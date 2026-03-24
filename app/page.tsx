@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useRef, useEffect } from "react";
-import { motion, AnimatePresence, useInView, useScroll, useTransform, useMotionTemplate, useSpring } from "motion/react";
+import { motion, AnimatePresence, useInView } from "motion/react";
 import {
   CloudRain,
   Waves,
@@ -25,6 +25,8 @@ import {
   GraduationCap,
   Mic,
   Sliders,
+  MessageCircle,
+  ArrowRight,
 } from "lucide-react";
 import svgPaths from "@/lib/svg-paths";
 
@@ -72,11 +74,11 @@ const soundscapePresets: Record<string, { label: string; description: string; la
 };
 
 const rotatingPhrases = [
-  "guided meditation",
-  "CBT session",
-  "body scan",
-  "breathing exercise",
-  "sleep story",
+  "a guided meditation",
+  "a CBT session",
+  "a body scan",
+  "a breathing exercise",
+  "a sleep story",
 ];
 
 const suggestions = [
@@ -162,109 +164,47 @@ function AmbientBackground() {
   );
 }
 
-/* ─── Cinematic Transition ─── */
+/* ─── Transition Interstitial ─── */
 
 function CinematicTransition() {
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  // Track scroll across the full tall container — gives us plenty of travel
-  const { scrollYProgress } = useScroll({
-    target: containerRef,
-    offset: ["start end", "end start"],
-  });
-
-  // Smooth everything through a spring so it feels buttery, not jerky
-  const smoothProgress = useSpring(scrollYProgress, {
-    stiffness: 100,
-    damping: 30,
-    restDelta: 0.001,
-  });
-
-  // --- Text focus pull ---
-  const rawBlur = useTransform(smoothProgress, [0.2, 0.42, 0.5], [20, 0.5, 0]);
-  const textScale = useTransform(smoothProgress, [0.2, 0.42, 0.5], [2.5, 1.02, 1]);
-  const textOpacity = useTransform(smoothProgress, [0.15, 0.3, 0.5, 0.7, 0.85], [0, 1, 1, 1, 0]);
-  const filterBlur = useMotionTemplate`blur(${rawBlur}px)`;
-
-  // --- Anamorphic lens flare ---
-  const flareLeft = useTransform(smoothProgress, [0.3, 0.6], [-20, 120]);
-  const flareLeftPercent = useMotionTemplate`${flareLeft}%`;
-  const flareOpacity = useTransform(smoothProgress, [0.3, 0.4, 0.5, 0.6], [0, 0.7, 0.7, 0]);
-
-  // --- Horizontal rules ---
-  const lineScale = useTransform(smoothProgress, [0.32, 0.48], [0, 1]);
-  const lineOpacity = useTransform(smoothProgress, [0.32, 0.42, 0.65, 0.8], [0, 0.4, 0.4, 0]);
-
-  // --- Ambient glow ---
-  const glowOpacity = useTransform(smoothProgress, [0.25, 0.42, 0.6, 0.8], [0, 0.15, 0.15, 0]);
+  const ref = useRef<HTMLDivElement>(null);
+  const inView = useInView(ref, { once: true, margin: "-50px" });
 
   return (
     <div
-      ref={containerRef}
-      className="relative"
+      ref={ref}
+      className="relative py-14 md:py-16 px-6"
       style={{ background: "var(--color-sand-900)" }}
     >
-      {/* Scroll runway — sticky card inside */}
-      <div className="h-[130vh]">
-        <div className="sticky top-0 h-[65vh] flex items-center justify-center overflow-hidden">
+      <div className="max-w-4xl mx-auto flex items-center gap-6">
+        {/* Left line */}
+        <motion.div
+          className="flex-1 h-[1px]"
+          style={{ background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.2))" }}
+          initial={{ scaleX: 0, originX: "100%" }}
+          animate={inView ? { scaleX: 1 } : {}}
+          transition={{ duration: 1, ease: [0.25, 0.1, 0.25, 1] }}
+        />
 
-          {/* Ambient radial glow */}
-          <motion.div
-            className="absolute inset-0 pointer-events-none"
-            style={{ opacity: glowOpacity }}
-          >
-            <div
-              className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[400px]"
-              style={{
-                background: "radial-gradient(ellipse, rgba(122,158,126,0.25) 0%, rgba(109,154,181,0.1) 40%, transparent 70%)",
-                filter: "blur(80px)",
-              }}
-            />
-          </motion.div>
+        {/* Text */}
+        <motion.h2
+          className="text-[1.15rem] md:text-[1.4rem] text-white/70 text-center whitespace-nowrap shrink-0 tracking-wide"
+          style={{ fontFamily: "var(--font-display)" }}
+          initial={{ opacity: 0 }}
+          animate={inView ? { opacity: 1 } : {}}
+          transition={{ duration: 0.8, delay: 0.3 }}
+        >
+          Why our AI sessions sound different
+        </motion.h2>
 
-          {/* Horizontal rules — draw in from center */}
-          <motion.div
-            className="absolute top-[calc(50%-3.5rem)] left-[10%] right-[10%] h-[1px] origin-center"
-            style={{
-              scaleX: lineScale,
-              opacity: lineOpacity,
-              background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.15) 20%, rgba(255,255,255,0.25) 50%, rgba(255,255,255,0.15) 80%, transparent)",
-            }}
-          />
-          <motion.div
-            className="absolute bottom-[calc(50%-3.5rem)] left-[10%] right-[10%] h-[1px] origin-center"
-            style={{
-              scaleX: lineScale,
-              opacity: lineOpacity,
-              background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.15) 20%, rgba(255,255,255,0.25) 50%, rgba(255,255,255,0.15) 80%, transparent)",
-            }}
-          />
-
-          {/* Main text — the focus pull */}
-          <motion.h2
-            className="relative z-10 text-[2rem] md:text-[3rem] lg:text-[3.5rem] text-white leading-[1.15] tracking-tight text-center px-6 will-change-transform"
-            style={{
-              fontFamily: "var(--font-display)",
-              scale: textScale,
-              opacity: textOpacity,
-              filter: filterBlur,
-            }}
-          >
-            Why our AI sessions<br />sound different
-          </motion.h2>
-
-          {/* Anamorphic lens flare */}
-          <motion.div
-            className="absolute top-1/2 -translate-y-1/2 pointer-events-none w-[40vw] h-[3px]"
-            style={{
-              left: flareLeftPercent,
-              opacity: flareOpacity,
-              background: "linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.05) 10%, rgba(255,255,255,0.6) 40%, rgba(200,215,255,0.8) 50%, rgba(255,255,255,0.6) 60%, rgba(255,255,255,0.05) 90%, transparent 100%)",
-              boxShadow: "0 0 60px 20px rgba(200,215,255,0.08), 0 0 20px 4px rgba(255,255,255,0.1)",
-              filter: "blur(0.5px)",
-            }}
-          />
-        </div>
+        {/* Right line */}
+        <motion.div
+          className="flex-1 h-[1px]"
+          style={{ background: "linear-gradient(90deg, rgba(255,255,255,0.2), transparent)" }}
+          initial={{ scaleX: 0, originX: "0%" }}
+          animate={inView ? { scaleX: 1 } : {}}
+          transition={{ duration: 1, ease: [0.25, 0.1, 0.25, 1] }}
+        />
       </div>
     </div>
   );
@@ -584,8 +524,8 @@ export default function HomePage() {
         <AmbientBackground />
 
         {/* Header */}
-        <header className="relative z-50 px-6 py-5">
-          <div className="max-w-5xl mx-auto flex items-center justify-between">
+        <header className="relative z-50 px-8 py-5">
+          <div className="max-w-7xl mx-auto flex items-center justify-between">
             <button onClick={handleStartOver} className="flex items-center gap-2 text-[var(--color-sand-900)] cursor-pointer">
               <Logo />
               <span className="text-lg tracking-tight" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>
@@ -593,6 +533,13 @@ export default function HomePage() {
               </span>
             </button>
             <div className="flex items-center gap-5">
+              <button
+                onClick={scrollToInfo}
+                className="text-sm text-[var(--color-sand-500)] hover:text-[var(--color-sand-900)] transition-colors cursor-pointer"
+                style={{ fontFamily: "var(--font-body)" }}
+              >
+                Listen to examples
+              </button>
               <button
                 onClick={scrollToInfo}
                 className="text-sm text-[var(--color-sand-500)] hover:text-[var(--color-sand-900)] transition-colors cursor-pointer"
@@ -636,7 +583,7 @@ export default function HomePage() {
                 </span>
 
                 <h1 className="text-[2rem] md:text-[2.75rem] text-[var(--color-sand-900)] text-center mb-8 leading-[1.2] whitespace-nowrap flex items-baseline justify-center">
-                  <span>Create a&nbsp;</span>
+                  <span>Generate&nbsp;</span>
                   <motion.span
                     className="relative inline-block overflow-hidden pl-[0.05em]"
                     style={{ height: "1.2em" }}
@@ -676,21 +623,17 @@ export default function HomePage() {
                         handleSubmitPrompt(prompt);
                       }
                     }}
-                    placeholder="Ask me anything about meditation..."
+                    placeholder="I am having trouble falling asleep because..."
                     className="flex-1 outline-none text-sm text-[var(--color-sand-900)] placeholder:text-[var(--color-sand-400)] bg-transparent"
                     style={{ fontFamily: "var(--font-body)" }}
                   />
                   <button
                     onClick={() => handleSubmitPrompt(prompt)}
                     disabled={!prompt.trim()}
-                    className="shrink-0 size-9 flex items-center justify-center disabled:opacity-30 transition-opacity cursor-pointer"
+                    className="shrink-0 w-9 h-9 flex items-center justify-center rounded-full transition-all cursor-pointer disabled:opacity-30"
+                    style={{ background: prompt.trim() ? "var(--color-sand-900)" : "transparent", color: prompt.trim() ? "var(--color-sand-50)" : "var(--color-sand-400)" }}
                   >
-                    <svg className="size-full" fill="none" viewBox="0 0 34.8962 34.8922">
-                      <path
-                        d={svgPaths.p2f0e8d80}
-                        fill={prompt.trim() ? "var(--color-sand-900)" : "var(--color-sand-300)"}
-                      />
-                    </svg>
+                    {prompt.trim() ? <ArrowRight className="w-4 h-4" /> : <MessageCircle className="w-5 h-5" />}
                   </button>
                 </div>
                 </div>
@@ -885,15 +828,18 @@ export default function HomePage() {
             transition={{ delay: 0.8 }}
             className="absolute bottom-8 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-2 cursor-pointer group"
           >
-            <span
-              className="flex items-center gap-2 px-6 py-3 rounded-full bg-[var(--color-sand-900)] text-[var(--color-sand-50)] shadow-lg group-hover:bg-[var(--color-sand-800)] group-hover:shadow-xl transition-all"
-              style={{ fontFamily: "var(--font-body)" }}
-            >
-              <Headphones className="w-4 h-4" />
-              <span className="text-sm font-medium">Hear what MindFlow sounds like</span>
+            <span className="relative rounded-full">
+              <span className="absolute -inset-[2px] rounded-full bg-[length:300%_300%] animate-[border-glow_4s_ease_infinite] opacity-80 group-hover:opacity-100 transition-opacity duration-300 blur-[0.5px]" style={{ background: "linear-gradient(135deg, var(--color-sage), var(--color-ocean), var(--color-dusk), var(--color-ember), var(--color-sage))", backgroundSize: "300% 300%" }} />
+              <span
+                className="relative flex items-center gap-3 px-10 py-5 rounded-full bg-[var(--color-sand-900)] text-[var(--color-sand-50)] shadow-lg group-hover:bg-[var(--color-sand-800)] group-hover:shadow-xl transition-all"
+                style={{ fontFamily: "var(--font-body)" }}
+              >
+                <Headphones className="w-5 h-5" />
+                <span className="text-base font-medium">Listen to examples</span>
+              </span>
             </span>
             <motion.div animate={{ y: [0, 5, 0] }} transition={{ duration: 1.5, repeat: Infinity }}>
-              <ChevronDown className="w-4 h-4 text-[var(--color-sand-900)]" />
+              <ChevronDown className="w-6 h-6 text-[var(--color-sand-900)]" />
             </motion.div>
           </motion.button>
         )}
