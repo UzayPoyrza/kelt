@@ -1149,7 +1149,7 @@ export default function StudioPage() {
 
             {/* Generate — Step 1: Prompt Input (identical to homepage) */}
             {activeNav === ("generate" as NavId) && genStep === "input" && (
-              <motion.div key="gen-input" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }} className="max-w-2xl mx-auto py-16 flex flex-col items-center">
+              <motion.div key="gen-input" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }} className="max-w-2xl mx-auto flex flex-col items-center justify-center min-h-[calc(100vh-120px)] -mt-40">
                 {/* Hidden measurer */}
                 <span
                   ref={measureRef}
@@ -1216,7 +1216,7 @@ export default function StudioPage() {
 
             {/* Generate — Step 2: Configure (copied from /create page) */}
             {activeNav === ("generate" as NavId) && genStep === "choose" && (
-              <motion.div key="gen-choose" initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.4 }} className="w-full max-w-xl mx-auto">
+              <motion.div key="gen-choose" initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.4 }} className="w-full max-w-xl mx-auto pt-[10vh]">
                 {/* Back button */}
                 <motion.button
                   initial={{ opacity: 0 }}
