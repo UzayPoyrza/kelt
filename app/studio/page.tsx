@@ -795,18 +795,25 @@ function StudioSession({ prompt, voice, duration, sound, onBack }: {
                   onClick={() => setSelectedBlock(isSelected ? null : block.id)}
                   className={`relative rounded-xl cursor-pointer transition-all ${
                     isSelected
-                      ? "shadow-[0_2px_12px_rgba(107,154,112,0.12)]"
-                      : "hover:shadow-[0_1px_4px_rgba(0,0,0,0.04)]"
+                      ? "shadow-[0_2px_16px_rgba(107,154,112,0.18)] ring-2 ring-[var(--color-sage)]/30"
+                      : "hover:shadow-[0_1px_6px_rgba(0,0,0,0.06)]"
                   }`}
                   style={{
-                    borderLeft: `3.5px solid ${isSelected ? "var(--color-sage)" : "rgba(122,158,126,0.35)"}`,
-                    background: isSelected ? "var(--color-sage-light)" : "#fff",
-                    border: isSelected ? "1.5px solid rgba(122,158,126,0.3)" : "1.5px solid transparent",
-                    borderLeftWidth: "3.5px",
-                    borderLeftColor: isSelected ? "var(--color-sage)" : "rgba(122,158,126,0.35)",
+                    borderLeft: `4px solid ${isSelected ? "var(--color-sage)" : "rgba(122,158,126,0.3)"}`,
+                    background: isSelected ? "linear-gradient(135deg, #e8f0e9 0%, #f0f6f0 100%)" : "#fff",
+                    border: isSelected ? "1.5px solid rgba(122,158,126,0.35)" : "1.5px solid #e8e8ec",
+                    borderLeftWidth: "4px",
+                    borderLeftColor: isSelected ? "var(--color-sage)" : "rgba(122,158,126,0.3)",
                   }}
                 >
-                  <div className="flex items-start gap-2 pl-4 pr-3 py-3.5">
+                  {/* Editing indicator bar */}
+                  {isSelected && (
+                    <div className="flex items-center gap-1.5 px-4 pt-2.5 pb-0">
+                      <PenLine className="w-3 h-3 text-[var(--color-sage)]" />
+                      <span className="text-[10px] font-medium text-[var(--color-sage)]" style={{ fontFamily: "var(--font-body)" }}>Editing</span>
+                    </div>
+                  )}
+                  <div className="flex items-start gap-2 pl-4 pr-3 py-3.5" style={{ paddingTop: isSelected ? "8px" : undefined }}>
                     {/* Content */}
                     <div className="flex-1 min-w-0">
                       {isSelected ? (
@@ -814,53 +821,59 @@ function StudioSession({ prompt, voice, duration, sound, onBack }: {
                           value={block.text}
                           onChange={(e) => updateBlockText(block.id, e.target.value)}
                           onClick={(e) => e.stopPropagation()}
-                          className="w-full text-[14px] text-[#1a1614] bg-transparent outline-none resize-none leading-[1.75]"
+                          className="w-full text-[14px] text-[#1a1614] bg-white/60 outline-none resize-none leading-[1.75] rounded-lg px-3 py-2 border border-[rgba(122,158,126,0.25)] focus:border-[var(--color-sage)] transition-colors"
                           style={{ fontFamily: "var(--font-body)" }}
                           rows={Math.max(2, Math.ceil(block.text.length / 60))}
                           autoFocus
                         />
                       ) : (
-                        <div className="flex items-start gap-2">
-                          <p className="text-[14px] text-[#2d2926] leading-[1.75] flex-1" style={{ fontFamily: "var(--font-body)" }}>
-                            {block.text}
-                          </p>
-                          <PenLine className="w-3.5 h-3.5 text-[#c4c4c8] opacity-0 group-hover/row:opacity-100 transition-opacity shrink-0 mt-1" />
-                        </div>
+                        <p className="text-[14px] text-[#2d2926] leading-[1.75]" style={{ fontFamily: "var(--font-body)" }}>
+                          {block.text}
+                        </p>
                       )}
                     </div>
 
-                    {/* Reorder + Delete — on hover */}
-                    <div className="flex items-center gap-0.5 opacity-0 group-hover/row:opacity-100 transition-opacity shrink-0 mt-0.5">
-                      <div className="flex flex-col gap-px">
+                    {/* Action icons — always visible */}
+                    <div className="flex items-center gap-1 shrink-0 mt-0.5">
+                      {!isSelected && (
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setSelectedBlock(block.id); }}
+                          className="w-7 h-7 rounded-lg flex items-center justify-center text-[#9a9a9e] hover:text-[var(--color-sage)] hover:bg-[var(--color-sage-light)] transition-all cursor-pointer"
+                          title="Click to edit text"
+                        >
+                          <PenLine className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                      <div className="flex flex-col">
                         <button
                           onClick={(e) => { e.stopPropagation(); if (canMoveVoiceUp) moveBlock(block.id, "up"); }}
-                          className={`w-6 h-4 rounded-sm flex items-center justify-center transition-all ${
+                          className={`w-7 h-4 rounded-t-md flex items-center justify-center transition-all ${
                             canMoveVoiceUp
-                              ? "text-[var(--color-sage)] hover:bg-[var(--color-sage-light)] cursor-pointer"
-                              : "text-[#d8d8dc] cursor-default"
+                              ? "text-[#71717a] hover:text-[var(--color-sage)] hover:bg-[var(--color-sage-light)] cursor-pointer"
+                              : "text-[#d4d4d8] cursor-default"
                           }`}
-                          title="Move up"
+                          title={canMoveVoiceUp ? "Move segment up" : "Already at top"}
                         >
                           <svg width="10" height="6" viewBox="0 0 10 6" fill="none"><path d="M5 0L0 5h10L5 0z" fill="currentColor"/></svg>
                         </button>
                         <button
                           onClick={(e) => { e.stopPropagation(); if (canMoveVoiceDown) moveBlock(block.id, "down"); }}
-                          className={`w-6 h-4 rounded-sm flex items-center justify-center transition-all ${
+                          className={`w-7 h-4 rounded-b-md flex items-center justify-center transition-all ${
                             canMoveVoiceDown
-                              ? "text-[var(--color-sage)] hover:bg-[var(--color-sage-light)] cursor-pointer"
-                              : "text-[#d8d8dc] cursor-default"
+                              ? "text-[#71717a] hover:text-[var(--color-sage)] hover:bg-[var(--color-sage-light)] cursor-pointer"
+                              : "text-[#d4d4d8] cursor-default"
                           }`}
-                          title="Move down"
+                          title={canMoveVoiceDown ? "Move segment down" : "Already at bottom"}
                         >
                           <svg width="10" height="6" viewBox="0 0 10 6" fill="none"><path d="M5 6L0 1h10L5 6z" fill="currentColor"/></svg>
                         </button>
                       </div>
                       <button
                         onClick={(e) => { e.stopPropagation(); deleteBlock(block.id); }}
-                        className="w-6 h-6 rounded-md flex items-center justify-center text-[#d4d4d4] hover:text-red-400 hover:bg-red-50 transition-all cursor-pointer"
-                        title="Delete segment"
+                        className="w-7 h-7 rounded-lg flex items-center justify-center text-[#b4b4b8] hover:text-red-500 hover:bg-red-50 transition-all cursor-pointer"
+                        title="Delete this segment and its pause"
                       >
-                        <X className="w-3 h-3" />
+                        <X className="w-3.5 h-3.5" />
                       </button>
                     </div>
                   </div>
