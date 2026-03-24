@@ -77,6 +77,7 @@ const rotatingPhrases = [
   "a guided meditation",
   "a CBT session",
   "a body scan",
+  "a guided meditation",
   "a breathing exercise",
   "a sleep story",
 ];
@@ -274,186 +275,18 @@ function FadeIn({ children, className = "", delay = 0 }: { children: React.React
   );
 }
 
-/* ─── Live Pause Demo ─── */
+/* ─── Pause Timeline Demo ─── */
 
-const demoScript: { type: "text" | "pause" | "breath"; content: string; duration?: number }[] = [
-  { type: "text", content: "Gently close your eyes." },
-  { type: "pause", content: "settling in", duration: 3000 },
-  { type: "text", content: "Take a slow breath in\u2026" },
-  { type: "breath", content: "inhale", duration: 4000 },
-  { type: "text", content: "And release." },
-  { type: "breath", content: "exhale", duration: 6000 },
-  { type: "text", content: "Notice your shoulders." },
-  { type: "pause", content: "body awareness", duration: 3000 },
-  { type: "text", content: "Let them soften and drop." },
-  { type: "pause", content: "letting go", duration: 5000 },
-  { type: "text", content: "There\u2019s nowhere to be but here." },
-  { type: "pause", content: "presence", duration: 4000 },
+const timelineSteps = [
+  { type: "text" as const, content: "Gently close your eyes.", time: "0:00" },
+  { type: "pause" as const, label: "settle in", seconds: 3, time: "0:02" },
+  { type: "text" as const, content: "Breathe in for 4 seconds\u2026", time: "0:05" },
+  { type: "breath" as const, label: "inhale", seconds: 4, time: "0:06" },
+  { type: "text" as const, content: "Now exhale slowly for 6 seconds.", time: "0:10" },
+  { type: "breath" as const, label: "exhale", seconds: 6, time: "0:11" },
+  { type: "text" as const, content: "Notice your shoulders\u2026 let them drop.", time: "0:17" },
+  { type: "pause" as const, label: "body responds", seconds: 5, time: "0:19" },
 ];
-
-function PauseDemo() {
-  const [isRunning, setIsRunning] = useState(false);
-  const [currentStep, setCurrentStep] = useState(-1);
-  const [visibleSteps, setVisibleSteps] = useState<number[]>([]);
-  const [pauseProgress, setPauseProgress] = useState(0);
-  const ref = useRef(null);
-  const inView = useInView(ref, { once: true, margin: "-100px" });
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  const runDemo = useCallback(() => {
-    setIsRunning(true);
-    setVisibleSteps([]);
-    setCurrentStep(-1);
-    setPauseProgress(0);
-
-    let stepIndex = 0;
-
-    const advance = () => {
-      if (stepIndex >= demoScript.length) {
-        setIsRunning(false);
-        setCurrentStep(-1);
-        return;
-      }
-
-      const step = demoScript[stepIndex];
-      setCurrentStep(stepIndex);
-      setVisibleSteps((prev) => [...prev, stepIndex]);
-
-      if (step.type === "pause" || step.type === "breath") {
-        const dur = step.duration || 3000;
-        setPauseProgress(0);
-        const tick = 50;
-        let elapsed = 0;
-        intervalRef.current = setInterval(() => {
-          elapsed += tick;
-          setPauseProgress(Math.min(elapsed / dur, 1));
-          if (elapsed >= dur) {
-            if (intervalRef.current) clearInterval(intervalRef.current);
-            stepIndex++;
-            advance();
-          }
-        }, tick);
-      } else {
-        stepIndex++;
-        timerRef.current = setTimeout(advance, 800);
-      }
-    };
-
-    timerRef.current = setTimeout(advance, 500);
-  }, []);
-
-  // Auto-start when scrolled into view
-  useEffect(() => {
-    if (inView && !isRunning && visibleSteps.length === 0) {
-      runDemo();
-    }
-  }, [inView, isRunning, visibleSteps.length, runDemo]);
-
-  // Cleanup
-  useEffect(() => {
-    return () => {
-      if (timerRef.current) clearTimeout(timerRef.current);
-      if (intervalRef.current) clearInterval(intervalRef.current);
-    };
-  }, []);
-
-  return (
-    <div ref={ref} className="bg-white rounded-3xl border border-[var(--color-sand-200)] overflow-hidden shadow-sm">
-      {/* Terminal-style header */}
-      <div className="flex items-center justify-between px-6 py-3 border-b border-[var(--color-sand-100)] bg-[var(--color-sand-50)]">
-        <div className="flex items-center gap-2">
-          <div className="flex gap-1.5">
-            <div className="w-2.5 h-2.5 rounded-full bg-[var(--color-sand-300)]" />
-            <div className="w-2.5 h-2.5 rounded-full bg-[var(--color-sand-300)]" />
-            <div className="w-2.5 h-2.5 rounded-full bg-[var(--color-sand-300)]" />
-          </div>
-          <span className="text-xs text-[var(--color-sand-500)] ml-2" style={{ fontFamily: "var(--font-body)" }}>
-            MindFlow Session Preview — Live
-          </span>
-        </div>
-        <button
-          onClick={runDemo}
-          disabled={isRunning}
-          className="text-xs text-[var(--color-sand-500)] hover:text-[var(--color-sand-900)] transition-colors disabled:opacity-30 cursor-pointer flex items-center gap-1"
-          style={{ fontFamily: "var(--font-body)" }}
-        >
-          <RotateCcw className="w-3 h-3" />
-          Replay
-        </button>
-      </div>
-
-      {/* Content area */}
-      <div className="p-6 md:p-8 min-h-[320px]">
-        <div className="space-y-1">
-          {demoScript.map((step, i) => {
-            const isVisible = visibleSteps.includes(i);
-            const isCurrent = currentStep === i;
-
-            if (!isVisible) return null;
-
-            if (step.type === "text") {
-              return (
-                <motion.p
-                  key={i}
-                  initial={{ opacity: 0, y: 6 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.3 }}
-                  className="text-lg text-[var(--color-sand-900)] py-1"
-                  style={{ fontFamily: "var(--font-display)" }}
-                >
-                  {step.content}
-                </motion.p>
-              );
-            }
-
-            // Pause or breath
-            return (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="flex items-center gap-3 py-2"
-              >
-                {/* Progress bar */}
-                <div className="flex-1 h-6 rounded-lg bg-[var(--color-sand-50)] border border-[var(--color-sand-100)] overflow-hidden relative">
-                  <motion.div
-                    className="absolute inset-y-0 left-0 rounded-lg"
-                    style={{
-                      width: `${(isCurrent ? pauseProgress : 1) * 100}%`,
-                      background: step.type === "breath"
-                        ? "linear-gradient(90deg, var(--color-sage-light), var(--color-sage))"
-                        : "linear-gradient(90deg, var(--color-sand-100), var(--color-sand-300))",
-                      opacity: 0.5,
-                    }}
-                    transition={{ duration: 0.05 }}
-                  />
-                  <div className="relative z-10 flex items-center justify-between h-full px-3">
-                    <span className="text-xs text-[var(--color-sand-600)]" style={{ fontFamily: "var(--font-body)" }}>
-                      {step.type === "breath" ? (step.content === "inhale" ? "Breathe in\u2026" : "Breathe out\u2026") : `\u23F8 ${step.content}`}
-                    </span>
-                    <span className="text-xs font-mono text-[var(--color-sand-400)]">
-                      {((step.duration || 3000) / 1000).toFixed(0)}s
-                    </span>
-                  </div>
-                </div>
-              </motion.div>
-            );
-          })}
-
-          {/* Cursor when running */}
-          {isRunning && (
-            <motion.div
-              animate={{ opacity: [1, 0.3, 1] }}
-              transition={{ duration: 1, repeat: Infinity }}
-              className="w-[2px] h-5 bg-[var(--color-sand-400)] mt-1 rounded-full"
-            />
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
 
 /* ─── Main Page ─── */
 
@@ -557,11 +390,21 @@ export default function HomePage() {
   }, [phraseIndex]);
 
   useEffect(() => {
-    const id = setInterval(() => {
+    let intervalId: ReturnType<typeof setInterval> | null = null;
+    // Show "a guided meditation" for 7s initially, then rotate every 2.5s
+    const initialDelay = setTimeout(() => {
       hasAnimatedRef.current = true;
-      setPhraseIndex((i) => (i + 1) % rotatingPhrases.length);
-    }, 2500);
-    return () => clearInterval(id);
+      setPhraseIndex(1);
+
+      intervalId = setInterval(() => {
+        setPhraseIndex((i) => (i + 1) % rotatingPhrases.length);
+      }, 2500);
+    }, 7000);
+
+    return () => {
+      clearTimeout(initialDelay);
+      if (intervalId) clearInterval(intervalId);
+    };
   }, []);
 
   return (
@@ -724,82 +567,99 @@ export default function HomePage() {
                 transition={{ duration: 0.4 }}
                 className="w-full max-w-xl mx-auto"
               >
-                {/* Back button — top left */}
+                {/* Back button — top left, visible */}
                 <motion.button
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   onClick={() => { setStage("input"); setPrompt(""); }}
-                  className="flex items-center gap-1 text-sm text-[var(--color-sand-500)] hover:text-[var(--color-sand-900)] transition-colors cursor-pointer mb-6"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm text-[var(--color-sand-600)] hover:text-[var(--color-sand-900)] hover:bg-white/60 border border-[var(--color-sand-200)] hover:border-[var(--color-sand-300)] transition-all cursor-pointer mb-8"
                   style={{ fontFamily: "var(--font-body)" }}
                 >
                   <ChevronLeft className="w-4 h-4" />Back
                 </motion.button>
 
+                {/* Prompt display — editable feel */}
                 <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="mb-10 text-center">
-                  <p className="text-sm text-[var(--color-sand-500)] mb-2" style={{ fontFamily: "var(--font-body)" }}>Your meditation</p>
-                  <p className="text-lg text-[var(--color-sand-900)] max-w-md mx-auto" style={{ fontFamily: "var(--font-display)" }}>&ldquo;{prompt}&rdquo;</p>
+                  <p className="text-2xl text-[var(--color-sand-900)] max-w-md mx-auto leading-snug" style={{ fontFamily: "var(--font-display)" }}>&ldquo;{prompt}&rdquo;</p>
                 </motion.div>
 
+                {/* Duration — compact inline pills */}
                 <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="mb-8">
-                  <p className="text-xs uppercase tracking-widest text-[var(--color-sand-500)] mb-3 font-medium" style={{ fontFamily: "var(--font-body)" }}>Duration</p>
+                  <p className="text-xs uppercase tracking-widest text-[var(--color-sand-400)] mb-3" style={{ fontFamily: "var(--font-body)" }}>Duration</p>
                   <div className="flex gap-2">
                     {durations.map((d) => (
-                      <button key={d} onClick={() => setDuration(d)} className={`flex-1 py-3 rounded-xl text-sm transition-all cursor-pointer ${duration === d ? "bg-[var(--color-sand-900)] text-[var(--color-sand-50)] shadow-sm" : "bg-white/60 text-[var(--color-sand-700)] hover:bg-white"}`} style={{ fontFamily: "var(--font-body)" }}>{d}m</button>
+                      <button key={d} onClick={() => setDuration(d)} className={`flex-1 py-2.5 rounded-full text-sm transition-all cursor-pointer ${duration === d ? "bg-[var(--color-sand-900)] text-[var(--color-sand-50)] shadow-sm" : "bg-white/60 text-[var(--color-sand-600)] hover:bg-white border border-[var(--color-sand-200)]"}`} style={{ fontFamily: "var(--font-body)" }}>{d}m</button>
                     ))}
                   </div>
                 </motion.div>
 
+                {/* Voice — prominent cards with waveform */}
                 <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }} className="mb-8">
-                  <p className="text-xs uppercase tracking-widest text-[var(--color-sand-500)] mb-3 font-medium" style={{ fontFamily: "var(--font-body)" }}>Voice</p>
-                  <div className="grid grid-cols-2 gap-2">
-                    {voices.map((v) => (
-                      <button key={v.id} onClick={() => setVoice(v.id)} className={`flex items-center gap-3 p-3.5 rounded-xl transition-all cursor-pointer text-left ${voice === v.id ? "bg-[var(--color-sand-900)] text-[var(--color-sand-50)] shadow-sm" : "bg-white/60 text-[var(--color-sand-900)] hover:bg-white"}`}>
-                        <div className="flex-1 min-w-0">
-                          <span className="text-sm font-medium block" style={{ fontFamily: "var(--font-body)" }}>{v.label}</span>
-                          <span className={`text-xs mt-0.5 block ${voice === v.id ? "opacity-60" : "text-[var(--color-sand-500)]"}`} style={{ fontFamily: "var(--font-body)" }}>{v.description}</span>
-                        </div>
-                        <div
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setVoice(v.id);
-                            setVoicePlaying(voicePlaying === v.id ? null : v.id);
-                            // TODO: play actual voice sample audio
-                            if (voicePlaying !== v.id) {
-                              setTimeout(() => setVoicePlaying(null), 3000);
-                            }
-                          }}
-                          className={`shrink-0 w-8 h-8 rounded-full flex items-center justify-center transition-all ${voice === v.id ? "bg-white/20 text-white" : "bg-[var(--color-sand-100)] text-[var(--color-sand-500)] hover:bg-[var(--color-sand-200)]"}`}
-                        >
-                          {voicePlaying === v.id ? <Pause className="w-3 h-3" /> : <Play className="w-3 h-3 ml-0.5" />}
-                        </div>
-                      </button>
-                    ))}
+                  <p className="text-xs uppercase tracking-widest text-[var(--color-sand-400)] mb-3" style={{ fontFamily: "var(--font-body)" }}>Voice</p>
+                  <div className="grid grid-cols-2 gap-2.5">
+                    {voices.map((v) => {
+                      const isActive = voice === v.id;
+                      const isVoicePlaying = voicePlaying === v.id;
+                      return (
+                        <button key={v.id} onClick={() => { setVoice(v.id); setVoicePlaying(v.id); /* TODO: play voice sample */ setTimeout(() => setVoicePlaying((cur) => cur === v.id ? null : cur), 3000); }} className={`relative flex items-center gap-3 p-4 rounded-xl transition-all cursor-pointer text-left overflow-hidden ${isActive ? "bg-[var(--color-sand-900)] text-[var(--color-sand-50)] shadow-md" : "bg-white text-[var(--color-sand-900)] hover:shadow-sm border border-[var(--color-sand-200)] hover:border-[var(--color-sand-300)]"}`}>
+                          <div className="flex-1 min-w-0">
+                            <span className="text-sm font-medium block" style={{ fontFamily: "var(--font-body)" }}>{v.label}</span>
+                            <span className={`text-xs mt-0.5 block ${isActive ? "opacity-50" : "text-[var(--color-sand-500)]"}`} style={{ fontFamily: "var(--font-body)" }}>{v.description}</span>
+                            {/* Mini waveform when playing */}
+                            {isVoicePlaying && (
+                              <div className="flex items-end gap-[2px] h-3 mt-2">
+                                {Array.from({ length: 12 }).map((_, i) => (
+                                  <motion.div
+                                    key={i}
+                                    className={`w-[2px] rounded-full ${isActive ? "bg-white/50" : "bg-[var(--color-sand-400)]"}`}
+                                    animate={{ height: [`${20 + Math.random() * 40}%`, `${40 + Math.random() * 60}%`, `${20 + Math.random() * 40}%`] }}
+                                    transition={{ duration: 0.4 + Math.random() * 0.3, repeat: Infinity, ease: "easeInOut" }}
+                                    style={{ height: "30%" }}
+                                  />
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                          <div
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setVoicePlaying(voicePlaying === v.id ? null : v.id);
+                            }}
+                            className={`shrink-0 w-9 h-9 rounded-full flex items-center justify-center transition-all ${isActive ? "bg-white/20 text-white hover:bg-white/30" : "bg-[var(--color-sand-100)] text-[var(--color-sand-500)] hover:bg-[var(--color-sand-200)]"}`}
+                          >
+                            {isVoicePlaying ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5 ml-0.5" />}
+                          </div>
+                        </button>
+                      );
+                    })}
                   </div>
                 </motion.div>
 
-                <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="mb-10">
-                  <div className="flex items-center gap-3 p-4 rounded-xl bg-[var(--color-sage-light)]/40 border border-[var(--color-sage)]/10">
-                    <div className="w-8 h-8 rounded-full bg-[var(--color-sage)]/10 flex items-center justify-center shrink-0">
-                      <Headphones className="w-4 h-4 text-[var(--color-sage)]" />
-                    </div>
-                    <div>
-                      <p className="text-sm text-[var(--color-sand-900)] font-medium" style={{ fontFamily: "var(--font-body)" }}>Soundscape options available after generation</p>
-                      <p className="text-xs text-[var(--color-sand-500)]" style={{ fontFamily: "var(--font-body)" }}>We&apos;ll suggest ambient layers matched to your session</p>
-                    </div>
-                  </div>
+                {/* Soundscape — subtle inline note */}
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }} className="mb-10 text-center">
+                  <p className="text-xs text-[var(--color-sand-400)] flex items-center justify-center gap-1.5" style={{ fontFamily: "var(--font-body)" }}>
+                    <Headphones className="w-3 h-3" />
+                    Soundscape &amp; ambient layers will be matched after generation
+                  </p>
                 </motion.div>
 
+                {/* Generate button — large, centered, animated gradient border + text */}
                 <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }} className="flex justify-center">
                   <div className="relative rounded-2xl group">
-                    <div className="absolute -inset-[2px] rounded-2xl bg-[length:300%_300%] animate-[border-glow_4s_ease_infinite] opacity-80 group-hover:opacity-100 transition-opacity duration-300 blur-[0.5px]" style={{ background: "linear-gradient(135deg, var(--color-sage), var(--color-ocean), var(--color-dusk), var(--color-ember), var(--color-sage))", backgroundSize: "300% 300%" }} />
+                    <div className="absolute -inset-[2.5px] rounded-2xl bg-[length:300%_300%] animate-[border-glow_4s_ease_infinite] opacity-90 group-hover:opacity-100 transition-opacity duration-300" style={{ background: "linear-gradient(135deg, var(--color-sage), var(--color-ocean), var(--color-dusk), var(--color-ember), var(--color-sage))", backgroundSize: "300% 300%" }} />
                     <motion.button
                       onClick={handleGenerate}
-                      className="relative flex items-center justify-center gap-3 px-12 py-4 rounded-2xl bg-[var(--color-sand-900)] text-[var(--color-sand-50)] hover:bg-[var(--color-sand-800)] transition-all text-base shadow-lg cursor-pointer"
+                      className="relative flex items-center justify-center gap-3 px-16 py-5 rounded-2xl bg-[var(--color-sand-900)] text-[var(--color-sand-50)] hover:bg-[var(--color-sand-800)] transition-all text-lg shadow-xl cursor-pointer"
                       style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.97 }}
                     >
-                      <Sparkles className="w-5 h-5" />
+                      <motion.div
+                        animate={{ rotate: [0, 15, -15, 0] }}
+                        transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                      >
+                        <Sparkles className="w-5 h-5" />
+                      </motion.div>
                       Generate Meditation
                     </motion.button>
                   </div>
@@ -994,73 +854,85 @@ export default function HomePage() {
       <CinematicTransition />
 
       {/* ════════════════════════════════════════════
-          SECTION 1 — LIVE PAUSE DEMO
+          SECTION 1 — PAUSE INTELLIGENCE
          ════════════════════════════════════════════ */}
       <section className="relative py-20 px-6 overflow-hidden" style={{ background: "var(--color-sand-50)" }}>
-        <div className="max-w-5xl mx-auto">
-          <FadeIn className="text-center mb-6">
+        <div className="max-w-4xl mx-auto">
+          <FadeIn className="text-center mb-14">
             <p className="text-xs uppercase tracking-[0.2em] text-[var(--color-sand-500)] mb-4 font-medium" style={{ fontFamily: "var(--font-body)" }}>
-              Pause &amp; Semantics Awareness
+              Pause Intelligence
             </p>
-            <h2 className="text-[2.5rem] md:text-[3.5rem] text-[var(--color-sand-900)] leading-tight mb-6">
+            <h2 className="text-[2.5rem] md:text-[3.5rem] text-[var(--color-sand-900)] leading-tight mb-5">
               Most AI reads text.<br />Ours understands silence.
             </h2>
-            <p className="text-lg text-[var(--color-sand-600)] max-w-2xl mx-auto leading-relaxed mb-4" style={{ fontFamily: "var(--font-body)" }}>
-              Watch how MindFlow generates a meditation. Notice how the pauses aren&apos;t random &mdash;
-              they&apos;re timed to your breath, calibrated to the instruction, and placed where a
-              real teacher would let silence do the work.
+            <p className="text-base text-[var(--color-sand-600)] max-w-lg mx-auto leading-relaxed" style={{ fontFamily: "var(--font-body)" }}>
+              Every pause is intentional &mdash; timed to your breath, calibrated to the instruction.
             </p>
           </FadeIn>
 
+          {/* Timeline visualization */}
           <FadeIn>
-            <PauseDemo />
-          </FadeIn>
-
-          {/* Comparison: us vs typical AI */}
-          <FadeIn className="mt-20">
-            <div className="grid md:grid-cols-2 gap-6">
-              <div className="bg-white rounded-2xl p-7 border border-[var(--color-sand-200)]">
-                <div className="flex items-center gap-2 mb-5">
-                  <div className="w-2 h-2 rounded-full bg-red-400" />
-                  <p className="text-xs uppercase tracking-widest text-[var(--color-sand-500)] font-medium" style={{ fontFamily: "var(--font-body)" }}>Typical AI Meditation</p>
+            <div className="relative bg-white rounded-2xl border border-[var(--color-sand-200)] overflow-hidden shadow-sm">
+              {/* Header */}
+              <div className="flex items-center gap-2 px-5 py-3 border-b border-[var(--color-sand-100)] bg-[var(--color-sand-50)]">
+                <div className="flex gap-1.5">
+                  <div className="w-2 h-2 rounded-full bg-[var(--color-sand-300)]" />
+                  <div className="w-2 h-2 rounded-full bg-[var(--color-sand-300)]" />
+                  <div className="w-2 h-2 rounded-full bg-[var(--color-sand-300)]" />
                 </div>
-                <div className="space-y-2 font-mono text-sm text-[var(--color-sand-600)]" style={{ fontFamily: "var(--font-body)" }}>
-                  <p>Close your eyes. Take a deep breath in.</p>
-                  <p>Now breathe out. Feel your body relax.</p>
-                  <p>Notice any tension in your shoulders.</p>
-                  <p>Let it go. Breathe in again. And out.</p>
-                  <p className="text-xs text-[var(--color-sand-400)] italic mt-3">No pauses. No pacing. Just a wall of text read aloud.</p>
-                </div>
+                <span className="text-[10px] text-[var(--color-sand-400)] ml-1" style={{ fontFamily: "var(--font-body)" }}>MindFlow Session — First 24 seconds</span>
               </div>
-              <div className="bg-[var(--color-sand-900)] rounded-2xl p-7 text-[var(--color-sand-50)]">
-                <div className="flex items-center gap-2 mb-5">
-                  <div className="w-2 h-2 rounded-full bg-green-400" />
-                  <p className="text-xs uppercase tracking-widest opacity-60 font-medium" style={{ fontFamily: "var(--font-body)" }}>MindFlow</p>
+
+              <div className="p-5 md:p-7">
+                {/* Timeline */}
+                <div className="relative">
+                  {timelineSteps.map((step, i) => (
+                    <FadeIn key={i} delay={i * 0.06}>
+                      <div className="flex items-start gap-3">
+                        {/* Vertical line + dot */}
+                        <div className="flex flex-col items-center w-11 shrink-0 pt-1">
+                          <div className={`w-2 h-2 rounded-full ${step.type === "text" ? "bg-[var(--color-sand-800)]" : step.type === "breath" ? "bg-[var(--color-sage)]" : "bg-[var(--color-sand-300)]"}`} />
+                          {i < timelineSteps.length - 1 && (
+                            <div className="w-[1px] flex-1 min-h-[12px] bg-[var(--color-sand-200)]" />
+                          )}
+                        </div>
+
+                        {/* Content */}
+                        <div className={`flex-1 ${step.type === "text" ? "pb-3" : "pb-3"}`}>
+                          {step.type === "text" ? (
+                            <p className="text-[15px] text-[var(--color-sand-900)] leading-snug" style={{ fontFamily: "var(--font-display)" }}>{step.content}</p>
+                          ) : (
+                            <div className="flex items-center gap-2">
+                              {/* Proportional bar — width reflects duration relative to max (6s) */}
+                              <div className="h-1 rounded-full overflow-hidden" style={{ width: `${(step.seconds / 6) * 60}%` }}>
+                                <motion.div
+                                  className="h-full rounded-full"
+                                  style={{ background: step.type === "breath" ? "var(--color-sage)" : "var(--color-sand-300)" }}
+                                  initial={{ width: "0%" }}
+                                  whileInView={{ width: "100%" }}
+                                  viewport={{ once: true }}
+                                  transition={{ duration: 1, delay: 0.2 + i * 0.06, ease: "easeOut" }}
+                                />
+                              </div>
+                              <span className="text-[10px] text-[var(--color-sand-400)] shrink-0" style={{ fontFamily: "var(--font-body)" }}>
+                                {step.label} · {step.seconds}s
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </FadeIn>
+                  ))}
                 </div>
-                <div className="space-y-2 text-sm" style={{ fontFamily: "var(--font-body)" }}>
-                  <p>Close your eyes.</p>
-                  <div className="flex items-center gap-2 py-1">
-                    <div className="flex gap-0.5">
-                      {[1,2,3].map(n => <div key={n} className="w-1 h-1 rounded-full bg-white/30" />)}
-                    </div>
-                    <span className="text-xs opacity-40 italic">3s — let the instruction land</span>
+
+                {/* Bottom insight */}
+                <div className="mt-4 pt-4 border-t border-[var(--color-sand-100)] flex items-start gap-3">
+                  <div className="w-7 h-7 rounded-full bg-[var(--color-sage-light)] flex items-center justify-center shrink-0 mt-0.5">
+                    <Activity className="w-3.5 h-3.5 text-[var(--color-sage)]" />
                   </div>
-                  <p>Take a deep breath in&hellip;</p>
-                  <div className="flex items-center gap-2 py-1">
-                    <div className="h-[1px] flex-1 bg-gradient-to-r from-white/20 via-white/5 to-transparent" />
-                    <span className="text-xs opacity-40 italic">4s inhale window</span>
-                  </div>
-                  <p>And slowly release.</p>
-                  <div className="flex items-center gap-2 py-1">
-                    <div className="h-[1px] flex-1 bg-gradient-to-r from-white/20 via-white/5 to-transparent" />
-                    <span className="text-xs opacity-40 italic">6s exhale — longer to activate parasympathetic</span>
-                  </div>
-                  <p>Notice your shoulders&hellip; and let them drop.</p>
-                  <div className="flex items-center gap-2 py-1">
-                    <div className="flex gap-0.5">
-                      {[1,2,3,4,5].map(n => <div key={n} className="w-1 h-1 rounded-full bg-white/30" />)}
-                    </div>
-                    <span className="text-xs opacity-40 italic">5s — body needs time to respond</span>
+                  <div>
+                    <p className="text-sm text-[var(--color-sand-900)] font-medium" style={{ fontFamily: "var(--font-body)" }}>12 of 24 seconds are intentional silence</p>
+                    <p className="text-xs text-[var(--color-sand-500)] mt-0.5" style={{ fontFamily: "var(--font-body)" }}>Exhale windows are longer than inhales to activate parasympathetic response</p>
                   </div>
                 </div>
               </div>
