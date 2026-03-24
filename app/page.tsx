@@ -296,6 +296,7 @@ export default function HomePage() {
   const [duration, setDuration] = useState<number>(10);
   const [voice, setVoice] = useState<string>("aria");
   const [voicePlaying, setVoicePlaying] = useState<string | null>(null);
+  const voiceGridRef = useRef<HTMLDivElement>(null);
   const [ambient, setAmbient] = useState<string>("none");
   const [isPlaying, setIsPlaying] = useState(false);
   const [soundscape, setSoundscape] = useState<string | null>(null);
@@ -413,7 +414,7 @@ export default function HomePage() {
       {/* ════════════════════════════════════════════
           HERO / GENERATOR
          ════════════════════════════════════════════ */}
-      <section className="relative min-h-screen flex flex-col overflow-hidden">
+      <section className="relative min-h-screen flex flex-col overflow-hidden" onClick={() => voicePlaying && setVoicePlaying(null)}>
         <AmbientBackground />
 
         {/* Header */}
@@ -566,6 +567,7 @@ export default function HomePage() {
                 exit={{ opacity: 0, x: -30 }}
                 transition={{ duration: 0.4 }}
                 className="w-full max-w-xl mx-auto"
+                onClick={() => setVoicePlaying(null)}
               >
                 {/* Back button — top left, visible */}
                 <motion.button
@@ -601,24 +603,22 @@ export default function HomePage() {
                       const isActive = voice === v.id;
                       const isVoicePlaying = voicePlaying === v.id;
                       return (
-                        <button key={v.id} onClick={() => { setVoice(v.id); setVoicePlaying(v.id); /* TODO: play voice sample */ setTimeout(() => setVoicePlaying((cur) => cur === v.id ? null : cur), 3000); }} className={`relative flex items-center gap-3 p-4 rounded-xl transition-all cursor-pointer text-left overflow-hidden ${isActive ? "bg-[var(--color-sand-900)] text-[var(--color-sand-50)] shadow-md" : "bg-white text-[var(--color-sand-900)] hover:shadow-sm border border-[var(--color-sand-200)] hover:border-[var(--color-sand-300)]"}`}>
+                        <button key={v.id} onClick={(e) => { e.stopPropagation(); setVoice(v.id); setVoicePlaying(v.id); /* TODO: play voice sample */ setTimeout(() => setVoicePlaying((cur) => cur === v.id ? null : cur), 3000); }} className={`relative flex items-center gap-3 p-4 rounded-xl transition-all cursor-pointer text-left overflow-hidden ${isActive ? "bg-[var(--color-sand-900)] text-[var(--color-sand-50)] shadow-md" : "bg-white text-[var(--color-sand-900)] hover:shadow-sm border border-[var(--color-sand-200)] hover:border-[var(--color-sand-300)]"}`}>
                           <div className="flex-1 min-w-0">
                             <span className="text-sm font-medium block" style={{ fontFamily: "var(--font-body)" }}>{v.label}</span>
                             <span className={`text-xs mt-0.5 block ${isActive ? "opacity-50" : "text-[var(--color-sand-500)]"}`} style={{ fontFamily: "var(--font-body)" }}>{v.description}</span>
-                            {/* Mini waveform when playing */}
-                            {isVoicePlaying && (
-                              <div className="flex items-end gap-[2px] h-3 mt-2">
-                                {Array.from({ length: 12 }).map((_, i) => (
-                                  <motion.div
-                                    key={i}
-                                    className={`w-[2px] rounded-full ${isActive ? "bg-white/50" : "bg-[var(--color-sand-400)]"}`}
-                                    animate={{ height: [`${20 + Math.random() * 40}%`, `${40 + Math.random() * 60}%`, `${20 + Math.random() * 40}%`] }}
-                                    transition={{ duration: 0.4 + Math.random() * 0.3, repeat: Infinity, ease: "easeInOut" }}
-                                    style={{ height: "30%" }}
-                                  />
-                                ))}
-                              </div>
-                            )}
+                            {/* Mini waveform — space always reserved */}
+                            <div className="flex items-end gap-[2px] h-3 mt-2">
+                              {isVoicePlaying && Array.from({ length: 12 }).map((_, i) => (
+                                <motion.div
+                                  key={i}
+                                  className={`w-[2px] rounded-full ${isActive ? "bg-white/50" : "bg-[var(--color-sand-400)]"}`}
+                                  animate={{ height: [`${20 + Math.random() * 40}%`, `${40 + Math.random() * 60}%`, `${20 + Math.random() * 40}%`] }}
+                                  transition={{ duration: 0.4 + Math.random() * 0.3, repeat: Infinity, ease: "easeInOut" }}
+                                  style={{ height: "30%" }}
+                                />
+                              ))}
+                            </div>
                           </div>
                           <div
                             onClick={(e) => {
@@ -944,73 +944,100 @@ export default function HomePage() {
       {/* ════════════════════════════════════════════
           SECTION 2 — STUDIO AUDIO
          ════════════════════════════════════════════ */}
-      <section className="relative py-20 px-6" style={{ background: "var(--color-sand-900)" }}>
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute w-[600px] h-[600px] rounded-full blur-[200px] opacity-8" style={{ top: "-10%", left: "20%", background: "#4a7a5a" }} />
-          <div className="absolute w-[500px] h-[500px] rounded-full blur-[180px] opacity-6" style={{ bottom: "-10%", right: "10%", background: "#5a6a8a" }} />
+      <section className="relative py-24 px-6 overflow-hidden" style={{ background: "var(--color-sand-900)" }}>
+        {/* Atmospheric glows */}
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute w-[500px] h-[500px] rounded-full blur-[200px] opacity-[0.07]" style={{ top: "10%", left: "15%", background: "var(--color-sage)" }} />
+          <div className="absolute w-[400px] h-[400px] rounded-full blur-[180px] opacity-[0.05]" style={{ bottom: "5%", right: "10%", background: "var(--color-dusk)" }} />
         </div>
-        <div className="max-w-5xl mx-auto relative z-10">
-          <FadeIn className="text-center mb-12">
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 text-white/70 text-xs mb-5" style={{ fontFamily: "var(--font-body)" }}>
-              <Mic className="w-3.5 h-3.5" />
-              Professional Audio Pipeline
-            </div>
-            <h2 className="text-[2.5rem] md:text-[3.5rem] text-[var(--color-sand-50)] leading-tight mb-6">
-              Your meditation sounds like<br />a studio recording. Because it is.
+
+        <div className="max-w-4xl mx-auto relative z-10">
+          {/* Header */}
+          <FadeIn className="text-center mb-16">
+            <p className="text-xs uppercase tracking-[0.25em] text-white/30 mb-5" style={{ fontFamily: "var(--font-body)" }}>
+              Engineered with professional sound designers
+            </p>
+            <h2 className="text-[2.5rem] md:text-[3.5rem] text-[var(--color-sand-50)] leading-tight mb-5">
+              Every session is mixed<br />like a professional album.
             </h2>
-            <p className="text-base text-white/50 max-w-2xl mx-auto leading-relaxed" style={{ fontFamily: "var(--font-body)" }}>
-              We didn&apos;t just train an AI and ship it. We built an audio pipeline with
-              Grammy-nominated engineers and psychoacoustics researchers. Every session
-              goes through the same signal chain as a professional album.
+            <p className="text-base text-white/40 max-w-md mx-auto leading-relaxed" style={{ fontFamily: "var(--font-body)" }}>
+              We partnered with audio engineers to make sure every meditation
+              sounds warm, spacious, and crafted for headphones.
             </p>
           </FadeIn>
 
-          {/* Audio pipeline visualization */}
+          {/* Living equalizer visualization */}
           <FadeIn>
-            <div className="bg-white/5 backdrop-blur-sm rounded-3xl border border-white/10 p-8 md:p-10 mb-12">
-              <p className="text-xs uppercase tracking-[0.2em] text-white/40 mb-8 font-medium" style={{ fontFamily: "var(--font-body)" }}>
-                Signal Chain — Every Session
-              </p>
-              <div className="flex flex-col md:flex-row items-stretch gap-3">
-                {[
-                  { step: "01", label: "Voice Synthesis", detail: "Neural TTS with emotion modeling and natural prosody", icon: Mic },
-                  { step: "02", label: "Pause Engine", detail: "Breath-cycle timing, semantic pause injection, silence shaping", icon: Timer },
-                  { step: "03", label: "Spatial Mix", detail: "Binaural panning, room simulation, depth positioning", icon: Headphones },
-                  { step: "04", label: "Ambient Layer", detail: "Field-recorded soundscapes, frequency-matched to session type", icon: TreePine },
-                  { step: "05", label: "Master", detail: "48kHz/24-bit, loudness-normalized, headphone EQ'd", icon: Sliders },
-                ].map((s, i) => (
-                  <FadeIn key={s.step} delay={i * 0.08} className="flex-1">
-                    <div className="bg-white/5 rounded-xl p-5 h-full border border-white/5 hover:border-white/15 transition-colors">
-                      <div className="flex items-center gap-2 mb-3">
-                        <span className="text-xs font-mono text-white/30">{s.step}</span>
-                        <s.icon className="w-3.5 h-3.5 text-white/40" />
-                      </div>
-                      <p className="text-sm font-medium text-white/90 mb-1" style={{ fontFamily: "var(--font-body)" }}>{s.label}</p>
-                      <p className="text-xs text-white/40 leading-relaxed" style={{ fontFamily: "var(--font-body)" }}>{s.detail}</p>
-                    </div>
-                  </FadeIn>
-                ))}
+            <div className="relative mb-16">
+              {/* EQ bars — ambient, always-moving visualization */}
+              <div className="flex items-end justify-center gap-[3px] h-24 mb-6">
+                {Array.from({ length: 48 }).map((_, i) => {
+                  const center = 24;
+                  const dist = Math.abs(i - center) / center;
+                  const baseH = 20 + (1 - dist) * 55 + Math.sin(i * 0.6) * 15;
+                  return (
+                    <motion.div
+                      key={i}
+                      className="flex-1 max-w-[6px] rounded-full"
+                      style={{
+                        background: `linear-gradient(to top, rgba(122,158,126,${0.15 + (1 - dist) * 0.35}), rgba(122,158,126,${0.05 + (1 - dist) * 0.15}))`,
+                      }}
+                      animate={{
+                        height: [
+                          `${baseH}%`,
+                          `${baseH + 10 + Math.random() * 20}%`,
+                          `${baseH - 5 + Math.random() * 10}%`,
+                          `${baseH}%`,
+                        ],
+                      }}
+                      transition={{
+                        duration: 2 + Math.random() * 2,
+                        repeat: Infinity,
+                        ease: "easeInOut",
+                        delay: i * 0.04,
+                      }}
+                    />
+                  );
+                })}
               </div>
-              {/* Connecting line */}
-              <div className="hidden md:block mt-4 mx-5">
-                <div className="h-[1px] w-full bg-gradient-to-r from-white/5 via-white/15 to-white/5" />
+
+              {/* Labels under EQ */}
+              <div className="flex justify-between px-2">
+                <span className="text-[9px] uppercase tracking-wider text-white/20" style={{ fontFamily: "var(--font-body)" }}>Voice</span>
+                <span className="text-[9px] uppercase tracking-wider text-white/20" style={{ fontFamily: "var(--font-body)" }}>Spatial Mix</span>
+                <span className="text-[9px] uppercase tracking-wider text-white/20" style={{ fontFamily: "var(--font-body)" }}>Ambient</span>
               </div>
             </div>
           </FadeIn>
 
-          {/* Audio specs grid */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {/* Three pillars — what makes the audio special */}
+          <div className="grid md:grid-cols-3 gap-6">
             {[
-              { value: "48kHz", label: "Sample rate", sub: "Studio standard" },
-              { value: "24-bit", label: "Bit depth", sub: "Full dynamic range" },
-              { value: "LUFS-14", label: "Loudness target", sub: "Optimized for quiet" },
-              { value: "Stereo+", label: "Spatial format", sub: "Binaural compatible" },
-            ].map((spec, i) => (
-              <FadeIn key={spec.label} delay={i * 0.06}>
-                <div className="text-center py-6 border border-white/5 rounded-xl">
-                  <p className="text-xl text-white/90 mb-1" style={{ fontFamily: "var(--font-display)" }}>{spec.value}</p>
-                  <p className="text-xs text-white/50 font-medium" style={{ fontFamily: "var(--font-body)" }}>{spec.label}</p>
-                  <p className="text-xs text-white/25 mt-0.5" style={{ fontFamily: "var(--font-body)" }}>{spec.sub}</p>
+              {
+                icon: Mic,
+                title: "Voice that breathes",
+                text: "Natural inflection and emotion, not robotic text-to-speech. Every word sounds human.",
+              },
+              {
+                icon: Headphones,
+                title: "Mixed for headphones",
+                text: "Binaural spatial audio places the voice and sounds around you, not just in front of you.",
+              },
+              {
+                icon: Sliders,
+                title: "Studio mastered",
+                text: "48kHz, 24-bit audio with loudness optimization. The same quality standard as streaming music.",
+              },
+            ].map((item, i) => (
+              <FadeIn key={item.title} delay={i * 0.1}>
+                <div className="group">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="w-9 h-9 rounded-full bg-white/[0.05] border border-white/[0.08] flex items-center justify-center group-hover:border-white/20 transition-colors">
+                      <item.icon className="w-4 h-4 text-white/50 group-hover:text-white/80 transition-colors" />
+                    </div>
+                    <h3 className="text-base text-white/90" style={{ fontFamily: "var(--font-display)" }}>{item.title}</h3>
+                  </div>
+                  <p className="text-sm text-white/35 leading-relaxed pl-12" style={{ fontFamily: "var(--font-body)" }}>{item.text}</p>
                 </div>
               </FadeIn>
             ))}
