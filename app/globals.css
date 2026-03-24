@@ -224,6 +224,10 @@
   background: #a1a1aa;
 }
 
+.studio-title-hover:hover {
+  border-color: #18181b !important;
+}
+
 .grain-overlay::before {
   content: '';
   position: absolute;

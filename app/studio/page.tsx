@@ -33,6 +33,11 @@ import {
   Info,
   Trash2,
   X,
+  RotateCcw,
+  RotateCw,
+  ThumbsUp,
+  ThumbsDown,
+  Share2,
 } from "lucide-react";
 import svgPaths from "@/lib/svg-paths";
 import { suggestions, voices as sharedVoices, durations as sharedDurations, detectIntent, rotatingPhrases } from "@/lib/shared";
@@ -287,9 +292,9 @@ function SessionCard({ session, delay, isNowPlaying, onPlay, onOpenStudio }: {
 
 /* ─── Bottom Player Bar ─── */
 
-function PlayerBar({ session, isPlaying, onTogglePlay, onClose }: {
+function PlayerBar({ session, isPlaying, onTogglePlay, onClose, inline }: {
   session: (typeof mockSessions)[number]; isPlaying: boolean;
-  onTogglePlay: () => void; onClose: () => void;
+  onTogglePlay: () => void; onClose: () => void; inline?: boolean;
 }) {
   const [progress, setProgress] = useState(0);
   const colors = categoryColors[session.category] || categoryColors.focus;
@@ -305,14 +310,14 @@ function PlayerBar({ session, isPlaying, onTogglePlay, onClose }: {
 
   return (
     <motion.div
-      initial={{ y: 80, opacity: 0 }}
+      initial={{ y: 40, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
-      exit={{ y: 80, opacity: 0 }}
+      exit={{ y: 40, opacity: 0 }}
       transition={{ type: "spring", stiffness: 400, damping: 30, mass: 0.8 }}
-      className="fixed bottom-0 left-56 right-0 z-50 border-t border-[#e4e4e7] bg-white/95 backdrop-blur-xl"
+      className={inline ? "border-t border-[#e4e4e7] bg-white/95 backdrop-blur-xl" : "fixed bottom-0 left-56 right-0 z-50 border-t border-[#e4e4e7] bg-white/95 backdrop-blur-xl"}
     >
       {/* Progress bar */}
-      <div className="absolute top-0 left-0 right-0 h-[2px] bg-[#f0f0f3]">
+      <div className="h-[2px] bg-[#f0f0f3]">
         <motion.div
           className="h-full rounded-full"
           style={{ background: colors.accent, width: `${progress}%` }}
@@ -351,9 +356,6 @@ function PlayerBar({ session, isPlaying, onTogglePlay, onClose }: {
 
         {/* Right side */}
         <div className="flex items-center gap-3 flex-1 justify-end">
-          <span className="text-[11px] text-[#a1a1aa] tabular-nums" style={{ fontFamily: "var(--font-body)" }}>
-            {Math.floor(progress * 0.15)}:{String(Math.floor((progress * 0.15 % 1) * 60)).padStart(2, "0")} / {session.duration}
-          </span>
           <button className="w-8 h-8 rounded-lg hover:bg-[#f4f4f5] flex items-center justify-center text-[#71717a] hover:text-[#18181b] transition-colors cursor-pointer">
             <Download className="w-4 h-4" />
           </button>
@@ -397,26 +399,62 @@ function StudioSession({ prompt, voice, duration, sound, onBack }: {
   const [showSoundDropdown, setShowSoundDropdown] = useState(false);
 
   const [showDurationInfo, setShowDurationInfo] = useState(false);
-  const sessionName = deriveSessionName(prompt);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [studioPlaying, setStudioPlaying] = useState(false);
+  const [showStudioPlayer, setShowStudioPlayer] = useState(false);
+  const [hasGenerated, setHasGenerated] = useState(false);
+  const [sessionName, setSessionName] = useState(() => deriveSessionName(prompt));
+  const [isRenamingSession, setIsRenamingSession] = useState(false);
+  const renameInputRef = useRef<HTMLInputElement>(null);
   const estimated = estimateDuration(script);
 
+  const handleGenerateAudio = useCallback(() => {
+    setIsGenerating(true);
+    setTimeout(() => {
+      setIsGenerating(false);
+      setShowStudioPlayer(true);
+      setStudioPlaying(true);
+      setHasGenerated(true);
+    }, 2000);
+  }, []);
+
+  // Build a mock session for the player
+  const intent = prompt.toLowerCase().includes("sleep") ? "sleep" : prompt.toLowerCase().includes("focus") ? "focus" : prompt.toLowerCase().includes("stress") || prompt.toLowerCase().includes("anxi") ? "stress" : "focus";
+  const iconMap: Record<string, typeof Moon> = { sleep: Moon, focus: Sun, stress: Heart, anxiety: Heart };
+  const studioSession = {
+    id: "studio",
+    title: sessionName,
+    duration: `${estimated.minutes} min`,
+    voice: voices.find(v => v.id === sessionVoice)?.name || "Aria",
+    protocol: "Custom",
+    sound: sessionSound,
+    createdAt: "Just now",
+    category: intent,
+    icon: iconMap[intent] || Brain,
+  };
+
   const selectedVoice = voices.find(v => v.id === sessionVoice) || voices[0];
+
+  const markEdited = useCallback(() => setHasGenerated(false), []);
 
   const setPauseDuration = useCallback((id: string, seconds: number) => {
     setScript(prev => prev.map(b =>
       b.id === id ? { ...b, pauseDuration: Math.max(1, seconds) } : b
     ));
-  }, []);
+    markEdited();
+  }, [markEdited]);
 
   const togglePauseType = useCallback((id: string) => {
     setScript(prev => prev.map(b =>
       b.id === id ? { ...b, pauseDuration: (b.pauseDuration || 2) < 3 ? 4 : 2 } : b
     ));
-  }, []);
+    markEdited();
+  }, [markEdited]);
 
   const updateBlockText = useCallback((id: string, text: string) => {
     setScript(prev => prev.map(b => b.id === id ? { ...b, text } : b));
-  }, []);
+    markEdited();
+  }, [markEdited]);
 
   return (
     <div className="flex flex-1 min-h-0" style={{ background: "#ffffff" }}>
@@ -428,7 +466,28 @@ function StudioSession({ prompt, voice, duration, sound, onBack }: {
             <ArrowLeft className="w-3.5 h-3.5" />
             Back
           </button>
-          <h2 className="text-sm text-[#18181b] absolute left-1/2 -translate-x-1/2" style={{ fontFamily: "var(--font-display)", fontWeight: 500 }}>{sessionName}</h2>
+          {isRenamingSession ? (
+            <input
+              ref={renameInputRef}
+              type="text"
+              value={sessionName}
+              onChange={(e) => setSessionName(e.target.value)}
+              onBlur={() => setIsRenamingSession(false)}
+              onKeyDown={(e) => { if (e.key === "Enter") setIsRenamingSession(false); if (e.key === "Escape") setIsRenamingSession(false); }}
+              className="text-sm text-[#18181b] absolute left-1/2 -translate-x-1/2 bg-white border border-[#e4e4e7] rounded-md px-2 py-0.5 outline-none focus:border-[#a1a1aa] text-center w-56"
+              style={{ fontFamily: "var(--font-display)", fontWeight: 500 }}
+              autoFocus
+            />
+          ) : (
+            <h2
+              className="text-sm text-[#18181b] absolute left-1/2 -translate-x-1/2 cursor-text px-2 py-0.5 rounded-md studio-title-hover"
+              style={{ fontFamily: "var(--font-display)", fontWeight: 500, border: "1px solid transparent" }}
+              onClick={() => { setIsRenamingSession(true); setTimeout(() => renameInputRef.current?.select(), 0); }}
+              title="Click to rename"
+            >
+              {sessionName}
+            </h2>
+          )}
           <div className="flex items-center gap-4">
             <span className="text-[10px] text-[#a1a1aa]" style={{ fontFamily: "var(--font-body)" }}>
               {script.filter(b => b.type === "voice").length} segments · {script.filter(b => b.type === "pause").length} pauses · {script.filter(b => b.type === "breath").length} breaths
@@ -526,12 +585,44 @@ function StudioSession({ prompt, voice, duration, sound, onBack }: {
               3 credits remaining
             </span>
           </div>
-          <button className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-[#18181b] text-white hover:bg-[#27272a] transition-colors text-sm cursor-pointer shadow-sm"
+          <button
+            onClick={handleGenerateAudio}
+            disabled={isGenerating}
+            className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-[#18181b] text-white hover:bg-[#27272a] transition-colors text-sm cursor-pointer shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
             style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}>
-            <Sparkles className="w-3.5 h-3.5" />
-            Generate Audio
+            {isGenerating ? (
+              <>
+                <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }}>
+                  <Sparkles className="w-3.5 h-3.5" />
+                </motion.div>
+                Generating...
+              </>
+            ) : hasGenerated ? (
+              <>
+                <Sparkles className="w-3.5 h-3.5" />
+                Regenerate Audio
+              </>
+            ) : (
+              <>
+                <Sparkles className="w-3.5 h-3.5" />
+                Generate Audio
+              </>
+            )}
           </button>
         </div>
+
+        {/* Inline Studio Player */}
+        <AnimatePresence>
+          {showStudioPlayer && (
+            <PlayerBar
+              session={studioSession}
+              isPlaying={studioPlaying}
+              onTogglePlay={() => setStudioPlaying(prev => !prev)}
+              onClose={() => { setShowStudioPlayer(false); setStudioPlaying(false); }}
+              inline
+            />
+          )}
+        </AnimatePresence>
       </div>
 
       {/* ─── Settings Panel (right) ─── */}
@@ -562,7 +653,7 @@ function StudioSession({ prompt, voice, duration, sound, onBack }: {
               {showVoiceDropdown && (
                 <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-lg border border-[#e4e4e7] shadow-lg z-20 overflow-hidden">
                   {voices.map(v => (
-                    <button key={v.id} onClick={() => { setSessionVoice(v.id); setShowVoiceDropdown(false); }}
+                    <button key={v.id} onClick={() => { setSessionVoice(v.id); setShowVoiceDropdown(false); markEdited(); }}
                       className="w-full flex items-center gap-2.5 px-3 py-2.5 hover:bg-[#f4f4f5] transition-colors cursor-pointer text-left">
                       <div className="w-6 h-6 rounded-full flex items-center justify-center" style={{ background: v.color + "20" }}>
                         <div className="w-2 h-2 rounded-full" style={{ background: v.color }} />
@@ -595,7 +686,7 @@ function StudioSession({ prompt, voice, duration, sound, onBack }: {
               {showSoundDropdown && (
                 <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-lg border border-[#e4e4e7] shadow-lg z-20 overflow-hidden">
                   {soundPresets.map(s => (
-                    <button key={s} onClick={() => { setSessionSound(s); setShowSoundDropdown(false); }}
+                    <button key={s} onClick={() => { setSessionSound(s); setShowSoundDropdown(false); markEdited(); }}
                       className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-[#f4f4f5] transition-colors cursor-pointer text-left">
                       <span className="text-sm text-[#18181b]" style={{ fontFamily: "var(--font-body)" }}>{s}</span>
                       {s === sessionSound && <Check className="w-3.5 h-3.5 text-[#6b9a70]" />}
@@ -651,6 +742,7 @@ function StudioSession({ prompt, voice, duration, sound, onBack }: {
           </div>
         </div>
       </div>
+
     </div>
   );
 }
@@ -929,7 +1021,7 @@ export default function StudioPage() {
               <motion.div key="history" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
                 <div className="bg-white rounded-xl border border-[#e8e8ec] overflow-hidden">
                   {/* Table header */}
-                  <div className="grid grid-cols-[1fr_100px_80px_80px_100px_96px] gap-4 px-5 py-3 border-b border-[#f0f0f3] bg-[#fafafa]">
+                  <div className="grid grid-cols-[1fr_100px_80px_80px_100px_130px] gap-4 px-5 py-3 border-b border-[#f0f0f3] bg-[#fafafa]">
                     {["Session", "Protocol", "Duration", "Voice", "Created", ""].map((h) => (
                       <span key={h} className="text-[10px] uppercase tracking-wider text-[#a1a1aa]" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>{h}</span>
                     ))}
@@ -949,7 +1041,7 @@ export default function StudioPage() {
                           setActiveNav("generate" as NavId);
                           setGenStep("studio");
                         }}
-                        className="group grid grid-cols-[1fr_100px_80px_80px_100px_96px] gap-4 items-center px-5 py-3.5 border-b border-[#f4f4f5] last:border-b-0 hover:bg-[#fafafa] transition-colors cursor-pointer"
+                        className="group grid grid-cols-[1fr_100px_80px_80px_100px_130px] gap-4 items-center px-5 py-3.5 border-b border-[#f4f4f5] last:border-b-0 hover:bg-[#fafafa] transition-colors cursor-pointer"
                       >
                         <div className="flex items-center gap-3 min-w-0">
                           <div className="w-2 h-2 rounded-full shrink-0" style={{ background: isRowPlaying ? accent : "#d4d4d8" }} />
@@ -962,22 +1054,25 @@ export default function StudioPage() {
                         <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-all duration-200">
                           <button
                             onClick={(e) => { e.stopPropagation(); handlePlaySession(session.id); }}
-                            className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-[#27272a] transition-colors shadow-sm"
+                            title={isRowPlaying ? "Pause" : "Play"}
+                            className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-[#27272a] transition-colors shadow-sm"
                             style={{ background: isRowPlaying ? accent : "#18181b", color: "#fff" }}
                           >
-                            {isRowPlaying ? <Pause className="w-3 h-3" /> : <Play className="w-3 h-3 ml-0.5" />}
+                            {isRowPlaying ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5 ml-0.5" />}
+                          </button>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); setGenConfig({ prompt: session.title, voice: session.voice.toLowerCase(), duration: parseInt(session.duration), sound: session.sound }); setActiveNav("generate" as NavId); setGenStep("studio"); }}
+                            title="Edit in Studio"
+                            className="w-8 h-8 rounded-lg hover:bg-[#f0f0f3] flex items-center justify-center text-[#71717a] hover:text-[#18181b] transition-colors"
+                          >
+                            <PenLine className="w-4 h-4" />
                           </button>
                           <button
                             onClick={(e) => { e.stopPropagation(); }}
-                            className="w-7 h-7 rounded-lg hover:bg-[#f0f0f3] flex items-center justify-center text-[#a1a1aa] hover:text-[#71717a] transition-colors"
+                            title="Download"
+                            className="w-8 h-8 rounded-lg hover:bg-[#f0f0f3] flex items-center justify-center text-[#71717a] hover:text-[#18181b] transition-colors"
                           >
-                            <PenLine className="w-3 h-3" />
-                          </button>
-                          <button
-                            onClick={(e) => { e.stopPropagation(); }}
-                            className="w-7 h-7 rounded-lg hover:bg-[#f0f0f3] flex items-center justify-center text-[#a1a1aa] hover:text-[#71717a] transition-colors"
-                          >
-                            <Download className="w-3.5 h-3.5" />
+                            <Download className="w-4 h-4" />
                           </button>
                         </div>
                       </motion.div>
