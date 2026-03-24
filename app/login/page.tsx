@@ -13,6 +13,11 @@ import {
   Wand2,
   Clock,
   Mic,
+  PenLine,
+  LayoutGrid,
+  History,
+  Download,
+  Shield,
 } from "lucide-react";
 import svgPaths from "@/lib/svg-paths";
 
@@ -364,7 +369,7 @@ export default function LoginPage() {
       </div>
 
       {/* ─── Left: Studio Preview ─── */}
-      <div className="hidden md:flex relative w-[55%] lg:w-[60%] min-h-screen items-center justify-center p-8 lg:p-12">
+      <div className="hidden md:flex relative w-[55%] lg:w-[60%] min-h-screen items-center justify-center p-8 lg:p-12 overflow-y-auto">
         {/* Background for left panel */}
         <div className="absolute inset-0 bg-white/40 border-r border-[var(--color-sand-200)]" />
 
@@ -382,15 +387,54 @@ export default function LoginPage() {
           </span>
         </motion.a>
 
-        <motion.div
-          initial={{ opacity: 0, x: -30 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: 0.3, duration: 0.5 }}
-          className="relative z-10 w-full max-w-2xl bg-white rounded-3xl p-7 lg:p-9 shadow-sm border border-[var(--color-sand-200)]"
-          style={{ minHeight: 420 }}
-        >
-          <StudioPreview />
-        </motion.div>
+        <div className="relative z-10 w-full max-w-2xl flex flex-col gap-8">
+          <motion.div
+            initial={{ opacity: 0, x: -30 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.3, duration: 0.5 }}
+            className="w-full bg-white rounded-3xl p-7 lg:p-9 shadow-sm border border-[var(--color-sand-200)]"
+            style={{ minHeight: 420 }}
+          >
+            <StudioPreview />
+          </motion.div>
+
+          {/* Studio features */}
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.7, duration: 0.5 }}
+            className="grid grid-cols-2 lg:grid-cols-3 gap-3"
+          >
+            {[
+              { icon: PenLine, title: "Edit scripts", desc: "Refine every word, pause, and breath cue", color: "#7a9e7e" },
+              { icon: LayoutGrid, title: "All sessions", desc: "Access everything you've created in one place", color: "#6d9ab5" },
+              { icon: History, title: "Full history", desc: "Revisit and replay any past session", color: "#8b7ea6" },
+              { icon: Wand2, title: "Regenerate", desc: "Tweak and regenerate any section instantly", color: "#c4876c" },
+              { icon: Download, title: "Download audio", desc: "Export sessions as high-quality audio files", color: "#7a9e7e" },
+              { icon: Shield, title: "Commercial use", desc: "Full rights to every session you generate", color: "#6d9ab5" },
+            ].map((feature, i) => (
+              <motion.div
+                key={feature.title}
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.8 + i * 0.07, duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+                whileHover={{ scale: 1.02, transition: { duration: 0.2 } }}
+                className="group relative overflow-hidden rounded-xl p-5 cursor-default transition-all duration-300"
+                style={{ background: "#2d2926", border: "1px solid rgba(255,255,255,0.08)" }}
+              >
+                {/* Accent glow on hover */}
+                <div className="absolute -top-10 -left-10 w-28 h-28 rounded-full opacity-0 group-hover:opacity-40 transition-opacity duration-500 blur-2xl" style={{ background: feature.color }} />
+                <div className="relative z-10">
+                  <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-4 shadow-lg" style={{ background: `${feature.color}30`, border: `1px solid ${feature.color}40`, boxShadow: `0 4px 12px ${feature.color}20` }}>
+                    <feature.icon className="w-[18px] h-[18px]" style={{ color: feature.color, filter: `drop-shadow(0 0 4px ${feature.color}60)` }} />
+                  </div>
+                  <p className="text-[14px] text-white mb-1.5" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>{feature.title}</p>
+                  <p className="text-[12px] text-white/60 leading-relaxed" style={{ fontFamily: "var(--font-body)" }}>{feature.desc}</p>
+                </div>
+              </motion.div>
+            ))}
+          </motion.div>
+        </div>
       </div>
 
       {/* ─── Right: Sign In ─── */}
@@ -425,7 +469,7 @@ export default function LoginPage() {
             <h1 className="text-[2.25rem] md:text-[2.75rem] text-[var(--color-sand-900)] leading-tight mb-3">
               Welcome to
               <br />
-              <span className="italic">Kilt Studio</span>
+              <span className="italic bg-clip-text text-transparent bg-[length:300%_300%] animate-[border-glow_4s_ease_infinite]" style={{ backgroundImage: "linear-gradient(135deg, var(--color-sage), var(--color-ocean), var(--color-dusk), var(--color-ember), var(--color-sage))", backgroundSize: "300% 300%" }}>Kilt Studio</span>
             </h1>
             <p className="text-[var(--color-sand-500)] text-sm leading-relaxed" style={{ fontFamily: "var(--font-body)" }}>
               Sign in to edit, remix, and perfect your AI-generated meditations.

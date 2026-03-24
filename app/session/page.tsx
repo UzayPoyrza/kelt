@@ -196,8 +196,8 @@ function SessionContent() {
                         style={{ fontFamily: "var(--font-body)" }}
                       >
                         <Music className="w-3.5 h-3.5" />
-                        Change background sound
-                        <ChevronDown className={`w-3 h-3 transition-transform ${showBgPicker ? "rotate-180" : ""}`} />
+                        Background sound
+                        <ChevronDown className={`w-3.5 h-3.5 transition-transform ${showBgPicker ? "rotate-180" : ""}`} />
                       </button>
                       <div className="flex items-center gap-1">
                         <button className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-[var(--color-sand-600)] hover:bg-[var(--color-sand-100)] transition-colors text-xs cursor-pointer" style={{ fontFamily: "var(--font-body)" }}>
@@ -220,22 +220,26 @@ function SessionContent() {
                         transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
                         className="overflow-hidden"
                       >
-                        <div className="border-t border-[var(--color-sand-200)] px-5 py-3 space-y-2">
-                          {/* Volume slider — always visible */}
+                        <div className="border-t border-[var(--color-sand-200)] px-5 py-3 space-y-3">
+                          {/* Background sound volume */}
                           <div className="flex items-center gap-3">
-                            <Volume2 className={`w-3.5 h-3.5 shrink-0 ${soundscape ? "text-[var(--color-sand-400)]" : "text-[var(--color-sand-300)]"}`} />
+                            <div className="flex items-center gap-1.5 shrink-0">
+                              <Music className={`w-3 h-3 ${soundscape ? "text-[var(--color-sand-500)]" : "text-[var(--color-sand-300)]"}`} />
+                              <span className="text-[10px] text-[var(--color-sand-400)] uppercase tracking-wider" style={{ fontFamily: "var(--font-body)" }}>Vol</span>
+                            </div>
                             <input
                               type="range" min="0" max="100" value={bgVolume}
                               onChange={(e) => setBgVolume(Number(e.target.value))}
                               disabled={!soundscape}
-                              className="flex-1 h-1 appearance-none bg-[var(--color-sand-200)] rounded-full cursor-pointer disabled:opacity-40 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-[var(--color-sand-900)]"
+                              className="flex-1 h-1 appearance-none rounded-full cursor-pointer disabled:opacity-40 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-[var(--color-sand-900)] [&::-webkit-slider-thumb]:cursor-pointer"
+                              style={{ background: soundscape ? `linear-gradient(to right, var(--color-sand-900) ${bgVolume}%, var(--color-sand-200) ${bgVolume}%)` : "var(--color-sand-200)" }}
                             />
-                            <span className="text-[10px] text-[var(--color-sand-400)] w-8 text-right font-mono">{bgVolume}%</span>
+                            <span className="text-[10px] text-[var(--color-sand-400)] w-8 text-right tabular-nums" style={{ fontFamily: "var(--font-body)" }}>{bgVolume}%</span>
                           </div>
 
                           {/* Recommended — single default */}
                           <div>
-                            <p className="text-[10px] uppercase tracking-wider text-[var(--color-sand-400)] mb-2 font-medium" style={{ fontFamily: "var(--font-body)" }}>Recommended</p>
+                            <p className="text-[10px] uppercase tracking-wider text-[var(--color-sand-400)] mb-2 font-medium" style={{ fontFamily: "var(--font-body)" }}>Recommended — Default</p>
                             <div className="flex flex-wrap gap-1.5">
                               {recommendedPresets.map((preset) => {
                                 const isSel = soundscape === preset.label;

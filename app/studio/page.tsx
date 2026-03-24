@@ -80,12 +80,12 @@ const soundCategories = {
 };
 
 const mockSessions = [
-  { id: "1", title: "Deep sleep after a long day", duration: "15 min", voice: "Aria", protocol: "CBT-I + NSDR", sound: "Deep Night", createdAt: "2 hours ago", category: "sleep", icon: Moon },
-  { id: "2", title: "Morning focus before standup", duration: "10 min", voice: "James", protocol: "MBSR", sound: "Flow State", createdAt: "Yesterday", category: "focus", icon: Sun },
-  { id: "3", title: "Calm my nerves before the flight", duration: "8 min", voice: "Kai", protocol: "HRV-BF + ACT", sound: "Still Water", createdAt: "2 days ago", category: "anxiety", icon: Heart },
-  { id: "4", title: "Stress relief after deadline", duration: "20 min", voice: "Luna", protocol: "PMR + ACT", sound: "Safe Harbor", createdAt: "3 days ago", category: "stress", icon: Wind },
-  { id: "5", title: "Quick breathing reset", duration: "5 min", voice: "Aria", protocol: "HRV-BF", sound: "Sanctuary", createdAt: "Last week", category: "focus", icon: Brain },
-  { id: "6", title: "Wind down for bed", duration: "15 min", voice: "Luna", protocol: "NSDR", sound: "Soft Drift", createdAt: "Last week", category: "sleep", icon: Moon },
+  { id: "1", title: "Deep sleep after a long day", duration: "15 min", voice: "Aria", protocol: "CBT-I + NSDR", sound: "Deep Night", createdAt: "2 hours ago", accessedAt: "Just now", category: "sleep", icon: Moon },
+  { id: "2", title: "Morning focus before standup", duration: "10 min", voice: "James", protocol: "MBSR", sound: "Flow State", createdAt: "Yesterday", accessedAt: "3 hours ago", category: "focus", icon: Sun },
+  { id: "3", title: "Calm my nerves before the flight", duration: "8 min", voice: "Kai", protocol: "HRV-BF + ACT", sound: "Still Water", createdAt: "2 days ago", accessedAt: "Yesterday", category: "anxiety", icon: Heart },
+  { id: "4", title: "Stress relief after deadline", duration: "20 min", voice: "Luna", protocol: "PMR + ACT", sound: "Safe Harbor", createdAt: "3 days ago", accessedAt: "2 days ago", category: "stress", icon: Wind },
+  { id: "5", title: "Quick breathing reset", duration: "5 min", voice: "Aria", protocol: "HRV-BF", sound: "Sanctuary", createdAt: "Last week", accessedAt: "4 days ago", category: "focus", icon: Brain },
+  { id: "6", title: "Wind down for bed", duration: "15 min", voice: "Luna", protocol: "NSDR", sound: "Soft Drift", createdAt: "Last week", accessedAt: "Last week", category: "sleep", icon: Moon },
 ];
 
 const navItems = [
@@ -304,6 +304,9 @@ function PlayerBar({ session, isPlaying, onTogglePlay, onClose, inline }: {
   onTogglePlay: () => void; onClose: () => void; inline?: boolean;
 }) {
   const [progress, setProgress] = useState(0);
+  const [showBgSound, setShowBgSound] = useState(false);
+  const [bgSound, setBgSound] = useState(session.sound);
+  const [bgVol, setBgVol] = useState(70);
   const colors = categoryColors[session.category] || categoryColors.focus;
   const Icon = session.icon;
 
@@ -346,8 +349,9 @@ function PlayerBar({ session, isPlaying, onTogglePlay, onClose, inline }: {
 
         {/* Controls */}
         <div className="flex items-center gap-2">
-          <button className="w-8 h-8 rounded-lg hover:bg-[#f4f4f5] flex items-center justify-center text-[#71717a] hover:text-[#18181b] transition-colors cursor-pointer">
-            <ArrowLeft className="w-4 h-4" />
+          <button className="relative w-9 h-9 rounded-lg hover:bg-[#f4f4f5] flex items-center justify-center text-[#71717a] hover:text-[#18181b] transition-colors cursor-pointer" title="Back 10s">
+            <RotateCcw className="w-5 h-5" />
+            <span className="absolute text-[7px] font-bold" style={{ fontFamily: "var(--font-body)" }}>10</span>
           </button>
           <button
             onClick={onTogglePlay}
@@ -356,13 +360,65 @@ function PlayerBar({ session, isPlaying, onTogglePlay, onClose, inline }: {
           >
             {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4 ml-0.5" />}
           </button>
-          <button className="w-8 h-8 rounded-lg hover:bg-[#f4f4f5] flex items-center justify-center text-[#71717a] hover:text-[#18181b] transition-colors cursor-pointer">
-            <ArrowRight className="w-4 h-4" />
+          <button className="relative w-9 h-9 rounded-lg hover:bg-[#f4f4f5] flex items-center justify-center text-[#71717a] hover:text-[#18181b] transition-colors cursor-pointer" title="Skip 10s">
+            <RotateCw className="w-5 h-5" />
+            <span className="absolute text-[7px] font-bold" style={{ fontFamily: "var(--font-body)" }}>10</span>
           </button>
         </div>
 
-        {/* Right side */}
+        {/* Right side — background sound + actions */}
         <div className="flex items-center gap-3 flex-1 justify-end">
+        <div className="relative flex items-center gap-2.5 px-3 py-1.5 rounded-full bg-[#f4f4f5] border border-[#e8e8ec]">
+          <button
+            onClick={(e) => { e.stopPropagation(); setShowBgSound(!showBgSound); }}
+            className={`flex items-center gap-2 px-2.5 py-1 rounded-md text-[12px] transition-all cursor-pointer ${showBgSound ? "bg-[#18181b] text-white" : "text-[#3f3f46] hover:bg-[#e8e8ec]"}`}
+            style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}
+          >
+            <Music className={`w-3.5 h-3.5 ${showBgSound ? "text-white/70" : "text-[#71717a]"}`} />
+            <span>{bgSound}</span>
+            <ChevronDown className={`w-4 h-4 transition-transform ${showBgSound ? "rotate-180 text-white/70" : "text-[#71717a]"}`} />
+          </button>
+
+          <div className="w-[1px] h-3.5 bg-[#d4d4d8]" />
+
+          <div className="flex items-center gap-1">
+            <button onClick={() => setBgVol(bgVol > 0 ? 0 : 70)} className="text-[#71717a] hover:text-[#18181b] transition-colors cursor-pointer">
+              {bgVol === 0 ? <VolumeX className="w-3 h-3" /> : <Volume2 className="w-3 h-3" />}
+            </button>
+            <input
+              type="range" min={0} max={100} value={bgVol}
+              onChange={(e) => setBgVol(Number(e.target.value))}
+              className="w-24 h-[3px] rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-2.5 [&::-webkit-slider-thumb]:h-2.5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-[#3f3f46] [&::-webkit-slider-thumb]:cursor-pointer"
+              style={{ background: `linear-gradient(to right, #3f3f46 ${bgVol}%, #d4d4d8 ${bgVol}%)` }}
+            />
+          </div>
+
+          {/* Dropdown */}
+          {showBgSound && (
+            <>
+              <div className="fixed inset-0 z-[60]" onClick={() => setShowBgSound(false)} />
+              <div className="absolute bottom-full left-0 mb-2 w-52 bg-white rounded-lg border border-[#e4e4e7] shadow-lg z-[70] max-h-64 overflow-y-auto">
+                {Object.entries(soundCategories).map(([key, cat], catIdx) => (
+                  <div key={key}>
+                    <div className={`px-3 py-1.5 bg-[#f7f7f8] ${catIdx > 0 ? "border-t border-[#e4e4e7]" : ""}`}>
+                      <span className="text-[9px] uppercase tracking-wider text-[#a1a1aa] font-medium" style={{ fontFamily: "var(--font-body)" }}>
+                        {cat.label}{key === "recommended" ? " — Default" : ""}
+                      </span>
+                    </div>
+                    {cat.items.map((s, i) => (
+                      <button key={s} onClick={() => { setBgSound(s); setShowBgSound(false); }}
+                        className={`w-full flex items-center justify-between px-3 py-2 hover:bg-[#f4f4f5] transition-colors cursor-pointer text-left ${i > 0 ? "border-t border-[#f0f0f3]" : ""}`}>
+                        <span className="text-[12px] text-[#18181b]" style={{ fontFamily: "var(--font-body)" }}>{s}</span>
+                        {s === bgSound && <Check className="w-3 h-3 text-[#6b9a70]" />}
+                      </button>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+
           <button className="w-8 h-8 rounded-lg hover:bg-[#f4f4f5] flex items-center justify-center text-[#71717a] hover:text-[#18181b] transition-colors cursor-pointer">
             <Download className="w-4 h-4" />
           </button>
@@ -661,8 +717,8 @@ function StudioSession({ prompt, voice, duration, sound, onBack }: {
               </button>
               {showVoiceDropdown && (
                 <>
-                  <div className="fixed inset-0 z-10" onClick={() => setShowVoiceDropdown(false)} />
-                  <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-lg border border-[#e4e4e7] shadow-lg z-20">
+                  <div className="fixed inset-0 z-[200]" onClick={() => setShowVoiceDropdown(false)} />
+                  <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-lg border border-[#e4e4e7] shadow-lg z-[210]">
                     {voices.map((v, i) => (
                       <button key={v.id} onClick={() => { setSessionVoice(v.id); setShowVoiceDropdown(false); markEdited(); }}
                         className={`w-full flex items-center gap-2.5 px-3 py-2.5 hover:bg-[#f4f4f5] transition-colors cursor-pointer text-left ${i > 0 ? "border-t border-[#f0f0f3]" : ""}`}>
@@ -719,8 +775,8 @@ function StudioSession({ prompt, voice, duration, sound, onBack }: {
               </button>
               {showSoundDropdown && (
                 <>
-                  <div className="fixed inset-0 z-10" onClick={() => setShowSoundDropdown(false)} />
-                  <div className="absolute top-[calc(100%+2px)] left-0 right-0 bg-white rounded-lg border border-[#e4e4e7] shadow-lg z-20 max-h-64 overflow-y-auto">
+                  <div className="fixed inset-0 z-[200]" onClick={() => setShowSoundDropdown(false)} />
+                  <div className="absolute top-[calc(100%+2px)] left-0 right-0 bg-white rounded-lg border border-[#e4e4e7] shadow-lg z-[210] max-h-64 overflow-y-auto">
                     {Object.entries(soundCategories).map(([key, cat], catIdx) => (
                       <div key={key}>
                         <div className={`px-3 py-1.5 bg-[#f7f7f8] ${catIdx > 0 ? "border-t border-[#e4e4e7]" : ""}`}>
@@ -1086,8 +1142,8 @@ export default function StudioPage() {
               <motion.div key="history" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
                 <div className="bg-white rounded-xl border border-[#e8e8ec] overflow-hidden">
                   {/* Table header */}
-                  <div className="grid grid-cols-[1fr_100px_80px_80px_100px_130px] gap-4 px-5 py-3 border-b border-[#f0f0f3] bg-[#fafafa]">
-                    {["Session", "Protocol", "Duration", "Voice", "Created", ""].map((h) => (
+                  <div className="grid grid-cols-[1fr_100px_80px_80px_100px_100px_130px] gap-4 px-5 py-3 border-b border-[#f0f0f3] bg-[#fafafa]">
+                    {["Session", "Protocol", "Duration", "Voice", "Created", "Accessed", ""].map((h) => (
                       <span key={h} className="text-[10px] uppercase tracking-wider text-[#a1a1aa]" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>{h}</span>
                     ))}
                   </div>
@@ -1106,7 +1162,7 @@ export default function StudioPage() {
                           setActiveNav("generate" as NavId);
                           setGenStep("studio");
                         }}
-                        className="group grid grid-cols-[1fr_100px_80px_80px_100px_130px] gap-4 items-center px-5 py-3.5 border-b border-[#f4f4f5] last:border-b-0 hover:bg-[#fafafa] transition-colors cursor-pointer"
+                        className="group grid grid-cols-[1fr_100px_80px_80px_100px_100px_130px] gap-4 items-center px-5 py-3.5 border-b border-[#f4f4f5] last:border-b-0 hover:bg-[#fafafa] transition-colors cursor-pointer"
                       >
                         <div className="flex items-center gap-3 min-w-0">
                           <div className="w-2 h-2 rounded-full shrink-0" style={{ background: isRowPlaying ? accent : "#d4d4d8" }} />
@@ -1116,6 +1172,7 @@ export default function StudioPage() {
                         <span className="text-[11px] text-[#71717a] tabular-nums" style={{ fontFamily: "var(--font-body)" }}>{session.duration}</span>
                         <span className="text-[11px] text-[#71717a]" style={{ fontFamily: "var(--font-body)" }}>{session.voice}</span>
                         <span className="text-[11px] text-[#a1a1aa]" style={{ fontFamily: "var(--font-body)" }}>{session.createdAt}</span>
+                        <span className="text-[11px] text-[#a1a1aa]" style={{ fontFamily: "var(--font-body)" }}>{session.accessedAt}</span>
                         <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-all duration-200">
                           <button
                             onClick={(e) => { e.stopPropagation(); handlePlaySession(session.id); }}
