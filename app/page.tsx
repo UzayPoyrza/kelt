@@ -191,13 +191,22 @@ export default function HomePage() {
                 MindFlow
               </span>
             </button>
-            <button
-              onClick={scrollToInfo}
-              className="text-sm text-[var(--color-sand-500)] hover:text-[var(--color-sand-900)] transition-colors cursor-pointer"
-              style={{ fontFamily: "var(--font-body)" }}
-            >
-              How it works
-            </button>
+            <div className="flex items-center gap-5">
+              <button
+                onClick={scrollToInfo}
+                className="text-sm text-[var(--color-sand-500)] hover:text-[var(--color-sand-900)] transition-colors cursor-pointer"
+                style={{ fontFamily: "var(--font-body)" }}
+              >
+                How it works
+              </button>
+              <a
+                href="/login"
+                className="px-4 py-2 rounded-xl bg-[var(--color-sand-900)] text-[var(--color-sand-50)] hover:bg-[var(--color-sand-800)] transition-colors text-sm cursor-pointer"
+                style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}
+              >
+                Sign in
+              </a>
+            </div>
           </div>
         </header>
 
