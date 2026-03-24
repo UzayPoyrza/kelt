@@ -139,7 +139,7 @@ function SessionContent() {
                 </div>
 
                 {/* Player card */}
-                <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} className={`bg-white shadow-sm border border-[var(--color-sand-200)] overflow-hidden ${showBgPicker ? "rounded-2xl" : "rounded-t-2xl border-b-0"}`}>
+                <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} className="bg-white rounded-2xl shadow-sm border border-[var(--color-sand-200)] overflow-hidden">
                   <div className="px-5 py-4">
                     {/* Waveform */}
                     <div className="flex items-end justify-center gap-[2px] h-14 mb-3">
@@ -288,90 +288,95 @@ function SessionContent() {
                   </AnimatePresence>
                 </motion.div>
 
-                {/* Edit in Kilt Studio — integrated as card footer */}
+                {/* Edit in Kilt Studio — slim CTA with hover demo */}
                 {!showBgPicker && (
-                  <a href="/login" className="block group">
-                    <div className="bg-[var(--color-sand-900)] rounded-b-2xl -mt-[1px] overflow-hidden cursor-pointer group-hover:bg-[var(--color-sand-800)] transition-colors relative">
-                      {/* Gradient bottom border */}
-                      <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-[length:300%_300%] animate-[border-glow_4s_ease_infinite] opacity-80 group-hover:opacity-100 transition-opacity" style={{ background: "linear-gradient(135deg, var(--color-sage), var(--color-ocean), var(--color-dusk), var(--color-ember), var(--color-sage))", backgroundSize: "300% 300%" }} />
+                  <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }} className="mt-4">
+                    <a href="/login" className="block relative rounded-xl group">
+                      <div className="absolute -inset-[1.5px] rounded-xl bg-[length:300%_300%] animate-[border-glow_4s_ease_infinite] opacity-70 group-hover:opacity-100 transition-opacity duration-300" style={{ background: "linear-gradient(135deg, var(--color-sage), var(--color-ocean), var(--color-dusk), var(--color-ember), var(--color-sage))", backgroundSize: "300% 300%" }} />
+                      <div className="relative bg-[var(--color-sand-900)] rounded-xl overflow-hidden cursor-pointer">
+                        {/* Main bar */}
+                        <div className="px-5 py-3.5 flex items-center justify-between">
+                          <div className="flex items-center gap-4">
+                            <div className="flex items-center gap-2">
+                              <PenLine className="w-4 h-4 text-[var(--color-sand-50)]" />
+                              <span className="text-[var(--color-sand-50)] text-sm" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>
+                                Edit in Kilt Studio
+                              </span>
+                            </div>
+                            <div className="w-[1px] h-4 bg-white/10" />
+                            <div className="flex items-center gap-3">
+                              {[
+                                { icon: Sliders, text: "Edit script" },
+                                { icon: Clock, text: "Timing" },
+                                { icon: Layers, text: "Sounds" },
+                              ].map((item) => (
+                                <div key={item.text} className="flex items-center gap-1">
+                                  <item.icon className="w-3 h-3 text-white/60" />
+                                  <span className="text-[10px] text-white/70" style={{ fontFamily: "var(--font-body)" }}>{item.text}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <span className="text-[10px] uppercase tracking-wider text-white/80 font-medium px-2.5 py-0.5 rounded-full border-[1.5px] border-white/45" style={{ fontFamily: "var(--font-body)" }}>Free</span>
+                            <ArrowRight className="w-4 h-4 text-white/40 group-hover:text-white/70 group-hover:translate-x-0.5 transition-all" />
+                          </div>
+                        </div>
 
-                      {/* Header with features inline */}
-                      <div className="px-5 pt-3.5 pb-2 flex items-center justify-between">
-                        <div className="flex items-center gap-4">
-                          <div className="flex items-center gap-2.5">
-                            <PenLine className="w-4 h-4 text-[var(--color-sand-50)]" />
-                            <span className="text-[var(--color-sand-50)] text-sm" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>
-                              Edit in Kilt Studio
+                        {/* Demo — reveals on hover */}
+                        <div className="max-h-0 group-hover:max-h-[200px] transition-[max-height] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] overflow-hidden">
+                          <div className="mx-4 mb-3 rounded-lg overflow-hidden border border-white/[0.08]" style={{ background: "rgba(255,255,255,0.02)" }}>
+                            <div className="px-3 py-2 space-y-[4px]">
+                              <div className="flex items-center gap-2 px-2 py-1.5 rounded" style={{ background: "rgba(255,255,255,0.03)" }}>
+                                <div className="w-3 h-3 rounded-full flex items-center justify-center shrink-0" style={{ background: "rgba(122,158,126,0.2)" }}>
+                                  <div className="w-1 h-1 rounded-full" style={{ background: "var(--color-sage)" }} />
+                                </div>
+                                <span className="text-[8px] text-white/40 truncate" style={{ fontFamily: "var(--font-body)" }}>Find a comfortable position...</span>
+                              </div>
+
+                              <div className="flex items-center gap-2 px-2 py-1.5 rounded border border-white/[0.12]" style={{ background: "rgba(139,126,158,0.08)" }}>
+                                <div className="w-3 h-3 rounded-full flex items-center justify-center shrink-0" style={{ background: "rgba(139,126,158,0.25)" }}>
+                                  <div className="w-1 h-1 rounded-full" style={{ background: "var(--color-dusk)" }} />
+                                </div>
+                                <span className="text-[8px] text-white/35 italic flex-1" style={{ fontFamily: "var(--font-body)" }}>⏸ Settle in</span>
+                                <span className="text-[7px] text-white/30 px-1.5 py-0.5 rounded-full border border-white/15">Short</span>
+                                <span className="text-[7px] text-white/15 px-1.5 py-0.5 rounded-full border border-white/[0.06]">Long</span>
+                              </div>
+
+                              <div className="flex items-center gap-2 px-2 py-1.5 rounded border border-white/[0.1]" style={{ background: "rgba(255,255,255,0.04)" }}>
+                                <div className="w-3 h-3 rounded-full flex items-center justify-center shrink-0" style={{ background: "rgba(122,158,126,0.2)" }}>
+                                  <div className="w-1 h-1 rounded-full" style={{ background: "var(--color-sage)" }} />
+                                </div>
+                                <span className="text-[8px] text-white/50 truncate" style={{ fontFamily: "var(--font-body)" }}>Gently close your eyes</span>
+                                <div className="w-[1px] h-3 bg-white/40 animate-pulse shrink-0" />
+                              </div>
+
+                              <div className="flex items-center gap-2 px-2 py-1.5 rounded border border-white/[0.12]" style={{ background: "rgba(139,126,158,0.08)" }}>
+                                <div className="w-3 h-3 rounded-full flex items-center justify-center shrink-0" style={{ background: "rgba(139,126,158,0.25)" }}>
+                                  <div className="w-1 h-1 rounded-full" style={{ background: "var(--color-dusk)" }} />
+                                </div>
+                                <span className="text-[8px] text-white/35 italic flex-1" style={{ fontFamily: "var(--font-body)" }}>⏸ Body responds</span>
+                                <span className="text-[7px] text-white/15 px-1.5 py-0.5 rounded-full border border-white/[0.06]">Short</span>
+                                <span className="text-[7px] text-white/30 px-1.5 py-0.5 rounded-full border border-white/15" style={{ background: "rgba(139,126,158,0.15)" }}>Long</span>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="px-5 pb-3 flex justify-end">
+                            <span className="flex items-center gap-1.5 text-sm" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>
+                              <span
+                                className="bg-clip-text text-transparent bg-[length:300%_300%] animate-[border-glow_4s_ease_infinite]"
+                                style={{ backgroundImage: "linear-gradient(135deg, var(--color-sage), var(--color-ocean), var(--color-dusk), var(--color-ember), var(--color-sage))", backgroundSize: "300% 300%" }}
+                              >
+                                Open in Studio
+                              </span>
+                              <ArrowRight className="w-4 h-4 text-white/60" />
                             </span>
                           </div>
-                          <div className="flex items-center gap-3.5">
-                            {[
-                              { icon: Sliders, text: "Edit script" },
-                              { icon: Clock, text: "Adjust timing" },
-                              { icon: Layers, text: "Layer sounds" },
-                            ].map((item) => (
-                              <div key={item.text} className="flex items-center gap-1">
-                                <item.icon className="w-3 h-3 text-white/25" />
-                                <span className="text-[10px] text-white/30" style={{ fontFamily: "var(--font-body)" }}>{item.text}</span>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                        <span className="text-[10px] uppercase tracking-wider text-white/80 font-medium px-2.5 py-0.5 rounded-full border-[1.5px] border-white/45" style={{ fontFamily: "var(--font-body)" }}>Free</span>
-                      </div>
-
-                      {/* Studio demo — 4 blocks, pause focused */}
-                      <div className="mx-4 mb-2.5 rounded-lg overflow-hidden border border-white/[0.08]" style={{ background: "rgba(255,255,255,0.02)" }}>
-                        <div className="px-3 py-2 space-y-[4px]">
-                          <div className="flex items-center gap-2 px-2 py-1.5 rounded" style={{ background: "rgba(255,255,255,0.03)" }}>
-                            <div className="w-3 h-3 rounded-full flex items-center justify-center shrink-0" style={{ background: "rgba(122,158,126,0.2)" }}>
-                              <div className="w-1 h-1 rounded-full" style={{ background: "var(--color-sage)" }} />
-                            </div>
-                            <span className="text-[8px] text-white/40 truncate" style={{ fontFamily: "var(--font-body)" }}>Find a comfortable position...</span>
-                          </div>
-
-                          <div className="flex items-center gap-2 px-2 py-1.5 rounded border border-white/[0.12]" style={{ background: "rgba(139,126,158,0.08)" }}>
-                            <div className="w-3 h-3 rounded-full flex items-center justify-center shrink-0" style={{ background: "rgba(139,126,158,0.25)" }}>
-                              <div className="w-1 h-1 rounded-full" style={{ background: "var(--color-dusk)" }} />
-                            </div>
-                            <span className="text-[8px] text-white/35 italic flex-1" style={{ fontFamily: "var(--font-body)" }}>⏸ Settle in</span>
-                            <span className="text-[7px] text-white/30 px-1.5 py-0.5 rounded-full border border-white/15">Short</span>
-                            <span className="text-[7px] text-white/15 px-1.5 py-0.5 rounded-full border border-white/[0.06]">Long</span>
-                          </div>
-
-                          <div className="flex items-center gap-2 px-2 py-1.5 rounded border border-white/[0.1]" style={{ background: "rgba(255,255,255,0.04)" }}>
-                            <div className="w-3 h-3 rounded-full flex items-center justify-center shrink-0" style={{ background: "rgba(122,158,126,0.2)" }}>
-                              <div className="w-1 h-1 rounded-full" style={{ background: "var(--color-sage)" }} />
-                            </div>
-                            <span className="text-[8px] text-white/50 truncate" style={{ fontFamily: "var(--font-body)" }}>Gently close your eyes</span>
-                            <div className="w-[1px] h-3 bg-white/40 animate-pulse shrink-0" />
-                          </div>
-
-                          <div className="flex items-center gap-2 px-2 py-1.5 rounded border border-white/[0.12]" style={{ background: "rgba(139,126,158,0.08)" }}>
-                            <div className="w-3 h-3 rounded-full flex items-center justify-center shrink-0" style={{ background: "rgba(139,126,158,0.25)" }}>
-                              <div className="w-1 h-1 rounded-full" style={{ background: "var(--color-dusk)" }} />
-                            </div>
-                            <span className="text-[8px] text-white/35 italic flex-1" style={{ fontFamily: "var(--font-body)" }}>⏸ Body responds</span>
-                            <span className="text-[7px] text-white/15 px-1.5 py-0.5 rounded-full border border-white/[0.06]">Short</span>
-                            <span className="text-[7px] text-white/30 px-1.5 py-0.5 rounded-full border border-white/15" style={{ background: "rgba(139,126,158,0.15)" }}>Long</span>
-                          </div>
                         </div>
                       </div>
-
-                      {/* Open Studio action */}
-                      <div className="px-5 pb-3 flex justify-end">
-                        <span className="flex items-center gap-1.5 text-sm" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>
-                          <span
-                            className="bg-clip-text text-transparent bg-[length:300%_300%] animate-[border-glow_4s_ease_infinite]"
-                            style={{ backgroundImage: "linear-gradient(135deg, var(--color-sage), var(--color-ocean), var(--color-dusk), var(--color-ember), var(--color-sage))", backgroundSize: "300% 300%" }}
-                          >
-                            Open in Studio
-                          </span>
-                          <ArrowRight className="w-4 h-4 text-white/60 group-hover:translate-x-0.5 transition-transform" />
-                        </span>
-                      </div>
-                    </div>
-                  </a>
+                    </a>
+                  </motion.div>
                 )}
               </motion.div>
             )}
