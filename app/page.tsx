@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useRef, useEffect } from "react";
-import { motion, AnimatePresence, useInView } from "motion/react";
+import { motion, AnimatePresence, useInView, useScroll, useTransform, useMotionTemplate, useSpring } from "motion/react";
 import {
   CloudRain,
   Waves,
@@ -71,10 +71,21 @@ const soundscapePresets: Record<string, { label: string; description: string; la
   ],
 };
 
+const rotatingPhrases = [
+  "guided meditation",
+  "CBT session",
+  "body scan",
+  "breathing exercise",
+  "sleep story",
+];
+
 const suggestions = [
-  "A 10-minute meditation for stress relief after a long day",
-  "Help me fall asleep with a calming body scan",
-  "Morning focus meditation to start my day sharp",
+  "Calm my anxiety before a big meeting",
+  "Help me wind down and fall asleep",
+  "5-min breathing reset",
+  "PMR session for muscle tension",
+  "HRV coherence breathing at 5.5 breaths/min",
+  "Guided meditation on letting go of control",
 ];
 
 const protocols = [
@@ -147,6 +158,114 @@ function AmbientBackground() {
         className="animate-breathe absolute w-[300px] h-[300px] rounded-full blur-[120px] opacity-15"
         style={{ top: "40%", left: "50%", transform: "translate(-50%, -50%)", background: "#c8d5ca" }}
       />
+    </div>
+  );
+}
+
+/* ─── Cinematic Transition ─── */
+
+function CinematicTransition() {
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Track scroll across the full tall container — gives us plenty of travel
+  const { scrollYProgress } = useScroll({
+    target: containerRef,
+    offset: ["start end", "end start"],
+  });
+
+  // Smooth everything through a spring so it feels buttery, not jerky
+  const smoothProgress = useSpring(scrollYProgress, {
+    stiffness: 100,
+    damping: 30,
+    restDelta: 0.001,
+  });
+
+  // --- Text focus pull ---
+  const rawBlur = useTransform(smoothProgress, [0.2, 0.42, 0.5], [20, 0.5, 0]);
+  const textScale = useTransform(smoothProgress, [0.2, 0.42, 0.5], [2.5, 1.02, 1]);
+  const textOpacity = useTransform(smoothProgress, [0.15, 0.3, 0.5, 0.7, 0.85], [0, 1, 1, 1, 0]);
+  const filterBlur = useMotionTemplate`blur(${rawBlur}px)`;
+
+  // --- Anamorphic lens flare ---
+  const flareLeft = useTransform(smoothProgress, [0.3, 0.6], [-20, 120]);
+  const flareLeftPercent = useMotionTemplate`${flareLeft}%`;
+  const flareOpacity = useTransform(smoothProgress, [0.3, 0.4, 0.5, 0.6], [0, 0.7, 0.7, 0]);
+
+  // --- Horizontal rules ---
+  const lineScale = useTransform(smoothProgress, [0.32, 0.48], [0, 1]);
+  const lineOpacity = useTransform(smoothProgress, [0.32, 0.42, 0.65, 0.8], [0, 0.4, 0.4, 0]);
+
+  // --- Ambient glow ---
+  const glowOpacity = useTransform(smoothProgress, [0.25, 0.42, 0.6, 0.8], [0, 0.15, 0.15, 0]);
+
+  return (
+    <div
+      ref={containerRef}
+      className="relative"
+      style={{ background: "var(--color-sand-900)" }}
+    >
+      {/* Scroll runway — sticky card inside */}
+      <div className="h-[130vh]">
+        <div className="sticky top-0 h-[65vh] flex items-center justify-center overflow-hidden">
+
+          {/* Ambient radial glow */}
+          <motion.div
+            className="absolute inset-0 pointer-events-none"
+            style={{ opacity: glowOpacity }}
+          >
+            <div
+              className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[400px]"
+              style={{
+                background: "radial-gradient(ellipse, rgba(122,158,126,0.25) 0%, rgba(109,154,181,0.1) 40%, transparent 70%)",
+                filter: "blur(80px)",
+              }}
+            />
+          </motion.div>
+
+          {/* Horizontal rules — draw in from center */}
+          <motion.div
+            className="absolute top-[calc(50%-3.5rem)] left-[10%] right-[10%] h-[1px] origin-center"
+            style={{
+              scaleX: lineScale,
+              opacity: lineOpacity,
+              background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.15) 20%, rgba(255,255,255,0.25) 50%, rgba(255,255,255,0.15) 80%, transparent)",
+            }}
+          />
+          <motion.div
+            className="absolute bottom-[calc(50%-3.5rem)] left-[10%] right-[10%] h-[1px] origin-center"
+            style={{
+              scaleX: lineScale,
+              opacity: lineOpacity,
+              background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.15) 20%, rgba(255,255,255,0.25) 50%, rgba(255,255,255,0.15) 80%, transparent)",
+            }}
+          />
+
+          {/* Main text — the focus pull */}
+          <motion.h2
+            className="relative z-10 text-[2rem] md:text-[3rem] lg:text-[3.5rem] text-white leading-[1.15] tracking-tight text-center px-6 will-change-transform"
+            style={{
+              fontFamily: "var(--font-display)",
+              scale: textScale,
+              opacity: textOpacity,
+              filter: filterBlur,
+            }}
+          >
+            Why our AI sessions<br />sound different
+          </motion.h2>
+
+          {/* Anamorphic lens flare */}
+          <motion.div
+            className="absolute top-1/2 -translate-y-1/2 pointer-events-none w-[40vw] h-[3px]"
+            style={{
+              left: flareLeftPercent,
+              opacity: flareOpacity,
+              background: "linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.05) 10%, rgba(255,255,255,0.6) 40%, rgba(200,215,255,0.8) 50%, rgba(255,255,255,0.6) 60%, rgba(255,255,255,0.05) 90%, transparent 100%)",
+              boxShadow: "0 0 60px 20px rgba(200,215,255,0.08), 0 0 20px 4px rgba(255,255,255,0.1)",
+              filter: "blur(0.5px)",
+            }}
+          />
+        </div>
+      </div>
     </div>
   );
 }
@@ -435,6 +554,26 @@ export default function HomePage() {
     return () => { if (sampleIntervalRef.current) clearInterval(sampleIntervalRef.current); };
   }, []);
 
+  const [phraseIndex, setPhraseIndex] = useState(0);
+  const [phraseWidth, setPhraseWidth] = useState<number | null>(null);
+  const hasAnimatedRef = useRef(false);
+  const measureRef = useRef<HTMLSpanElement>(null);
+
+  useEffect(() => {
+    // Measure the current phrase width
+    if (measureRef.current) {
+      setPhraseWidth(measureRef.current.offsetWidth);
+    }
+  }, [phraseIndex]);
+
+  useEffect(() => {
+    const id = setInterval(() => {
+      hasAnimatedRef.current = true;
+      setPhraseIndex((i) => (i + 1) % rotatingPhrases.length);
+    }, 2500);
+    return () => clearInterval(id);
+  }, []);
+
   return (
     <div className="min-h-screen" style={{ background: "var(--color-sand-50)" }}>
 
@@ -486,40 +625,47 @@ export default function HomePage() {
                 transition={{ duration: 0.4 }}
                 className="w-full max-w-2xl mx-auto flex flex-col items-center"
               >
-                <div className="mb-8">
-                  <Logo />
-                </div>
+                {/* Hidden measurer */}
+                <span
+                  ref={measureRef}
+                  className="absolute opacity-0 pointer-events-none text-[2rem] md:text-[2.75rem] italic font-bold whitespace-nowrap"
+                  style={{ fontFamily: "var(--font-display)" }}
+                  aria-hidden="true"
+                >
+                  {rotatingPhrases[phraseIndex]}
+                </span>
 
-                <h1 className="text-[2.5rem] md:text-[3.25rem] text-[var(--color-sand-900)] text-center mb-14 leading-tight">
-                  Describe your ideal meditation
+                <h1 className="text-[2rem] md:text-[2.75rem] text-[var(--color-sand-900)] text-center mb-8 leading-[1.2] whitespace-nowrap flex items-baseline justify-center">
+                  <span>Create a&nbsp;</span>
+                  <motion.span
+                    className="relative inline-block overflow-hidden pl-[0.05em]"
+                    style={{ height: "1.2em" }}
+                    animate={{ width: phraseWidth ? phraseWidth + 2 : "auto" }}
+                    transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+                  >
+                    <AnimatePresence mode="wait">
+                      <motion.span
+                        key={phraseIndex}
+                        initial={hasAnimatedRef.current ? { y: "110%", opacity: 0 } : false}
+                        animate={{ y: "0%", opacity: 1 }}
+                        exit={{ y: "-110%", opacity: 0 }}
+                        transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+                        className="absolute left-0 top-0 italic font-bold whitespace-nowrap"
+                      >
+                        {rotatingPhrases[phraseIndex]}
+                      </motion.span>
+                    </AnimatePresence>
+                    {/* Invisible sizer for baseline */}
+                    <span className="invisible italic font-bold" aria-hidden="true">
+                      {rotatingPhrases[phraseIndex]}
+                    </span>
+                  </motion.span>
                 </h1>
 
-                {/* Suggestions */}
-                <div className="w-full mb-4">
-                  <p className="text-xs uppercase tracking-widest text-[var(--color-sand-500)] mb-3 font-medium" style={{ fontFamily: "var(--font-body)" }}>
-                    Try something like
-                  </p>
-                  <div className="flex flex-wrap gap-2">
-                    {suggestions.map((s, i) => (
-                      <motion.button
-                        key={i}
-                        initial={{ opacity: 0, y: 8 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.2 + i * 0.06 }}
-                        onClick={() => handleSubmitPrompt(s)}
-                        className="bg-white/60 hover:bg-white border border-[var(--color-sand-200)] px-3.5 py-2 rounded-lg text-[var(--color-sand-700)] text-sm hover:shadow-sm transition-all text-left cursor-pointer"
-                        style={{ fontFamily: "var(--font-body)" }}
-                        whileHover={{ y: -1 }}
-                        whileTap={{ scale: 0.98 }}
-                      >
-                        {s}
-                      </motion.button>
-                    ))}
-                  </div>
-                </div>
-
                 {/* Input */}
-                <div className="w-full bg-white border border-[var(--color-sand-200)] rounded-xl p-3 flex items-center gap-3 shadow-sm">
+                <div className="w-full mb-8 relative rounded-xl group">
+                  <div className="absolute -inset-[2px] rounded-xl bg-[length:300%_300%] animate-[border-glow_4s_ease_infinite] opacity-80 group-focus-within:opacity-100 transition-opacity duration-300 blur-[0.5px]" style={{ background: "linear-gradient(135deg, var(--color-sage), var(--color-ocean), var(--color-dusk), var(--color-ember), var(--color-sage))", backgroundSize: "300% 300%" }} />
+                <div className="relative bg-white rounded-xl p-3 flex items-center gap-3">
                   <input
                     type="text"
                     value={prompt}
@@ -547,64 +693,30 @@ export default function HomePage() {
                     </svg>
                   </button>
                 </div>
+                </div>
 
-                {/* Hero sample teaser — 2 samples */}
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.5 }}
-                  className="w-full mt-8"
-                >
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-2">
-                      <Headphones className="w-3.5 h-3.5 text-[var(--color-sand-400)]" />
-                      <p className="text-xs uppercase tracking-widest text-[var(--color-sand-500)] font-medium" style={{ fontFamily: "var(--font-body)" }}>
-                        Made with MindFlow
-                      </p>
-                    </div>
-                    <button
-                      onClick={scrollToInfo}
-                      className="text-xs text-[var(--color-sand-500)] hover:text-[var(--color-sand-900)] transition-colors cursor-pointer flex items-center gap-1"
-                      style={{ fontFamily: "var(--font-body)" }}
-                    >
-                      Hear all samples
-                      <ChevronDown className="w-3 h-3" />
-                    </button>
+                {/* Suggestions */}
+                <div className="w-full flex flex-col items-center gap-3">
+                  <span className="text-xs text-[var(--color-sand-400)]" style={{ fontFamily: "var(--font-body)" }}>
+                    or try one of these
+                  </span>
+                  <div className="flex flex-wrap gap-2 justify-center">
+                    {suggestions.map((s, i) => (
+                      <motion.button
+                        key={i}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: 0.3 + i * 0.08 }}
+                        onClick={() => handleSubmitPrompt(s)}
+                        className="text-[var(--color-sand-600)] bg-white/70 hover:bg-white border border-[var(--color-sand-200)] text-xs px-3.5 py-2 rounded-full transition-all cursor-pointer"
+                        style={{ fontFamily: "var(--font-body)" }}
+                        whileTap={{ scale: 0.97 }}
+                      >
+                        {s}
+                      </motion.button>
+                    ))}
                   </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    {samples.slice(0, 2).map((s) => {
-                      const isActive = playing === s.id;
-                      const pct = sampleProgress[s.id] || 0;
-                      return (
-                        <button
-                          key={s.id}
-                          onClick={() => handleSamplePlay(s.id, s.duration)}
-                          className="group relative bg-white border border-[var(--color-sand-200)] rounded-xl p-3 text-left cursor-pointer hover:border-[var(--color-sand-300)] hover:shadow-sm transition-all overflow-hidden"
-                        >
-                          {isActive && (
-                            <motion.div
-                              className="absolute inset-y-0 left-0 bg-[var(--color-sage-light)] opacity-40"
-                              style={{ width: `${pct * 100}%` }}
-                            />
-                          )}
-                          <div className="relative z-10 flex items-center gap-3">
-                            <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-colors ${isActive ? "bg-[var(--color-sand-900)] text-[var(--color-sand-50)]" : "bg-[var(--color-sand-100)] text-[var(--color-sand-700)] group-hover:bg-[var(--color-sand-200)]"}`}>
-                              {isActive ? <Pause className="w-3 h-3" /> : <Play className="w-3 h-3 ml-0.5" />}
-                            </div>
-                            <div className="min-w-0">
-                              <p className="text-sm font-medium text-[var(--color-sand-900)] truncate" style={{ fontFamily: "var(--font-body)" }}>
-                                {s.label}
-                              </p>
-                              <p className="text-[10px] text-[var(--color-sand-400)]" style={{ fontFamily: "var(--font-body)" }}>
-                                {s.protocol} &middot; {s.duration}
-                              </p>
-                            </div>
-                          </div>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </motion.div>
+                </div>
 
               </motion.div>
             )}
@@ -774,14 +886,14 @@ export default function HomePage() {
             className="absolute bottom-8 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-2 cursor-pointer group"
           >
             <span
-              className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-white/80 backdrop-blur-sm border border-[var(--color-sand-200)] shadow-sm text-[var(--color-sand-700)] group-hover:bg-white group-hover:shadow-md transition-all"
+              className="flex items-center gap-2 px-6 py-3 rounded-full bg-[var(--color-sand-900)] text-[var(--color-sand-50)] shadow-lg group-hover:bg-[var(--color-sand-800)] group-hover:shadow-xl transition-all"
               style={{ fontFamily: "var(--font-body)" }}
             >
-              <Headphones className="w-4 h-4 text-[var(--color-sand-500)]" />
+              <Headphones className="w-4 h-4" />
               <span className="text-sm font-medium">Hear what MindFlow sounds like</span>
             </span>
             <motion.div animate={{ y: [0, 5, 0] }} transition={{ duration: 1.5, repeat: Infinity }}>
-              <ChevronDown className="w-4 h-4 text-[var(--color-sand-400)]" />
+              <ChevronDown className="w-4 h-4 text-[var(--color-sand-900)]" />
             </motion.div>
           </motion.button>
         )}
@@ -872,32 +984,9 @@ export default function HomePage() {
       </section>
 
       {/* ════════════════════════════════════════════
-          TRANSITION — Why We Sound Different
+          TRANSITION — Cinematic Focus Pull
          ════════════════════════════════════════════ */}
-      <div className="relative overflow-hidden" style={{ background: "var(--color-sand-900)" }}>
-        {/* Horizontal animated line */}
-        <motion.div
-          className="absolute top-0 left-0 h-[1px] bg-gradient-to-r from-transparent via-white/30 to-transparent"
-          initial={{ width: "0%", left: "50%" }}
-          whileInView={{ width: "100%", left: "0%" }}
-          transition={{ duration: 1.2, ease: "easeOut" }}
-          viewport={{ once: true }}
-        />
-        <div className="py-14 px-6 flex items-center justify-center">
-          <FadeIn>
-            <p className="text-[1.5rem] md:text-[2.25rem] text-center text-white/90 leading-snug" style={{ fontFamily: "var(--font-display)" }}>
-              Why our AI sessions sound different
-            </p>
-          </FadeIn>
-        </div>
-        <motion.div
-          className="absolute bottom-0 left-0 h-[1px] bg-gradient-to-r from-transparent via-white/30 to-transparent"
-          initial={{ width: "0%", left: "50%" }}
-          whileInView={{ width: "100%", left: "0%" }}
-          transition={{ duration: 1.2, ease: "easeOut", delay: 0.2 }}
-          viewport={{ once: true }}
-        />
-      </div>
+      <CinematicTransition />
 
       {/* ════════════════════════════════════════════
           SECTION 1 — LIVE PAUSE DEMO
