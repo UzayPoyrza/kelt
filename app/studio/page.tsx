@@ -38,9 +38,12 @@ import {
   ThumbsUp,
   ThumbsDown,
   Share2,
+  Volume2,
+  VolumeX,
+  FlaskConical,
 } from "lucide-react";
 import svgPaths from "@/lib/svg-paths";
-import { suggestions, voices as sharedVoices, durations as sharedDurations, detectIntent, rotatingPhrases } from "@/lib/shared";
+import { suggestions, voices as sharedVoices, durations as sharedDurations, detectIntent, rotatingPhrases, protocols } from "@/lib/shared";
 
 /* ─── Logo ─── */
 
@@ -70,7 +73,11 @@ const durations = [
   { value: 20, label: "20 min", desc: "Extended journey" },
 ];
 
-const soundPresets = ["Sanctuary", "Deep Night", "Flow State", "Still Water", "Safe Harbor"];
+const soundCategories = {
+  recommended: { label: "Recommended", items: ["Deep Night"] },
+  alternatives: { label: "Alternatives", items: ["Soft Drift", "Safe Harbor", "Flow State", "Still Water"] },
+  others: { label: "Others", items: ["Sanctuary", "Open Sky", "Forest Floor", "Letting Go", "Morning Clear"] },
+};
 
 const mockSessions = [
   { id: "1", title: "Deep sleep after a long day", duration: "15 min", voice: "Aria", protocol: "CBT-I + NSDR", sound: "Deep Night", createdAt: "2 hours ago", category: "sleep", icon: Moon },
@@ -397,6 +404,8 @@ function StudioSession({ prompt, voice, duration, sound, onBack }: {
   const [sessionSound, setSessionSound] = useState(sound);
   const [showVoiceDropdown, setShowVoiceDropdown] = useState(false);
   const [showSoundDropdown, setShowSoundDropdown] = useState(false);
+  const [showSoundInfo, setShowSoundInfo] = useState(false);
+  const [soundVolume, setSoundVolume] = useState(70);
 
   const [showDurationInfo, setShowDurationInfo] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -637,7 +646,7 @@ function StudioSession({ prompt, voice, duration, sound, onBack }: {
             <label className="text-[10px] uppercase tracking-wider text-[#71717a] mb-2.5 block" style={{ fontFamily: "var(--font-body)" }}>Voice</label>
             <div className="relative">
               <button
-                onClick={() => setShowVoiceDropdown(!showVoiceDropdown)}
+                onClick={() => { setShowVoiceDropdown(!showVoiceDropdown); setShowSoundDropdown(false); setShowSoundInfo(false); setShowDurationInfo(false); }}
                 className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg bg-white border border-[#e4e4e7] hover:border-[#d4d4d8] transition-colors cursor-pointer text-left">
                 <div className="flex items-center gap-2.5">
                   <div className="w-6 h-6 rounded-full flex items-center justify-center" style={{ background: selectedVoice.color + "20" }}>
@@ -648,52 +657,105 @@ function StudioSession({ prompt, voice, duration, sound, onBack }: {
                     <p className="text-[10px] text-[#71717a]" style={{ fontFamily: "var(--font-body)" }}>{selectedVoice.desc}</p>
                   </div>
                 </div>
-                <ChevronDown className="w-3.5 h-3.5 text-[#a1a1aa]" />
+                <ChevronDown className={`w-3.5 h-3.5 text-[#a1a1aa] transition-transform ${showVoiceDropdown ? "rotate-180" : ""}`} />
               </button>
               {showVoiceDropdown && (
-                <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-lg border border-[#e4e4e7] shadow-lg z-20 overflow-hidden">
-                  {voices.map(v => (
-                    <button key={v.id} onClick={() => { setSessionVoice(v.id); setShowVoiceDropdown(false); markEdited(); }}
-                      className="w-full flex items-center gap-2.5 px-3 py-2.5 hover:bg-[#f4f4f5] transition-colors cursor-pointer text-left">
-                      <div className="w-6 h-6 rounded-full flex items-center justify-center" style={{ background: v.color + "20" }}>
-                        <div className="w-2 h-2 rounded-full" style={{ background: v.color }} />
-                      </div>
-                      <div className="flex-1">
-                        <p className="text-sm text-[#18181b]" style={{ fontFamily: "var(--font-body)" }}>{v.name}</p>
-                        <p className="text-[10px] text-[#71717a]" style={{ fontFamily: "var(--font-body)" }}>{v.desc}</p>
-                      </div>
-                      {v.id === sessionVoice && <Check className="w-3.5 h-3.5 text-[#6b9a70]" />}
-                    </button>
-                  ))}
-                </div>
+                <>
+                  <div className="fixed inset-0 z-10" onClick={() => setShowVoiceDropdown(false)} />
+                  <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-lg border border-[#e4e4e7] shadow-lg z-20">
+                    {voices.map((v, i) => (
+                      <button key={v.id} onClick={() => { setSessionVoice(v.id); setShowVoiceDropdown(false); markEdited(); }}
+                        className={`w-full flex items-center gap-2.5 px-3 py-2.5 hover:bg-[#f4f4f5] transition-colors cursor-pointer text-left ${i > 0 ? "border-t border-[#f0f0f3]" : ""}`}>
+                        <div className="w-6 h-6 rounded-full flex items-center justify-center" style={{ background: v.color + "20" }}>
+                          <div className="w-2 h-2 rounded-full" style={{ background: v.color }} />
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-sm text-[#18181b]" style={{ fontFamily: "var(--font-body)" }}>{v.name}</p>
+                          <p className="text-[10px] text-[#71717a]" style={{ fontFamily: "var(--font-body)" }}>{v.desc}</p>
+                        </div>
+                        {v.id === sessionVoice && <Check className="w-3.5 h-3.5 text-[#6b9a70]" />}
+                      </button>
+                    ))}
+                  </div>
+                </>
               )}
             </div>
           </div>
 
           {/* Sound */}
           <div>
-            <label className="text-[10px] uppercase tracking-wider text-[#71717a] mb-2.5 block" style={{ fontFamily: "var(--font-body)" }}>Ambient Sound</label>
+            <div className="flex items-center gap-1.5 mb-2.5">
+              <label className="text-[10px] uppercase tracking-wider text-[#71717a]" style={{ fontFamily: "var(--font-body)" }}>Background Sound</label>
+              <div className="relative">
+                <button
+                  onClick={() => setShowSoundInfo(!showSoundInfo)}
+                  className="w-4 h-4 rounded-full flex items-center justify-center text-[#a1a1aa] hover:text-[#18181b] hover:bg-[#f4f4f5] transition-all cursor-pointer">
+                  <Info className="w-3 h-3" />
+                </button>
+                {showSoundInfo && (
+                  <div className="absolute left-1/2 -translate-x-1/2 top-full mt-1.5 w-56 p-3 rounded-lg bg-[#18181b] text-white shadow-xl z-30">
+                    <p className="text-[11px] leading-relaxed" style={{ fontFamily: "var(--font-body)" }}>
+                      Sounds are recommended based on your session&apos;s intent, protocol, and voice. The system matches ambient layers to maximize therapeutic effectiveness.
+                    </p>
+                    <div className="w-2 h-2 bg-[#18181b] rotate-45 absolute -top-1 left-1/2 -translate-x-1/2" />
+                  </div>
+                )}
+              </div>
+            </div>
             <div className="relative">
               <button
-                onClick={() => setShowSoundDropdown(!showSoundDropdown)}
+                onClick={() => { setShowSoundDropdown(!showSoundDropdown); setShowVoiceDropdown(false); setShowSoundInfo(false); setShowDurationInfo(false); }}
                 className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg bg-white border border-[#e4e4e7] hover:border-[#d4d4d8] transition-colors cursor-pointer text-left">
                 <div className="flex items-center gap-2.5">
                   <Music className="w-4 h-4 text-[#71717a]" />
-                  <span className="text-sm text-[#18181b]" style={{ fontFamily: "var(--font-body)" }}>{sessionSound}</span>
+                  <div>
+                    <span className="text-sm text-[#18181b] block" style={{ fontFamily: "var(--font-body)" }}>{sessionSound}</span>
+                    {soundCategories.recommended.items.includes(sessionSound) && (
+                      <span className="text-[9px] uppercase tracking-wider text-[#6b9a70]" style={{ fontFamily: "var(--font-body)" }}>Recommended</span>
+                    )}
+                  </div>
                 </div>
-                <ChevronDown className="w-3.5 h-3.5 text-[#a1a1aa]" />
+                <ChevronDown className={`w-3.5 h-3.5 text-[#a1a1aa] transition-transform ${showSoundDropdown ? "rotate-180" : ""}`} />
               </button>
               {showSoundDropdown && (
-                <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-lg border border-[#e4e4e7] shadow-lg z-20 overflow-hidden">
-                  {soundPresets.map(s => (
-                    <button key={s} onClick={() => { setSessionSound(s); setShowSoundDropdown(false); markEdited(); }}
-                      className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-[#f4f4f5] transition-colors cursor-pointer text-left">
-                      <span className="text-sm text-[#18181b]" style={{ fontFamily: "var(--font-body)" }}>{s}</span>
-                      {s === sessionSound && <Check className="w-3.5 h-3.5 text-[#6b9a70]" />}
-                    </button>
-                  ))}
-                </div>
+                <>
+                  <div className="fixed inset-0 z-10" onClick={() => setShowSoundDropdown(false)} />
+                  <div className="absolute top-[calc(100%+2px)] left-0 right-0 bg-white rounded-lg border border-[#e4e4e7] shadow-lg z-20 max-h-64 overflow-y-auto">
+                    {Object.entries(soundCategories).map(([key, cat], catIdx) => (
+                      <div key={key}>
+                        <div className={`px-3 py-1.5 bg-[#f7f7f8] ${catIdx > 0 ? "border-t border-[#e4e4e7]" : ""}`}>
+                          <span className="text-[9px] uppercase tracking-wider text-[#a1a1aa] font-medium" style={{ fontFamily: "var(--font-body)" }}>
+                            {cat.label}{key === "recommended" ? " — Default" : ""}
+                          </span>
+                        </div>
+                        {cat.items.map((s, i) => (
+                          <button key={s} onClick={() => { setSessionSound(s); setShowSoundDropdown(false); markEdited(); }}
+                            className={`w-full flex items-center justify-between px-3 py-2.5 hover:bg-[#f4f4f5] transition-colors cursor-pointer text-left ${i > 0 ? "border-t border-[#f0f0f3]" : ""}`}>
+                            <span className="text-sm text-[#18181b]" style={{ fontFamily: "var(--font-body)" }}>{s}</span>
+                            {s === sessionSound && <Check className="w-3.5 h-3.5 text-[#6b9a70]" />}
+                          </button>
+                        ))}
+                      </div>
+                    ))}
+                  </div>
+                </>
               )}
+            </div>
+            {/* Volume */}
+            <div className="flex items-center gap-2.5 mt-2.5">
+              <button onClick={() => setSoundVolume(soundVolume > 0 ? 0 : 70)} className="shrink-0 text-[#a1a1aa] hover:text-[#18181b] transition-colors cursor-pointer">
+                {soundVolume === 0 ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5" />}
+              </button>
+              <input
+                type="range"
+                min={0}
+                max={100}
+                value={soundVolume}
+                onChange={(e) => setSoundVolume(Number(e.target.value))}
+                className="flex-1 h-1 rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-[#18181b] [&::-webkit-slider-thumb]:cursor-pointer"
+                style={{ background: `linear-gradient(to right, #18181b ${soundVolume}%, #e4e4e7 ${soundVolume}%)` }}
+              />
+              <span className="text-[10px] text-[#a1a1aa] tabular-nums w-7 text-right" style={{ fontFamily: "var(--font-body)" }}>{soundVolume}%</span>
             </div>
           </div>
 
@@ -717,9 +779,9 @@ function StudioSession({ prompt, voice, duration, sound, onBack }: {
                 )}
               </div>
             </div>
-            <div className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg bg-white border border-[#e4e4e7]">
-              <Timer className="w-4 h-4 text-[#71717a]" />
-              <span className="text-sm text-[#18181b] tabular-nums" style={{ fontFamily: "var(--font-body)" }}>~{estimated.minutes}m {estimated.seconds > 0 ? `${estimated.seconds}s` : ""}</span>
+            <div className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg bg-[#f9f9fb] border border-transparent">
+              <Timer className="w-4 h-4 text-[#a1a1aa]" />
+              <span className="text-sm text-[#71717a] tabular-nums" style={{ fontFamily: "var(--font-body)" }}>~{estimated.minutes}m {estimated.seconds > 0 ? `${estimated.seconds}s` : ""}</span>
             </div>
           </div>
 
@@ -805,6 +867,9 @@ export default function StudioPage() {
   // Generate flow: "input" → "choose" → "studio"
   const [genStep, setGenStep] = useState<"input" | "choose" | "studio">("input");
   const [genConfig, setGenConfig] = useState({ prompt: "", voice: "aria", duration: 10, sound: "Sanctuary" });
+  const [showGenAdvanced, setShowGenAdvanced] = useState(false);
+  const [selectedGenProtocol, setSelectedGenProtocol] = useState<string | null>(null);
+  const [showGenProtocolInfo, setShowGenProtocolInfo] = useState(false);
 
   const handleQuickGenerate = useCallback(() => {
     const intent = detectIntent(genConfig.prompt);
@@ -891,7 +956,7 @@ export default function StudioPage() {
             voice={genConfig.voice}
             duration={genConfig.duration}
             sound={genConfig.sound}
-            onBack={() => setGenStep("choose")}
+            onBack={() => { setActiveNav("sessions"); setGenStep("input"); }}
           />
         </div>
       </div>
@@ -964,8 +1029,8 @@ export default function StudioPage() {
       {/* ─── Main Content ─── */}
       <main className="flex-1 min-h-screen">
         <motion.header initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.15, duration: 0.3 }}
-          className="sticky top-0 z-10 backdrop-blur-xl border-b border-[#e8e8ec] px-8 py-4" style={{ background: "rgba(250,249,247,0.85)" }}>
-          <div className="flex items-center justify-between">
+          className="sticky top-0 z-10 backdrop-blur-xl border-b border-[#e8e8ec] py-4" style={{ background: "rgba(250,249,247,0.85)" }}>
+          <div className="px-8 flex items-center justify-between">
             <div className="flex items-center gap-3">
               <h1 className="text-[15px] text-[#18181b]" style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}>
                 {activeNav === "sessions" && "All Sessions"}
@@ -988,7 +1053,7 @@ export default function StudioPage() {
           </div>
         </motion.header>
 
-        <div className="px-8 py-6">
+        <div className="max-w-6xl mx-auto px-10 pt-20 pb-8">
           <AnimatePresence mode="wait">
             {/* All Sessions */}
             {activeNav === "sessions" && (
@@ -1223,7 +1288,82 @@ export default function StudioPage() {
                   </div>
                 </motion.div>
 
-                <div className="mb-10" />
+                {/* Advanced — Protocol selection */}
+                <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="mb-10">
+                  <button
+                    onClick={() => setShowGenAdvanced(!showGenAdvanced)}
+                    className="flex items-center gap-3 w-full px-4 py-3 rounded-xl bg-white/60 border border-[var(--color-sand-200)] hover:border-[var(--color-sand-300)] hover:bg-white transition-all cursor-pointer"
+                    style={{ fontFamily: "var(--font-body)" }}
+                  >
+                    <FlaskConical className="w-4 h-4 text-[var(--color-sand-500)]" />
+                    <span className="text-sm text-[var(--color-sand-600)] flex-1 text-left">Advanced options</span>
+                    <ChevronDown className={`w-5 h-5 text-[var(--color-sand-400)] transition-transform ${showGenAdvanced ? "rotate-180" : ""}`} />
+                  </button>
+
+                  {showGenAdvanced && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      transition={{ duration: 0.25 }}
+                      className="mt-4"
+                    >
+                      <div className="flex items-center gap-1.5 mb-3">
+                        <p className="text-xs uppercase tracking-widest text-[var(--color-sand-400)]" style={{ fontFamily: "var(--font-body)" }}>Protocol</p>
+                        <div className="relative">
+                          <button
+                            onClick={(e) => { e.stopPropagation(); setShowGenProtocolInfo(!showGenProtocolInfo); }}
+                            className="w-4 h-4 rounded-full flex items-center justify-center text-[var(--color-sand-400)] hover:text-[var(--color-sand-700)] hover:bg-white/60 transition-all cursor-pointer"
+                          >
+                            <Info className="w-3 h-3" />
+                          </button>
+                          {showGenProtocolInfo && (
+                            <>
+                              <div className="fixed inset-0 z-10" onClick={() => setShowGenProtocolInfo(false)} />
+                              <div className="absolute left-1/2 -translate-x-1/2 top-full mt-2 w-72 p-4 rounded-xl bg-[var(--color-sand-900)] text-[var(--color-sand-50)] shadow-xl z-20">
+                                <p className="text-xs font-medium mb-1.5" style={{ fontFamily: "var(--font-body)" }}>How protocols work</p>
+                                <p className="text-[11px] leading-relaxed opacity-70" style={{ fontFamily: "var(--font-body)" }}>
+                                  Each session is structured around a clinical protocol. Our AI was trained on peer-reviewed techniques — it controls pacing, language patterns, and pause timing to match how each method is practiced by trained therapists.
+                                </p>
+                                <p className="text-[11px] leading-relaxed opacity-70 mt-2" style={{ fontFamily: "var(--font-body)" }}>
+                                  A protocol is chosen automatically during generation. For therapists and advanced users — override here.
+                                </p>
+                                <div className="w-2.5 h-2.5 bg-[var(--color-sand-900)] rotate-45 absolute -top-1 left-1/2 -translate-x-1/2" />
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      </div>
+
+                      <p className="text-[11px] text-[var(--color-sand-400)] mb-3 italic" style={{ fontFamily: "var(--font-body)" }}>
+                        Auto-chosen during generation. For therapists and advanced users — override below.
+                      </p>
+
+                      <div className="grid grid-cols-2 gap-2">
+                        {protocols.map((p) => {
+                          const isSelected = selectedGenProtocol === p.abbr;
+                          return (
+                            <button
+                              key={p.abbr}
+                              onClick={(e) => { e.stopPropagation(); setSelectedGenProtocol(isSelected ? null : p.abbr); }}
+                              className={`relative p-3 rounded-xl text-left transition-all cursor-pointer ${
+                                isSelected
+                                  ? "bg-[var(--color-sand-900)] text-[var(--color-sand-50)] shadow-md"
+                                  : "bg-white/60 text-[var(--color-sand-900)] hover:bg-white border border-[var(--color-sand-200)] hover:border-[var(--color-sand-300)]"
+                              }`}
+                            >
+                              <div className="flex items-center gap-1.5 mb-1">
+                                <span className="text-sm font-medium" style={{ fontFamily: "var(--font-body)" }}>{p.abbr}</span>
+                              </div>
+                              <span className={`text-[10px] leading-snug block ${isSelected ? "opacity-50" : "text-[var(--color-sand-500)]"}`} style={{ fontFamily: "var(--font-body)" }}>
+                                {p.name}
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </motion.div>
+                  )}
+                </motion.div>
 
                 {/* Action buttons */}
                 <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }} className="flex flex-col gap-3 items-center">
@@ -1255,7 +1395,7 @@ export default function StudioPage() {
 
             {/* Settings */}
             {activeNav === "settings" && (
-              <motion.div key="settings" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }} className="max-w-xl">
+              <motion.div key="settings" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }} className="max-w-xl mx-auto">
                 <div className="space-y-5">
                   {/* Account */}
                   <div className="bg-white rounded-xl border border-[#e8e8ec] overflow-hidden">
@@ -1276,10 +1416,29 @@ export default function StudioPage() {
                             </div>
                           </div>
                         </div>
-                        <button className="px-4 py-2 rounded-lg bg-[#18181b] text-white text-[12px] hover:bg-[#27272a] transition-colors cursor-pointer shadow-sm"
-                          style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>
-                          Upgrade to Pro
-                        </button>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => router.push("/upgrade")}
+                            className="px-4 py-2 rounded-lg bg-[#18181b] text-white text-[12px] hover:bg-[#27272a] transition-colors cursor-pointer shadow-sm"
+                            style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>
+                            Upgrade to Pro
+                          </button>
+                        </div>
+                      </div>
+                      {/* Subscription management */}
+                      <div className="mt-4 pt-4 border-t border-[#f0f0f3]">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <span className="text-[12px] text-[#71717a] block" style={{ fontFamily: "var(--font-body)", fontWeight: 450 }}>Subscription</span>
+                            <span className="text-[11px] text-[#a1a1aa]" style={{ fontFamily: "var(--font-body)" }}>Manage billing, invoices, and plan changes</span>
+                          </div>
+                          <button
+                            onClick={() => router.push("/upgrade")}
+                            className="px-3.5 py-1.5 rounded-lg border border-[#e4e4e7] bg-white text-[12px] text-[#3f3f46] hover:bg-[#f4f4f5] hover:border-[#d4d4d8] transition-colors cursor-pointer"
+                            style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>
+                            Manage Subscription
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </div>
