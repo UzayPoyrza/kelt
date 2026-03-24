@@ -1550,13 +1550,13 @@ export default function StudioPage() {
         {/* Sidebar */}
         <aside className="w-56 shrink-0 border-r border-[#e4e4e7] flex flex-col" style={{ background: "#f4f4f5" }}>
           <div className="px-5 pt-6 pb-5">
-            <a href="/" className="flex items-center gap-2 text-[var(--color-sand-900)]">
+            <button onClick={() => navigateTo("sessions" as NavId)} className="flex items-center gap-2 text-[var(--color-sand-900)] cursor-pointer">
               <Logo />
-              <div>
+              <div className="text-left">
                 <span className="text-sm tracking-tight block" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>Kilt Studio</span>
                 <span className="text-[10px] text-[var(--color-sand-400)] block -mt-0.5" style={{ fontFamily: "var(--font-body)" }}>by MindFlow</span>
               </div>
-            </a>
+            </button>
           </div>
           {/* Generate button hidden in studio session — use bottom bar Generate Audio instead */}
           <nav className="flex-1 px-3 space-y-0.5">
@@ -1608,13 +1608,13 @@ export default function StudioPage() {
       <motion.aside initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.35 }}
         className="w-56 shrink-0 border-r border-[var(--color-sand-200)] bg-white flex flex-col fixed top-0 left-0 h-screen z-30">
         <div className="px-5 pt-6 pb-5">
-          <a href="/" className="flex items-center gap-2 text-[var(--color-sand-900)]">
+          <button onClick={() => setActiveNav("sessions" as NavId)} className="flex items-center gap-2 text-[var(--color-sand-900)] cursor-pointer">
             <Logo />
-            <div>
+            <div className="text-left">
               <span className="text-sm tracking-tight block" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>Kilt Studio</span>
               <span className="text-[10px] text-[var(--color-sand-400)] block -mt-0.5" style={{ fontFamily: "var(--font-body)" }}>by MindFlow</span>
             </div>
-          </a>
+          </button>
         </div>
 
         <div className="px-3 mb-4">
@@ -1682,7 +1682,7 @@ export default function StudioPage() {
       </motion.aside>
 
       {/* ─── Main Content ─── */}
-      <main className="flex-1 min-h-screen ml-56">
+      <main className="flex-1 min-h-screen ml-56 overflow-y-scroll">
         <motion.header initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.15, duration: 0.3 }}
           className="sticky top-0 z-10 backdrop-blur-xl border-b border-[#e8e8ec] py-4" style={{ background: "rgba(250,249,247,0.85)" }}>
           <div className="px-8 flex items-center justify-between">
@@ -1743,15 +1743,15 @@ export default function StudioPage() {
             {activeNav === "history" && (
               <motion.div key="history" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
                 {/* Filter tabs */}
-                <div className="flex items-center gap-1 mb-6 bg-[var(--color-sand-900)] rounded-full p-1 w-fit shadow-md">
+                <div className="flex items-center gap-1 mb-6 bg-[#f5f3f0] border border-[#e7e5e4] rounded-lg p-1 w-fit">
                   {([["all", "All"], ["generations", "Generations"], ["sessions", "Sessions"]] as const).map(([key, label]) => (
                     <button
                       key={key}
                       onClick={() => { setHistoryFilter(key); setSessionsPage(1); setGenerationsPage(1); }}
-                      className={`px-4 py-2 rounded-full text-[12px] transition-all cursor-pointer ${
+                      className={`px-3.5 py-1.5 rounded-md text-[12px] transition-all cursor-pointer border ${
                         historyFilter === key
-                          ? "bg-white text-[var(--color-sand-900)] shadow-sm"
-                          : "text-white/50 hover:text-white/80"
+                          ? "bg-white text-[var(--color-sand-900)] shadow-sm border-[#e7e5e4]"
+                          : "text-[var(--color-sand-500)] hover:text-[var(--color-sand-900)] border-transparent"
                       }`}
                       style={{ fontFamily: "var(--font-body)", fontWeight: historyFilter === key ? 600 : 400 }}
                     >
@@ -1768,7 +1768,7 @@ export default function StudioPage() {
                   return (
                   <div className="mb-6">
                     {historyFilter === "all" && (
-                      <h3 className="text-[11px] uppercase tracking-wider text-[#78716c] mb-3 flex items-center gap-2" style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}>
+                      <h3 className="text-[11px] uppercase tracking-wide text-[var(--color-sand-900)] mb-3 flex items-center gap-2" style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}>
                         <Sparkles className="w-3 h-3" />
                         Generations
                       </h3>
@@ -1776,7 +1776,7 @@ export default function StudioPage() {
                     <div className="bg-[#fdfcfb] rounded-xl border border-[#e7e5e4] overflow-hidden shadow-sm">
                       <div className="grid grid-cols-[1fr_80px_70px_90px_70px_130px] gap-4 px-5 py-3 border-b border-[#e7e5e4] bg-[#f5f3f0]">
                         {["Prompt", "Voice", "Duration", "Protocol", "Credit", ""].map((h) => (
-                          <span key={h} className="text-[10px] uppercase tracking-wider text-[#a1a1aa]" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>{h}</span>
+                          <span key={h} className="text-[11px] uppercase tracking-wide text-[var(--color-sand-900)]" style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}>{h}</span>
                         ))}
                       </div>
                       {paged.map((gen, i) => {
@@ -1875,7 +1875,7 @@ export default function StudioPage() {
                   return (
                   <div className="mb-6">
                     {historyFilter === "all" && (
-                      <h3 className="text-[11px] uppercase tracking-wider text-[#78716c] mb-3 flex items-center gap-2" style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}>
+                      <h3 className="text-[11px] uppercase tracking-wide text-[var(--color-sand-900)] mb-3 flex items-center gap-2" style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}>
                         <FileText className="w-3 h-3" />
                         Sessions Created
                       </h3>
@@ -1883,7 +1883,7 @@ export default function StudioPage() {
                     <div className="bg-[#fcfcfd] rounded-xl border border-[#ddd6fe]/40 overflow-hidden shadow-sm" style={{ borderColor: "#e0dff0" }}>
                       <div className="grid grid-cols-[1fr_100px_80px_80px_140px_130px] gap-4 px-5 py-3 border-b bg-[#f4f3fb]" style={{ borderColor: "#e0dff0" }}>
                         {["Session", "Protocol", "Duration", "Voice", "Created", ""].map((h) => (
-                          <span key={h} className="text-[10px] uppercase tracking-wider text-[#a1a1aa]" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>{h}</span>
+                          <span key={h} className="text-[11px] uppercase tracking-wide text-[var(--color-sand-900)]" style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}>{h}</span>
                         ))}
                       </div>
                       {paged.map((session, i) => {
@@ -2225,9 +2225,9 @@ export default function StudioPage() {
               <motion.div key="settings" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }} className="max-w-xl mx-auto" onClick={() => settingsOpenDropdown && setSettingsOpenDropdown(null)}>
                 <div className="space-y-6">
                   {/* Account */}
-                  <div className="bg-white rounded-2xl border border-[var(--color-sand-200)] overflow-hidden shadow-sm">
-                    <div className="px-6 py-4 border-b border-[var(--color-sand-100)]" style={{ background: "var(--color-sand-50)" }}>
-                      <h3 className="text-[13px] text-[var(--color-sand-900)]" style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}>Account</h3>
+                  <div className="bg-[#fdfcfb] rounded-2xl border border-[#e7e5e4] overflow-hidden shadow-sm">
+                    <div className="px-6 py-4 border-b border-[#e7e5e4] bg-[#f5f3f0]">
+                      <h3 className="text-[11px] uppercase tracking-wide text-[var(--color-sand-900)]" style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}>Account</h3>
                     </div>
                     <div className="p-6">
                       <div className="flex items-center justify-between mb-5">
@@ -2268,9 +2268,9 @@ export default function StudioPage() {
                   </div>
 
                   {/* Defaults */}
-                  <div className="bg-white rounded-2xl border border-[var(--color-sand-200)] overflow-hidden shadow-sm">
-                    <div className="px-6 py-4 border-b border-[var(--color-sand-100)]" style={{ background: "var(--color-sand-50)" }}>
-                      <h3 className="text-[13px] text-[var(--color-sand-900)]" style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}>Defaults</h3>
+                  <div className="bg-[#fdfcfb] rounded-2xl border border-[#e7e5e4] overflow-hidden shadow-sm">
+                    <div className="px-6 py-4 border-b border-[#e7e5e4] bg-[#f5f3f0]">
+                      <h3 className="text-[11px] uppercase tracking-wide text-[var(--color-sand-900)]" style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}>Defaults</h3>
                       <p className="text-[11px] text-[var(--color-sand-400)] mt-0.5" style={{ fontFamily: "var(--font-body)" }}>Set your preferred starting point for new sessions</p>
                     </div>
                     <div className="divide-y divide-[var(--color-sand-100)]">
@@ -2359,9 +2359,9 @@ export default function StudioPage() {
                   </div>
 
                   {/* Behavior */}
-                  <div className="bg-white rounded-2xl border border-[var(--color-sand-200)] overflow-hidden shadow-sm">
-                    <div className="px-6 py-4 border-b border-[var(--color-sand-100)]" style={{ background: "var(--color-sand-50)" }}>
-                      <h3 className="text-[13px] text-[var(--color-sand-900)]" style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}>Behavior</h3>
+                  <div className="bg-[#fdfcfb] rounded-2xl border border-[#e7e5e4] overflow-hidden shadow-sm">
+                    <div className="px-6 py-4 border-b border-[#e7e5e4] bg-[#f5f3f0]">
+                      <h3 className="text-[11px] uppercase tracking-wide text-[var(--color-sand-900)]" style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}>Behavior</h3>
                       <p className="text-[11px] text-[var(--color-sand-400)] mt-0.5" style={{ fontFamily: "var(--font-body)" }}>Automate common actions</p>
                     </div>
                     <div className="divide-y divide-[var(--color-sand-100)]">
