@@ -710,9 +710,12 @@ export default function StudioPage() {
                   <p className="text-xs uppercase tracking-widest text-[var(--color-sand-400)] mb-3" style={{ fontFamily: "var(--font-body)" }}>Duration</p>
                   <div className="flex gap-2">
                     {sharedDurations.map((d) => (
-                      <button key={d} onClick={() => setGenConfig(prev => ({ ...prev, duration: d }))}
-                        className={`flex-1 py-2.5 rounded-full text-sm transition-all cursor-pointer ${genConfig.duration === d ? "bg-[var(--color-sand-900)] text-[var(--color-sand-50)] shadow-sm" : "bg-white/60 text-[var(--color-sand-600)] hover:bg-white border border-[var(--color-sand-200)]"}`}
-                        style={{ fontFamily: "var(--font-body)" }}>{d}m</button>
+                      <div key={d} className="flex-1 flex flex-col items-center">
+                        <span className={`text-[8px] tracking-wide uppercase mb-1 h-3 ${d === 10 && genConfig.duration !== 10 ? "text-[var(--color-sand-400)]" : "text-transparent select-none"}`} style={{ fontFamily: "var(--font-body)" }}>{d === 10 ? "Popular" : "\u00A0"}</span>
+                        <button onClick={() => setGenConfig(prev => ({ ...prev, duration: d }))}
+                          className={`w-full py-2.5 rounded-full text-sm transition-all cursor-pointer ${genConfig.duration === d ? "bg-[var(--color-sand-900)] text-[var(--color-sand-50)] shadow-sm" : "bg-white/60 text-[var(--color-sand-600)] hover:bg-white border border-[var(--color-sand-200)]"}`}
+                          style={{ fontFamily: "var(--font-body)" }}>{d}m</button>
+                      </div>
                     ))}
                   </div>
                 </motion.div>
@@ -728,7 +731,10 @@ export default function StudioPage() {
                         <button key={v.id} onClick={(e) => { e.stopPropagation(); setGenConfig(prev => ({ ...prev, voice: v.id })); setVoicePlaying(v.id); setTimeout(() => setVoicePlaying((cur) => cur === v.id ? null : cur), 3000); }}
                           className={`relative flex items-center gap-3 p-4 rounded-xl transition-all cursor-pointer text-left overflow-hidden ${isActive ? "bg-[var(--color-sand-900)] text-[var(--color-sand-50)] shadow-md" : "bg-white text-[var(--color-sand-900)] hover:shadow-sm border border-[var(--color-sand-200)] hover:border-[var(--color-sand-300)]"}`}>
                           <div className="flex-1 min-w-0">
-                            <span className="text-sm font-medium block" style={{ fontFamily: "var(--font-body)" }}>{v.label}</span>
+                            <span className="text-sm font-medium flex items-center gap-1.5" style={{ fontFamily: "var(--font-body)" }}>
+                              {v.label}
+                              {v.id === "aria" && isActive && <span className="text-[8px] uppercase tracking-wide opacity-40 font-normal px-1.5 py-px rounded-full bg-white/15">Default</span>}
+                            </span>
                             <span className={`text-xs mt-0.5 block ${isActive ? "opacity-50" : "text-[var(--color-sand-500)]"}`} style={{ fontFamily: "var(--font-body)" }}>{v.description}</span>
                             <div className="flex items-end gap-[2px] h-3 mt-2">
                               {isVoicePlaying && Array.from({ length: 12 }).map((_, i) => (
@@ -754,36 +760,32 @@ export default function StudioPage() {
                   </div>
                 </motion.div>
 
-                {/* Soundscape note */}
-                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }} className="mb-10 text-center">
-                  <p className="text-xs text-[var(--color-sand-400)] flex items-center justify-center gap-1.5" style={{ fontFamily: "var(--font-body)" }}>
-                    <Headphones className="w-3 h-3" />
-                    Soundscape &amp; ambient layers will be matched after generation
-                  </p>
-                </motion.div>
+                <div className="mb-10" />
 
-                {/* Action zone — visually separated */}
-                <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }} className="mt-4 pt-8 border-t border-[var(--color-sand-200)]">
-                  <p className="text-[10px] uppercase tracking-widest text-[var(--color-sand-400)] mb-4 text-center" style={{ fontFamily: "var(--font-body)" }}>How do you want to create?</p>
-                  <div className="flex gap-3">
-                    {/* Open in Studio — primary */}
+                {/* Action buttons */}
+                <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }} className="flex flex-col gap-3 items-center">
+                  {/* Open in Studio — primary CTA with border glow */}
+                  <div className="relative rounded-full group w-full">
+                    <div className="absolute -inset-[2.5px] rounded-full bg-[length:300%_300%] animate-[border-glow_4s_ease_infinite] opacity-90 group-hover:opacity-100 transition-opacity duration-300" style={{ background: "linear-gradient(135deg, var(--color-sage), var(--color-ocean), var(--color-dusk), var(--color-ember), var(--color-sage))", backgroundSize: "300% 300%" }} />
                     <button onClick={() => setGenStep("studio")}
-                      className="flex-1 flex flex-col items-center py-6 px-4 rounded-2xl bg-[var(--color-sand-900)] text-[var(--color-sand-50)] hover:bg-[var(--color-sand-800)] transition-all shadow-lg cursor-pointer"
-                      style={{ fontFamily: "var(--font-body)" }}>
-                      <PenLine className="w-5 h-5 mb-2.5" />
-                      <span className="text-sm font-medium">Open in Studio</span>
-                      <span className="text-[10px] opacity-40 mt-1">Edit script &amp; pauses</span>
-                    </button>
-
-                    {/* Quick Generate — secondary */}
-                    <button onClick={() => { /* TODO: quick generate */ }}
-                      className="flex-1 flex flex-col items-center py-6 px-4 rounded-2xl bg-white border-2 border-[var(--color-sand-200)] text-[var(--color-sand-900)] hover:border-[var(--color-sand-900)] hover:shadow-lg transition-all cursor-pointer"
-                      style={{ fontFamily: "var(--font-body)" }}>
-                      <Zap className="w-5 h-5 mb-2.5" />
-                      <span className="text-sm font-medium">Quick Generate</span>
-                      <span className="text-[10px] text-[var(--color-sand-400)] mt-1">Create instantly</span>
+                      className="relative w-full flex items-center justify-center gap-2.5 py-4 rounded-full bg-[var(--color-sand-900)] text-[var(--color-sand-50)] hover:bg-[var(--color-sand-800)] transition-all shadow-lg cursor-pointer text-sm"
+                      style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>
+                      <PenLine className="w-4 h-4" />
+                      <span>Open in Studio</span>
+                      <span className="opacity-40 text-xs font-normal">· Edit script &amp; pauses</span>
                     </button>
                   </div>
+
+                  <span className="text-[10px] uppercase tracking-widest text-[var(--color-sand-400)]" style={{ fontFamily: "var(--font-body)" }}>or</span>
+
+                  {/* Quick Generate — secondary */}
+                  <button onClick={() => { /* TODO: quick generate */ }}
+                    className="w-full flex items-center justify-center gap-2.5 py-4 rounded-full text-sm text-[var(--color-sand-900)] bg-white border-2 border-[var(--color-sand-900)] hover:bg-[var(--color-sand-50)] transition-all cursor-pointer"
+                    style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>
+                    <Zap className="w-4 h-4" />
+                    <span>Quick Generate</span>
+                    <span className="text-[var(--color-sand-400)] text-xs font-normal">· Create instantly</span>
+                  </button>
                 </motion.div>
               </motion.div>
             )}

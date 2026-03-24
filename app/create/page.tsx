@@ -9,7 +9,6 @@ import {
   Pause,
   ChevronLeft,
   Sparkles,
-  Headphones,
 } from "lucide-react";
 import {
   AmbientBackground,
@@ -79,9 +78,12 @@ function CreateContent() {
             {/* Duration */}
             <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="mb-8">
               <p className="text-xs uppercase tracking-widest text-[var(--color-sand-400)] mb-3" style={{ fontFamily: "var(--font-body)" }}>Duration</p>
-              <div className="flex gap-2">
+              <div className="flex gap-2 items-end">
                 {durations.map((d) => (
-                  <button key={d} onClick={() => setDuration(d)} className={`flex-1 py-2.5 rounded-full text-sm transition-all cursor-pointer ${duration === d ? "bg-[var(--color-sand-900)] text-[var(--color-sand-50)] shadow-sm" : "bg-white/60 text-[var(--color-sand-600)] hover:bg-white border border-[var(--color-sand-200)]"}`} style={{ fontFamily: "var(--font-body)" }}>{d}m</button>
+                  <div key={d} className="flex-1 flex flex-col items-center">
+                    <span className={`text-[8px] tracking-wide uppercase mb-1 h-3 ${d === 10 && duration !== 10 ? "text-[var(--color-sand-400)]" : "text-transparent select-none"}`} style={{ fontFamily: "var(--font-body)" }}>{d === 10 ? "Popular" : "\u00A0"}</span>
+                    <button onClick={() => setDuration(d)} className={`w-full py-2.5 rounded-full text-sm transition-all cursor-pointer ${duration === d ? "bg-[var(--color-sand-900)] text-[var(--color-sand-50)] shadow-sm" : "bg-white/60 text-[var(--color-sand-600)] hover:bg-white border border-[var(--color-sand-200)]"}`} style={{ fontFamily: "var(--font-body)" }}>{d}m</button>
+                  </div>
                 ))}
               </div>
             </motion.div>
@@ -96,7 +98,10 @@ function CreateContent() {
                   return (
                     <button key={v.id} onClick={(e) => { e.stopPropagation(); setVoice(v.id); setVoicePlaying(v.id); setTimeout(() => setVoicePlaying((cur) => cur === v.id ? null : cur), 3000); }} className={`relative flex items-center gap-3 p-4 rounded-xl transition-all cursor-pointer text-left overflow-hidden ${isActive ? "bg-[var(--color-sand-900)] text-[var(--color-sand-50)] shadow-md" : "bg-white text-[var(--color-sand-900)] hover:shadow-sm border border-[var(--color-sand-200)] hover:border-[var(--color-sand-300)]"}`}>
                       <div className="flex-1 min-w-0">
-                        <span className="text-sm font-medium block" style={{ fontFamily: "var(--font-body)" }}>{v.label}</span>
+                        <span className="text-sm font-medium flex items-center gap-1.5" style={{ fontFamily: "var(--font-body)" }}>
+                          {v.label}
+                          {v.id === "aria" && isActive && <span className="text-[8px] uppercase tracking-wide opacity-40 font-normal px-1.5 py-px rounded-full bg-white/15">Default</span>}
+                        </span>
                         <span className={`text-xs mt-0.5 block ${isActive ? "opacity-50" : "text-[var(--color-sand-500)]"}`} style={{ fontFamily: "var(--font-body)" }}>{v.description}</span>
                         <div className="flex items-end gap-[2px] h-3 mt-2">
                           {isVoicePlaying && Array.from({ length: 12 }).map((_, i) => (
@@ -125,13 +130,7 @@ function CreateContent() {
               </div>
             </motion.div>
 
-            {/* Soundscape note */}
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }} className="mb-10 text-center">
-              <p className="text-xs text-[var(--color-sand-400)] flex items-center justify-center gap-1.5" style={{ fontFamily: "var(--font-body)" }}>
-                <Headphones className="w-3 h-3" />
-                Soundscape &amp; ambient layers will be matched after generation
-              </p>
-            </motion.div>
+            <div className="mb-10" />
 
             {/* Generate button */}
             <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }} className="flex justify-center">
