@@ -1,16 +1,34 @@
+"use client";
+
 import { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { Sparkles } from "lucide-react";
-import svgPaths from "../../imports/svg-1yz92mdo5e";
+import svgPaths from "@/lib/svg-paths";
 
 function Logo() {
   return (
     <div className="h-[37.828px] relative shrink-0 w-[36px]">
-      <svg className="absolute block size-full" fill="none" preserveAspectRatio="none" viewBox="0 0 36 37.8281">
+      <svg
+        className="absolute block size-full"
+        fill="none"
+        preserveAspectRatio="none"
+        viewBox="0 0 36 37.8281"
+      >
         <g id="Logo">
-          <path d={svgPaths.p1c4d2300} fill="var(--fill-0, #160211)" id="Star 1" />
-          <path d={svgPaths.p2128f680} fill="var(--fill-0, #160211)" id="Star 3" />
-          <path d={svgPaths.p1c2ff500} fill="var(--fill-0, #160211)" id="Star 2" />
+          <path
+            d={svgPaths.p1c4d2300}
+            fill="var(--fill-0, #160211)"
+            id="Star 1"
+          />
+          <path
+            d={svgPaths.p2128f680}
+            fill="var(--fill-0, #160211)"
+            id="Star 3"
+          />
+          <path
+            d={svgPaths.p1c2ff500}
+            fill="var(--fill-0, #160211)"
+            id="Star 2"
+          />
         </g>
       </svg>
     </div>
@@ -24,7 +42,7 @@ interface Message {
   isGenerating?: boolean;
 }
 
-export function Generator() {
+export default function GeneratePage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
@@ -32,7 +50,7 @@ export function Generator() {
   const suggestions = [
     "Create a 10-minute meditation for stress relief",
     "I need help falling asleep tonight",
-    "Guide me through a morning focus meditation"
+    "Guide me through a morning focus meditation",
   ];
 
   const handleSend = async (text: string) => {
@@ -41,28 +59,34 @@ export function Generator() {
     const userMessage: Message = {
       id: Date.now(),
       text,
-      isUser: true
+      isUser: true,
     };
 
     const generatingMessage: Message = {
       id: Date.now() + 1,
       text: "",
       isUser: false,
-      isGenerating: true
+      isGenerating: true,
     };
 
-    setMessages(prev => [...prev, userMessage, generatingMessage]);
+    setMessages((prev) => [...prev, userMessage, generatingMessage]);
     setInputValue("");
     setIsGenerating(true);
 
-    // Simulate AI response
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    // TODO: Replace with actual API call to your backend
+    await new Promise((resolve) => setTimeout(resolve, 2000));
 
-    setMessages(prev => prev.map(msg => 
-      msg.id === generatingMessage.id 
-        ? { ...msg, text: "I've created a personalized meditation for you. It includes natural pause-aware pacing and professional studio-quality audio. Your meditation is ready to play.", isGenerating: false }
-        : msg
-    ));
+    setMessages((prev) =>
+      prev.map((msg) =>
+        msg.id === generatingMessage.id
+          ? {
+              ...msg,
+              text: "I've created a personalized meditation for you. It includes natural pause-aware pacing and professional studio-quality audio. Your meditation is ready to play.",
+              isGenerating: false,
+            }
+          : msg
+      )
+    );
     setIsGenerating(false);
   };
 
@@ -77,7 +101,12 @@ export function Generator() {
       {/* Blurred gradient background */}
       <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[544px] h-[464px] pointer-events-none">
         <div className="absolute inset-[-96.98%_-68.01%_-107.76%_-91.91%]">
-          <svg className="block size-full" fill="none" preserveAspectRatio="none" viewBox="0 0 1414 1414">
+          <svg
+            className="block size-full"
+            fill="none"
+            preserveAspectRatio="none"
+            viewBox="0 0 1414 1414"
+          >
             <g>
               <g filter="url(#filter0_f_meditation)">
                 <circle cx="904" cy="590" fill="#E0E7FF" r="140" />
@@ -87,15 +116,47 @@ export function Generator() {
               </g>
             </g>
             <defs>
-              <filter colorInterpolationFilters="sRGB" filterUnits="userSpaceOnUse" height="880" id="filter0_f_meditation" width="880" x="464" y="150">
+              <filter
+                colorInterpolationFilters="sRGB"
+                filterUnits="userSpaceOnUse"
+                height="880"
+                id="filter0_f_meditation"
+                width="880"
+                x="464"
+                y="150"
+              >
                 <feFlood floodOpacity="0" result="BackgroundImageFix" />
-                <feBlend in="SourceGraphic" in2="BackgroundImageFix" mode="normal" result="shape" />
-                <feGaussianBlur result="effect1_foregroundBlur_meditation" stdDeviation="150" />
+                <feBlend
+                  in="SourceGraphic"
+                  in2="BackgroundImageFix"
+                  mode="normal"
+                  result="shape"
+                />
+                <feGaussianBlur
+                  result="effect1_foregroundBlur_meditation"
+                  stdDeviation="150"
+                />
               </filter>
-              <filter colorInterpolationFilters="sRGB" filterUnits="userSpaceOnUse" height="1414" id="filter1_f_meditation" width="1414" x="0" y="0">
+              <filter
+                colorInterpolationFilters="sRGB"
+                filterUnits="userSpaceOnUse"
+                height="1414"
+                id="filter1_f_meditation"
+                width="1414"
+                x="0"
+                y="0"
+              >
                 <feFlood floodOpacity="0" result="BackgroundImageFix" />
-                <feBlend in="SourceGraphic" in2="BackgroundImageFix" mode="normal" result="shape" />
-                <feGaussianBlur result="effect1_foregroundBlur_meditation" stdDeviation="250" />
+                <feBlend
+                  in="SourceGraphic"
+                  in2="BackgroundImageFix"
+                  mode="normal"
+                  result="shape"
+                />
+                <feGaussianBlur
+                  result="effect1_foregroundBlur_meditation"
+                  stdDeviation="250"
+                />
               </filter>
             </defs>
           </svg>
@@ -126,9 +187,7 @@ export function Generator() {
             >
               <div className="flex items-center gap-3 mb-12">
                 <Logo />
-                <h1 className="text-xl text-[#160211]">
-                  MindFlow AI
-                </h1>
+                <h1 className="text-xl text-[#160211]">MindFlow AI</h1>
               </div>
 
               {messages.map((message) => (
@@ -136,13 +195,15 @@ export function Generator() {
                   key={message.id}
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className={`flex ${message.isUser ? 'justify-end' : 'justify-start'}`}
+                  className={`flex ${
+                    message.isUser ? "justify-end" : "justify-start"
+                  }`}
                 >
                   <div
                     className={`max-w-[80%] px-6 py-4 rounded-2xl ${
                       message.isUser
-                        ? 'bg-indigo-600 text-white'
-                        : 'bg-white/70 backdrop-blur-sm text-[#160211] border border-white'
+                        ? "bg-indigo-600 text-white"
+                        : "bg-white/70 backdrop-blur-sm text-[#160211] border border-white"
                     }`}
                   >
                     {message.isGenerating ? (
@@ -151,20 +212,34 @@ export function Generator() {
                           <motion.div
                             className="w-2 h-2 bg-gray-400 rounded-full"
                             animate={{ opacity: [0.3, 1, 0.3] }}
-                            transition={{ duration: 1.5, repeat: Infinity, delay: 0 }}
+                            transition={{
+                              duration: 1.5,
+                              repeat: Infinity,
+                              delay: 0,
+                            }}
                           />
                           <motion.div
                             className="w-2 h-2 bg-gray-400 rounded-full"
                             animate={{ opacity: [0.3, 1, 0.3] }}
-                            transition={{ duration: 1.5, repeat: Infinity, delay: 0.2 }}
+                            transition={{
+                              duration: 1.5,
+                              repeat: Infinity,
+                              delay: 0.2,
+                            }}
                           />
                           <motion.div
                             className="w-2 h-2 bg-gray-400 rounded-full"
                             animate={{ opacity: [0.3, 1, 0.3] }}
-                            transition={{ duration: 1.5, repeat: Infinity, delay: 0.4 }}
+                            transition={{
+                              duration: 1.5,
+                              repeat: Infinity,
+                              delay: 0.4,
+                            }}
                           />
                         </div>
-                        <span className="text-sm text-gray-500">Creating your meditation...</span>
+                        <span className="text-sm text-gray-500">
+                          Creating your meditation...
+                        </span>
                       </div>
                     ) : (
                       <p className="text-sm leading-relaxed">{message.text}</p>
@@ -211,7 +286,7 @@ export function Generator() {
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
+                if (e.key === "Enter" && !e.shiftKey) {
                   e.preventDefault();
                   handleSend(inputValue);
                 }
@@ -225,10 +300,17 @@ export function Generator() {
               disabled={!inputValue.trim() || isGenerating}
               className="shrink-0 size-9 flex items-center justify-center disabled:opacity-40 transition-opacity"
             >
-              <svg className="size-full" fill="none" preserveAspectRatio="none" viewBox="0 0 34.8962 34.8922">
-                <path 
-                  d={svgPaths.p2f0e8d80} 
-                  fill={inputValue.trim() && !isGenerating ? "#4F46E5" : "#AAAAAA"} 
+              <svg
+                className="size-full"
+                fill="none"
+                preserveAspectRatio="none"
+                viewBox="0 0 34.8962 34.8922"
+              >
+                <path
+                  d={svgPaths.p2f0e8d80}
+                  fill={
+                    inputValue.trim() && !isGenerating ? "#4F46E5" : "#AAAAAA"
+                  }
                 />
               </svg>
             </button>
