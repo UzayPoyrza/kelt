@@ -51,7 +51,7 @@ function CreateContent() {
 
         <Header />
 
-        <div className="relative z-10 flex-1 flex items-center justify-center px-6 pb-20">
+        <div className="relative z-10 flex-1 flex items-start justify-center px-6 pt-8 pb-10">
           <motion.div
             key="options"
             initial={{ opacity: 0, x: 30 }}

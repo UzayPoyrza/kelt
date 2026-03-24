@@ -74,12 +74,12 @@ function SessionContent() {
 
         <Header />
 
-        <div className="relative z-10 flex-1 flex items-center justify-center px-6 pb-6">
+        <div className="relative z-10 flex-1 flex items-start justify-center px-6 pt-8 pb-6">
           <AnimatePresence mode="wait">
 
             {/* ─── Generating ─── */}
             {stage === "generating" && (
-              <motion.div key="generating" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} transition={{ duration: 0.5 }} className="w-full max-w-md mx-auto flex flex-col items-center">
+              <motion.div key="generating" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} transition={{ duration: 0.5 }} className="absolute inset-0 flex flex-col items-center justify-center -mt-16">
                 <div className="relative w-40 h-40 flex items-center justify-center mb-12">
                   <div className="absolute inset-0 rounded-full border border-[var(--color-sand-300)] animate-pulse-ring" />
                   <div className="absolute inset-3 rounded-full border border-[var(--color-sand-300)] animate-pulse-ring" style={{ animationDelay: "0.5s" }} />
@@ -96,16 +96,28 @@ function SessionContent() {
             {/* ─── Ready ─── */}
             {stage === "ready" && (
               <motion.div key="ready" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="w-full max-w-xl mx-auto">
-                {/* Back button */}
-                <motion.button
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  onClick={() => router.push(`/create?prompt=${encodeURIComponent(prompt)}`)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm text-[var(--color-sand-600)] hover:text-[var(--color-sand-900)] hover:bg-white/60 border border-[var(--color-sand-200)] hover:border-[var(--color-sand-300)] transition-all cursor-pointer mb-3"
-                  style={{ fontFamily: "var(--font-body)" }}
-                >
-                  <ChevronLeft className="w-4 h-4" />Back
-                </motion.button>
+                {/* Top row: Back + (Edit in Kilt Studio (Free) when picker is open) */}
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-center justify-between mb-3">
+                  <button
+                    onClick={() => router.push(`/create?prompt=${encodeURIComponent(prompt)}`)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm text-[var(--color-sand-600)] hover:text-[var(--color-sand-900)] hover:bg-white/60 border border-[var(--color-sand-200)] hover:border-[var(--color-sand-300)] transition-all cursor-pointer"
+                    style={{ fontFamily: "var(--font-body)" }}
+                  >
+                    <ChevronLeft className="w-4 h-4" />Back
+                  </button>
+                  {showBgPicker && (
+                    <a href="/login" className="relative rounded-lg group">
+                      <div className="absolute -inset-[2px] rounded-lg bg-[length:300%_300%] animate-[border-glow_4s_ease_infinite] opacity-80 group-hover:opacity-100 transition-opacity duration-300 blur-[0.5px]" style={{ background: "linear-gradient(135deg, var(--color-sage), var(--color-ocean), var(--color-dusk), var(--color-ember), var(--color-sage))", backgroundSize: "300% 300%" }} />
+                      <span
+                        className="relative flex items-center gap-2 px-4 py-1.5 rounded-lg bg-[var(--color-sand-900)] text-[var(--color-sand-50)] text-sm cursor-pointer hover:bg-[var(--color-sand-800)] transition-colors"
+                        style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}
+                      >
+                        <Sparkles className="w-3.5 h-3.5" />
+                        Edit in Kilt Studio (Free)
+                      </span>
+                    </a>
+                  )}
+                </motion.div>
 
                 {/* Header */}
                 <div className="text-center mb-3">
@@ -270,6 +282,22 @@ function SessionContent() {
                     )}
                   </AnimatePresence>
                 </motion.div>
+
+                {/* Edit in Kilt Studio (Free) — large, below card when picker closed */}
+                {!showBgPicker && (
+                  <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }} className="flex justify-center mt-5">
+                    <a href="/login" className="relative rounded-xl group">
+                      <div className="absolute -inset-[2.5px] rounded-xl bg-[length:300%_300%] animate-[border-glow_4s_ease_infinite] opacity-90 group-hover:opacity-100 transition-opacity duration-300" style={{ background: "linear-gradient(135deg, var(--color-sage), var(--color-ocean), var(--color-dusk), var(--color-ember), var(--color-sage))", backgroundSize: "300% 300%" }} />
+                      <span
+                        className="relative flex items-center gap-3 px-10 py-3.5 rounded-xl bg-[var(--color-sand-900)] text-[var(--color-sand-50)] text-base cursor-pointer hover:bg-[var(--color-sand-800)] transition-colors shadow-lg"
+                        style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}
+                      >
+                        <Sparkles className="w-5 h-5" />
+                        Edit in Kilt Studio (Free)
+                      </span>
+                    </a>
+                  </motion.div>
+                )}
               </motion.div>
             )}
 
