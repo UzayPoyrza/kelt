@@ -168,7 +168,7 @@ function SessionCard({ session, delay, isNowPlaying, onPlay, onOpenStudio }: {
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay, duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-      className="group relative bg-white rounded-xl border border-[#e8e8ec] hover:border-[#d0d0d6] transition-all duration-300 cursor-pointer overflow-hidden hover:shadow-[0_2px_12px_rgba(0,0,0,0.06)]"
+      className="group relative bg-white rounded-xl border border-[#e8e8ec] hover:border-[#d0d0d6] transition-all duration-300 cursor-pointer hover:shadow-[0_2px_12px_rgba(0,0,0,0.06)]"
       onClick={onOpenStudio}
     >
       {/* Accent line */}
