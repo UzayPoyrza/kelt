@@ -1807,7 +1807,7 @@ export default function StudioPage() {
                     <input type="text" value={generatePrompt} onChange={(e) => setGeneratePrompt(e.target.value)}
                       onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handlePromptSubmit(generatePrompt); } }}
                       placeholder="Create a guided meditation on..."
-                      className="flex-1 outline-none text-sm text-[var(--color-sand-900)] placeholder:text-[var(--color-sand-400)] bg-transparent" style={{ fontFamily: "var(--font-body)" }} />
+                      className="flex-1 outline-none text-sm text-[var(--color-sand-900)] placeholder:text-[var(--color-sand-400)] placeholder:opacity-50 bg-transparent" style={{ fontFamily: "var(--font-body)" }} />
                     <button onClick={() => handlePromptSubmit(generatePrompt)} disabled={!generatePrompt.trim()}
                       className="shrink-0 w-9 h-9 flex items-center justify-center rounded-full transition-all cursor-pointer disabled:opacity-30"
                       style={{ background: generatePrompt.trim() ? "var(--color-sand-900)" : "transparent", color: generatePrompt.trim() ? "var(--color-sand-50)" : "var(--color-sand-400)" }}>

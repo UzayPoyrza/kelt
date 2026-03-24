@@ -327,7 +327,7 @@ export default function HomePage() {
                     }
                   }}
                   placeholder="Create a guided meditation on..."
-                  className="flex-1 outline-none text-sm text-[var(--color-sand-900)] placeholder:text-[var(--color-sand-400)] bg-transparent"
+                  className="flex-1 outline-none text-sm text-[var(--color-sand-900)] placeholder:text-[var(--color-sand-400)] placeholder:opacity-50 bg-transparent"
                   style={{ fontFamily: "var(--font-body)" }}
                 />
                 <button
