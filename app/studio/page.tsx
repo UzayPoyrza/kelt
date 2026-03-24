@@ -31,6 +31,8 @@ import {
   Headphones,
   ChevronLeft,
   Info,
+  Trash2,
+  X,
 } from "lucide-react";
 import svgPaths from "@/lib/svg-paths";
 import { suggestions, voices as sharedVoices, durations as sharedDurations, detectIntent, rotatingPhrases } from "@/lib/shared";
@@ -141,15 +143,19 @@ const generateScript = (prompt: string): ScriptBlock[] => [
 
 /* ─── Session Card ─── */
 
-function SessionCard({ session, delay }: { session: (typeof mockSessions)[number]; delay: number }) {
-  const [isPlaying, setIsPlaying] = useState(false);
+const categoryColors: Record<string, { accent: string; bg: string }> = {
+  sleep: { accent: "#8b7ea6", bg: "rgba(139,126,166,0.08)" },
+  focus: { accent: "#6b9a70", bg: "rgba(107,154,112,0.08)" },
+  anxiety: { accent: "#6d9ab5", bg: "rgba(109,154,181,0.08)" },
+  stress: { accent: "#c4876c", bg: "rgba(196,135,108,0.08)" },
+};
+
+function SessionCard({ session, delay, isNowPlaying, onPlay, onOpenStudio }: {
+  session: (typeof mockSessions)[number]; delay: number;
+  isNowPlaying: boolean; onPlay: () => void; onOpenStudio: () => void;
+}) {
+  const [showMenu, setShowMenu] = useState(false);
   const Icon = session.icon;
-  const categoryColors: Record<string, { accent: string; bg: string }> = {
-    sleep: { accent: "#8b7ea6", bg: "rgba(139,126,166,0.08)" },
-    focus: { accent: "#6b9a70", bg: "rgba(107,154,112,0.08)" },
-    anxiety: { accent: "#6d9ab5", bg: "rgba(109,154,181,0.08)" },
-    stress: { accent: "#c4876c", bg: "rgba(196,135,108,0.08)" },
-  };
   const colors = categoryColors[session.category] || categoryColors.focus;
 
   return (
@@ -158,6 +164,7 @@ function SessionCard({ session, delay }: { session: (typeof mockSessions)[number
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay, duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
       className="group relative bg-white rounded-xl border border-[#e8e8ec] hover:border-[#d0d0d6] transition-all duration-300 cursor-pointer overflow-hidden hover:shadow-[0_2px_12px_rgba(0,0,0,0.06)]"
+      onClick={onOpenStudio}
     >
       {/* Accent line */}
       <div className="absolute top-0 left-0 w-full h-[2px] opacity-0 group-hover:opacity-100 transition-opacity duration-300" style={{ background: `linear-gradient(90deg, ${colors.accent}, transparent)` }} />
@@ -165,8 +172,8 @@ function SessionCard({ session, delay }: { session: (typeof mockSessions)[number
       <div className="p-5">
         {/* Header row */}
         <div className="flex items-start justify-between mb-4">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ background: colors.bg }}>
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0" style={{ background: colors.bg }}>
               <Icon className="w-[18px] h-[18px]" style={{ color: colors.accent }} />
             </div>
             <div className="min-w-0">
@@ -174,17 +181,19 @@ function SessionCard({ session, delay }: { session: (typeof mockSessions)[number
               <p className="text-[11px] text-[#a1a1aa] mt-0.5" style={{ fontFamily: "var(--font-body)" }}>{session.createdAt}</p>
             </div>
           </div>
-          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all duration-200 translate-x-1 group-hover:translate-x-0">
-            <button
-              onClick={(e) => { e.stopPropagation(); setIsPlaying(!isPlaying); }}
-              className="w-8 h-8 rounded-lg bg-[#18181b] text-white flex items-center justify-center hover:bg-[#27272a] transition-colors shadow-sm"
-            >
-              {isPlaying ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5 ml-0.5" />}
-            </button>
-            <button className="w-8 h-8 rounded-lg hover:bg-[#f4f4f5] flex items-center justify-center text-[#a1a1aa] hover:text-[#71717a] transition-colors">
-              <MoreHorizontal className="w-4 h-4" />
-            </button>
-          </div>
+          {isNowPlaying && (
+            <div className="shrink-0 flex items-end gap-[2px] h-4">
+              {[0, 1, 2].map(i => (
+                <motion.div
+                  key={i}
+                  className="w-[3px] rounded-full"
+                  style={{ background: colors.accent }}
+                  animate={{ height: ["40%", "100%", "40%"] }}
+                  transition={{ duration: 0.5 + i * 0.15, repeat: Infinity, ease: "easeInOut", delay: i * 0.1 }}
+                />
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Waveform hint */}
@@ -197,10 +206,10 @@ function SessionCard({ session, delay }: { session: (typeof mockSessions)[number
                 className="flex-1 rounded-full transition-all duration-500"
                 style={{
                   height: `${Math.max(12, Math.min(95, h))}%`,
-                  background: isPlaying
+                  background: isNowPlaying
                     ? colors.accent
                     : `linear-gradient(180deg, #d4d4d8, #e4e4e7)`,
-                  opacity: isPlaying ? 0.7 : 0.4,
+                  opacity: isNowPlaying ? 0.7 : 0.4,
                 }}
               />
             );
@@ -217,11 +226,143 @@ function SessionCard({ session, delay }: { session: (typeof mockSessions)[number
           <span className="text-[11px] text-[#71717a]" style={{ fontFamily: "var(--font-body)" }}>{session.duration}</span>
           <span className="text-[10px] text-[#a1a1aa]" style={{ fontFamily: "var(--font-body)" }}>·</span>
           <span className="text-[11px] text-[#71717a]" style={{ fontFamily: "var(--font-body)" }}>{session.voice}</span>
-          <span className="text-[10px] text-[#a1a1aa]" style={{ fontFamily: "var(--font-body)" }}>·</span>
-          <span className="text-[11px] text-[#71717a] flex items-center gap-1" style={{ fontFamily: "var(--font-body)" }}>
-            <Music className="w-2.5 h-2.5" />
-            {session.sound}
+        </div>
+
+        {/* Open in Studio overlay on hover */}
+        <div className="absolute inset-0 flex items-center justify-center bg-white/80 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none">
+          <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[#18181b] text-white shadow-lg">
+            <PenLine className="w-3.5 h-3.5" />
+            <span className="text-[12px]" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>Open in Studio</span>
+          </div>
+        </div>
+        {/* Play + Options buttons sit above the overlay */}
+        <div className="absolute top-4 right-4 z-10 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all duration-200">
+          <button
+            onClick={(e) => { e.stopPropagation(); onPlay(); }}
+            className="w-8 h-8 rounded-lg flex items-center justify-center transition-all shadow-sm"
+            style={{ background: isNowPlaying ? colors.accent : "#18181b", color: "#fff" }}
+          >
+            {isNowPlaying ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5 ml-0.5" />}
+          </button>
+          <div className="relative">
+            <button
+              onClick={(e) => { e.stopPropagation(); setShowMenu(!showMenu); }}
+              className="w-8 h-8 rounded-lg bg-white/90 hover:bg-white flex items-center justify-center text-[#71717a] hover:text-[#18181b] transition-colors shadow-sm border border-[#e4e4e7]"
+            >
+              <MoreHorizontal className="w-4 h-4" />
+            </button>
+            {showMenu && (
+              <div
+                className="absolute top-full right-0 mt-1 w-40 bg-white rounded-lg border border-[#e4e4e7] shadow-xl z-30 overflow-hidden"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {[
+                  { label: "Open", icon: PenLine, action: () => { setShowMenu(false); onOpenStudio(); } },
+                  { label: "Download", icon: Download, action: () => setShowMenu(false) },
+                  { label: "Rename", icon: PenLine, action: () => setShowMenu(false) },
+                  { label: "Delete", icon: Trash2, action: () => setShowMenu(false), danger: true },
+                ].map((item) => (
+                  <button
+                    key={item.label}
+                    onClick={item.action}
+                    className={`w-full flex items-center gap-2.5 px-3 py-2 text-left text-[12px] transition-colors cursor-pointer ${
+                      (item as { danger?: boolean }).danger
+                        ? "text-red-500 hover:bg-red-50"
+                        : "text-[#3f3f46] hover:bg-[#f4f4f5]"
+                    }`}
+                    style={{ fontFamily: "var(--font-body)" }}
+                  >
+                    <item.icon className="w-3.5 h-3.5" />
+                    {item.label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
+/* ─── Bottom Player Bar ─── */
+
+function PlayerBar({ session, isPlaying, onTogglePlay, onClose }: {
+  session: (typeof mockSessions)[number]; isPlaying: boolean;
+  onTogglePlay: () => void; onClose: () => void;
+}) {
+  const [progress, setProgress] = useState(0);
+  const colors = categoryColors[session.category] || categoryColors.focus;
+  const Icon = session.icon;
+
+  useEffect(() => {
+    if (!isPlaying) return;
+    const interval = setInterval(() => {
+      setProgress(prev => prev >= 100 ? 0 : prev + 0.3);
+    }, 100);
+    return () => clearInterval(interval);
+  }, [isPlaying]);
+
+  return (
+    <motion.div
+      initial={{ y: 80, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      exit={{ y: 80, opacity: 0 }}
+      transition={{ type: "spring", stiffness: 400, damping: 30, mass: 0.8 }}
+      className="fixed bottom-0 left-56 right-0 z-50 border-t border-[#e4e4e7] bg-white/95 backdrop-blur-xl"
+    >
+      {/* Progress bar */}
+      <div className="absolute top-0 left-0 right-0 h-[2px] bg-[#f0f0f3]">
+        <motion.div
+          className="h-full rounded-full"
+          style={{ background: colors.accent, width: `${progress}%` }}
+          transition={{ duration: 0.1 }}
+        />
+      </div>
+
+      <div className="flex items-center gap-5 px-6 py-3">
+        {/* Session info */}
+        <div className="flex items-center gap-3 min-w-0 flex-1">
+          <div className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0" style={{ background: colors.bg }}>
+            <Icon className="w-5 h-5" style={{ color: colors.accent }} />
+          </div>
+          <div className="min-w-0">
+            <p className="text-[13px] text-[#18181b] truncate" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>{session.title}</p>
+            <p className="text-[11px] text-[#a1a1aa] truncate" style={{ fontFamily: "var(--font-body)" }}>{session.voice} · {session.duration} · {session.protocol}</p>
+          </div>
+        </div>
+
+        {/* Controls */}
+        <div className="flex items-center gap-2">
+          <button className="w-8 h-8 rounded-lg hover:bg-[#f4f4f5] flex items-center justify-center text-[#71717a] hover:text-[#18181b] transition-colors cursor-pointer">
+            <ArrowLeft className="w-4 h-4" />
+          </button>
+          <button
+            onClick={onTogglePlay}
+            className="w-10 h-10 rounded-xl flex items-center justify-center transition-all cursor-pointer shadow-sm"
+            style={{ background: isPlaying ? colors.accent : "#18181b", color: "#fff" }}
+          >
+            {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4 ml-0.5" />}
+          </button>
+          <button className="w-8 h-8 rounded-lg hover:bg-[#f4f4f5] flex items-center justify-center text-[#71717a] hover:text-[#18181b] transition-colors cursor-pointer">
+            <ArrowRight className="w-4 h-4" />
+          </button>
+        </div>
+
+        {/* Right side */}
+        <div className="flex items-center gap-3 flex-1 justify-end">
+          <span className="text-[11px] text-[#a1a1aa] tabular-nums" style={{ fontFamily: "var(--font-body)" }}>
+            {Math.floor(progress * 0.15)}:{String(Math.floor((progress * 0.15 % 1) * 60)).padStart(2, "0")} / {session.duration}
           </span>
+          <button className="w-8 h-8 rounded-lg hover:bg-[#f4f4f5] flex items-center justify-center text-[#71717a] hover:text-[#18181b] transition-colors cursor-pointer">
+            <Download className="w-4 h-4" />
+          </button>
+          <button
+            onClick={onClose}
+            className="w-8 h-8 rounded-lg hover:bg-[#f4f4f5] flex items-center justify-center text-[#a1a1aa] hover:text-[#18181b] transition-colors cursor-pointer"
+          >
+            <X className="w-4 h-4" />
+          </button>
         </div>
       </div>
     </motion.div>
@@ -523,6 +664,25 @@ export default function StudioPage() {
   const [generatePrompt, setGeneratePrompt] = useState("");
   const [voicePlaying, setVoicePlaying] = useState<string | null>(null);
 
+  // Bottom player state
+  const [nowPlayingId, setNowPlayingId] = useState<string | null>(null);
+  const [playerPlaying, setPlayerPlaying] = useState(false);
+  const nowPlayingSession = mockSessions.find(s => s.id === nowPlayingId) || null;
+
+  const handlePlaySession = useCallback((sessionId: string) => {
+    if (nowPlayingId === sessionId) {
+      setPlayerPlaying(prev => !prev);
+    } else {
+      setNowPlayingId(sessionId);
+      setPlayerPlaying(true);
+    }
+  }, [nowPlayingId]);
+
+  const handleClosePlayer = useCallback(() => {
+    setNowPlayingId(null);
+    setPlayerPlaying(false);
+  }, []);
+
   // Rotating phrases for generate heading
   const [phraseIndex, setPhraseIndex] = useState(0);
   const [phraseWidth, setPhraseWidth] = useState<number | null>(null);
@@ -744,7 +904,18 @@ export default function StudioPage() {
                 {filteredSessions.length > 0 ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                     {filteredSessions.map((session, i) => (
-                      <SessionCard key={session.id} session={session} delay={i * 0.05} />
+                      <SessionCard
+                        key={session.id}
+                        session={session}
+                        delay={i * 0.05}
+                        isNowPlaying={nowPlayingId === session.id && playerPlaying}
+                        onPlay={() => handlePlaySession(session.id)}
+                        onOpenStudio={() => {
+                          setGenConfig({ prompt: session.title, voice: session.voice.toLowerCase(), duration: parseInt(session.duration), sound: session.sound });
+                          setActiveNav("generate" as NavId);
+                          setGenStep("studio");
+                        }}
+                      />
                     ))}
                   </div>
                 ) : (
@@ -758,25 +929,30 @@ export default function StudioPage() {
               <motion.div key="history" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
                 <div className="bg-white rounded-xl border border-[#e8e8ec] overflow-hidden">
                   {/* Table header */}
-                  <div className="grid grid-cols-[1fr_100px_80px_80px_100px_72px] gap-4 px-5 py-3 border-b border-[#f0f0f3] bg-[#fafafa]">
+                  <div className="grid grid-cols-[1fr_100px_80px_80px_100px_96px] gap-4 px-5 py-3 border-b border-[#f0f0f3] bg-[#fafafa]">
                     {["Session", "Protocol", "Duration", "Voice", "Created", ""].map((h) => (
                       <span key={h} className="text-[10px] uppercase tracking-wider text-[#a1a1aa]" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>{h}</span>
                     ))}
                   </div>
                   {/* Rows */}
                   {mockSessions.map((session, i) => {
-                    const catColors: Record<string, string> = { sleep: "#8b7ea6", focus: "#6b9a70", anxiety: "#6d9ab5", stress: "#c4876c" };
-                    const accent = catColors[session.category] || "#6b9a70";
+                    const accent = (categoryColors[session.category] || categoryColors.focus).accent;
+                    const isRowPlaying = nowPlayingId === session.id && playerPlaying;
                     return (
                       <motion.div
                         key={session.id}
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         transition={{ delay: i * 0.04, duration: 0.25 }}
-                        className="group grid grid-cols-[1fr_100px_80px_80px_100px_72px] gap-4 items-center px-5 py-3.5 border-b border-[#f4f4f5] last:border-b-0 hover:bg-[#fafafa] transition-colors cursor-pointer"
+                        onClick={() => {
+                          setGenConfig({ prompt: session.title, voice: session.voice.toLowerCase(), duration: parseInt(session.duration), sound: session.sound });
+                          setActiveNav("generate" as NavId);
+                          setGenStep("studio");
+                        }}
+                        className="group grid grid-cols-[1fr_100px_80px_80px_100px_96px] gap-4 items-center px-5 py-3.5 border-b border-[#f4f4f5] last:border-b-0 hover:bg-[#fafafa] transition-colors cursor-pointer"
                       >
                         <div className="flex items-center gap-3 min-w-0">
-                          <div className="w-2 h-2 rounded-full shrink-0" style={{ background: accent }} />
+                          <div className="w-2 h-2 rounded-full shrink-0" style={{ background: isRowPlaying ? accent : "#d4d4d8" }} />
                           <span className="text-[13px] text-[#18181b] truncate" style={{ fontFamily: "var(--font-body)", fontWeight: 450 }}>{session.title}</span>
                         </div>
                         <span className="text-[11px] text-[#71717a] truncate" style={{ fontFamily: "var(--font-body)" }}>{session.protocol}</span>
@@ -784,10 +960,23 @@ export default function StudioPage() {
                         <span className="text-[11px] text-[#71717a]" style={{ fontFamily: "var(--font-body)" }}>{session.voice}</span>
                         <span className="text-[11px] text-[#a1a1aa]" style={{ fontFamily: "var(--font-body)" }}>{session.createdAt}</span>
                         <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-all duration-200">
-                          <button className="w-7 h-7 rounded-lg bg-[#18181b] text-white flex items-center justify-center hover:bg-[#27272a] transition-colors shadow-sm">
-                            <Play className="w-3 h-3 ml-0.5" />
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handlePlaySession(session.id); }}
+                            className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-[#27272a] transition-colors shadow-sm"
+                            style={{ background: isRowPlaying ? accent : "#18181b", color: "#fff" }}
+                          >
+                            {isRowPlaying ? <Pause className="w-3 h-3" /> : <Play className="w-3 h-3 ml-0.5" />}
                           </button>
-                          <button className="w-7 h-7 rounded-lg hover:bg-[#f0f0f3] flex items-center justify-center text-[#a1a1aa] hover:text-[#71717a] transition-colors">
+                          <button
+                            onClick={(e) => { e.stopPropagation(); }}
+                            className="w-7 h-7 rounded-lg hover:bg-[#f0f0f3] flex items-center justify-center text-[#a1a1aa] hover:text-[#71717a] transition-colors"
+                          >
+                            <PenLine className="w-3 h-3" />
+                          </button>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); }}
+                            className="w-7 h-7 rounded-lg hover:bg-[#f0f0f3] flex items-center justify-center text-[#a1a1aa] hover:text-[#71717a] transition-colors"
+                          >
                             <Download className="w-3.5 h-3.5" />
                           </button>
                         </div>
@@ -1053,6 +1242,18 @@ export default function StudioPage() {
           </AnimatePresence>
         </div>
       </main>
+
+      {/* Bottom Player */}
+      <AnimatePresence>
+        {nowPlayingSession && (
+          <PlayerBar
+            session={nowPlayingSession}
+            isPlaying={playerPlaying}
+            onTogglePlay={() => setPlayerPlaying(prev => !prev)}
+            onClose={handleClosePlayer}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }
