@@ -38,9 +38,15 @@ import {
   ThumbsUp,
   ThumbsDown,
   Share2,
+  AlertCircle,
+  FileText,
   Volume2,
   VolumeX,
   FlaskConical,
+  Plus,
+  GripVertical,
+  Type,
+  Clock3,
 } from "lucide-react";
 import svgPaths from "@/lib/svg-paths";
 import { suggestions, voices as sharedVoices, durations as sharedDurations, detectIntent, rotatingPhrases, protocols } from "@/lib/shared";
@@ -80,13 +86,38 @@ const soundCategories = {
 };
 
 const mockSessions = [
-  { id: "1", title: "Deep sleep after a long day", duration: "15 min", voice: "Aria", protocol: "CBT-I + NSDR", sound: "Deep Night", createdAt: "2 hours ago", accessedAt: "Just now", category: "sleep", icon: Moon },
-  { id: "2", title: "Morning focus before standup", duration: "10 min", voice: "James", protocol: "MBSR", sound: "Flow State", createdAt: "Yesterday", accessedAt: "3 hours ago", category: "focus", icon: Sun },
-  { id: "3", title: "Calm my nerves before the flight", duration: "8 min", voice: "Kai", protocol: "HRV-BF + ACT", sound: "Still Water", createdAt: "2 days ago", accessedAt: "Yesterday", category: "anxiety", icon: Heart },
-  { id: "4", title: "Stress relief after deadline", duration: "20 min", voice: "Luna", protocol: "PMR + ACT", sound: "Safe Harbor", createdAt: "3 days ago", accessedAt: "2 days ago", category: "stress", icon: Wind },
-  { id: "5", title: "Quick breathing reset", duration: "5 min", voice: "Aria", protocol: "HRV-BF", sound: "Sanctuary", createdAt: "Last week", accessedAt: "4 days ago", category: "focus", icon: Brain },
-  { id: "6", title: "Wind down for bed", duration: "15 min", voice: "Luna", protocol: "NSDR", sound: "Soft Drift", createdAt: "Last week", accessedAt: "Last week", category: "sleep", icon: Moon },
+  { id: "1", title: "Deep sleep after a long day", duration: "15 min", voice: "Aria", protocol: "CBT-I + NSDR", sound: "Deep Night", createdAt: "Mar 24, 2026 · 12:34 PM", createdAtShort: "2 hours ago", accessedAt: "Just now", category: "sleep", icon: Moon },
+  { id: "2", title: "Morning focus before standup", duration: "10 min", voice: "James", protocol: "MBSR", sound: "Flow State", createdAt: "Mar 23, 2026 · 8:15 AM", createdAtShort: "Yesterday", accessedAt: "3 hours ago", category: "focus", icon: Sun },
+  { id: "3", title: "Calm my nerves before the flight", duration: "8 min", voice: "Kai", protocol: "HRV-BF + ACT", sound: "Still Water", createdAt: "Mar 22, 2026 · 3:47 PM", createdAtShort: "2 days ago", accessedAt: "Yesterday", category: "anxiety", icon: Heart },
+  { id: "4", title: "Stress relief after deadline", duration: "20 min", voice: "Luna", protocol: "PMR + ACT", sound: "Safe Harbor", createdAt: "Mar 21, 2026 · 6:22 PM", createdAtShort: "3 days ago", accessedAt: "2 days ago", category: "stress", icon: Wind },
+  { id: "5", title: "Quick breathing reset", duration: "5 min", voice: "Aria", protocol: "HRV-BF", sound: "Sanctuary", createdAt: "Mar 17, 2026 · 10:05 AM", createdAtShort: "Last week", accessedAt: "4 days ago", category: "focus", icon: Brain },
+  { id: "6", title: "Wind down for bed", duration: "15 min", voice: "Luna", protocol: "NSDR", sound: "Soft Drift", createdAt: "Mar 16, 2026 · 11:12 PM", createdAtShort: "Last week", accessedAt: "Last week", category: "sleep", icon: Moon },
+  { id: "7", title: "Body scan for tension release", duration: "12 min", voice: "Aria", protocol: "PMR", sound: "Letting Go", createdAt: "Mar 14, 2026 · 7:45 PM", createdAtShort: "Last week", accessedAt: "Last week", category: "stress", icon: Heart },
+  { id: "8", title: "Pre-presentation confidence boost", duration: "8 min", voice: "Kai", protocol: "ACT", sound: "Open Sky", createdAt: "Mar 13, 2026 · 9:00 AM", createdAtShort: "2 weeks ago", accessedAt: "Last week", category: "anxiety", icon: Heart },
+  { id: "9", title: "Late night overthinking reset", duration: "20 min", voice: "Luna", protocol: "CBT-I", sound: "Deep Night", createdAt: "Mar 11, 2026 · 11:55 PM", createdAtShort: "2 weeks ago", accessedAt: "2 weeks ago", category: "sleep", icon: Moon },
+  { id: "10", title: "Post-workout recovery calm", duration: "10 min", voice: "James", protocol: "NSDR", sound: "Still Water", createdAt: "Mar 10, 2026 · 6:30 PM", createdAtShort: "2 weeks ago", accessedAt: "2 weeks ago", category: "focus", icon: Sun },
+  { id: "11", title: "Midday energy recharge", duration: "5 min", voice: "Kai", protocol: "HRV-BF", sound: "Flow State", createdAt: "Mar 8, 2026 · 1:15 PM", createdAtShort: "2 weeks ago", accessedAt: "2 weeks ago", category: "focus", icon: Brain },
+  { id: "12", title: "Sunday evening wind down", duration: "15 min", voice: "Aria", protocol: "PMR + NSDR", sound: "Safe Harbor", createdAt: "Mar 7, 2026 · 9:20 PM", createdAtShort: "2 weeks ago", accessedAt: "2 weeks ago", category: "sleep", icon: Moon },
 ];
+
+const mockGenerations = [
+  { id: "g1", prompt: "Help me fall asleep after a stressful day", voice: "Aria", duration: "15 min", protocol: "CBT-I + NSDR", status: "completed" as const, timestamp: "Mar 24, 2026 · 12:34 PM", creditUsed: 1, sessionId: "1" },
+  { id: "g2", prompt: "Morning focus session before my standup meeting", voice: "James", duration: "10 min", protocol: "MBSR", status: "completed" as const, timestamp: "Mar 23, 2026 · 8:15 AM", creditUsed: 1, sessionId: "2" },
+  { id: "g3", prompt: "Calm my nerves, I have a flight in 2 hours", voice: "Kai", duration: "8 min", protocol: "HRV-BF + ACT", status: "completed" as const, timestamp: "Mar 22, 2026 · 3:47 PM", creditUsed: 1, sessionId: "3" },
+  { id: "g4", prompt: "I just finished a massive deadline, need to decompress", voice: "Luna", duration: "20 min", protocol: "PMR + ACT", status: "completed" as const, timestamp: "Mar 21, 2026 · 6:22 PM", creditUsed: 1, sessionId: "4" },
+  { id: "g5", prompt: "Quick 5 minute breathing exercise", voice: "Aria", duration: "5 min", protocol: "HRV-BF", status: "completed" as const, timestamp: "Mar 17, 2026 · 10:05 AM", creditUsed: 1, sessionId: "5" },
+  { id: "g6", prompt: "Wind down before bed with gentle guidance", voice: "Luna", duration: "15 min", protocol: "NSDR", status: "completed" as const, timestamp: "Mar 16, 2026 · 11:12 PM", creditUsed: 1, sessionId: "6" },
+  { id: "g7", prompt: "Deep relaxation for muscle tension in my neck", voice: "James", duration: "10 min", protocol: "PMR", status: "failed" as const, timestamp: "Mar 15, 2026 · 2:30 PM", creditUsed: 0, sessionId: null },
+  { id: "g8", prompt: "Body scan to release shoulder and neck tension", voice: "Aria", duration: "12 min", protocol: "PMR", status: "completed" as const, timestamp: "Mar 14, 2026 · 7:45 PM", creditUsed: 1, sessionId: "7" },
+  { id: "g9", prompt: "I have a big presentation in an hour, help me feel confident", voice: "Kai", duration: "8 min", protocol: "ACT", status: "completed" as const, timestamp: "Mar 13, 2026 · 9:00 AM", creditUsed: 1, sessionId: "8" },
+  { id: "g10", prompt: "Can't stop overthinking, need to shut my brain off for sleep", voice: "Luna", duration: "20 min", protocol: "CBT-I", status: "completed" as const, timestamp: "Mar 11, 2026 · 11:55 PM", creditUsed: 1, sessionId: "9" },
+  { id: "g11", prompt: "Cool down mentally after an intense gym session", voice: "James", duration: "10 min", protocol: "NSDR", status: "completed" as const, timestamp: "Mar 10, 2026 · 6:30 PM", creditUsed: 1, sessionId: "10" },
+  { id: "g12", prompt: "Quick midday reset to get through the afternoon", voice: "Kai", duration: "5 min", protocol: "HRV-BF", status: "completed" as const, timestamp: "Mar 8, 2026 · 1:15 PM", creditUsed: 1, sessionId: "11" },
+  { id: "g13", prompt: "Gentle Sunday evening session before the new week", voice: "Aria", duration: "15 min", protocol: "PMR + NSDR", status: "completed" as const, timestamp: "Mar 7, 2026 · 9:20 PM", creditUsed: 1, sessionId: "12" },
+  { id: "g14", prompt: "Breathing exercise during a panic moment", voice: "Luna", duration: "5 min", protocol: "HRV-BF", status: "failed" as const, timestamp: "Mar 5, 2026 · 4:10 PM", creditUsed: 0, sessionId: null },
+];
+
+type HistoryFilter = "all" | "sessions" | "generations";
 
 const navItems = [
   { id: "sessions" as const, label: "All Sessions", icon: LayoutGrid },
@@ -98,7 +129,7 @@ type NavId = (typeof navItems)[number]["id"] | "generate";
 
 type ScriptBlock = {
   id: string;
-  type: "voice" | "pause" | "breath";
+  type: "voice" | "pause";
   text: string;
   pauseDuration?: number; // seconds — under 3s is "short", 3s+ is "long"
 };
@@ -122,11 +153,7 @@ function estimateDuration(script: ScriptBlock[]): { minutes: number; seconds: nu
       // ~150 words per minute, avg 5 chars per word
       totalSeconds += Math.ceil((block.text.length / 5) / 150 * 60);
     } else if (block.type === "pause") {
-      totalSeconds += block.pauseDuration || 2;
-    } else if (block.type === "breath") {
-      // Extract seconds from text like "Inhale — 4 seconds"
-      const match = block.text.match(/(\d+)/);
-      totalSeconds += match ? parseInt(match[1]) : 4;
+      totalSeconds += block.pauseDuration ?? 0;
     }
   }
   return { minutes: Math.floor(totalSeconds / 60), seconds: totalSeconds % 60 };
@@ -134,23 +161,24 @@ function estimateDuration(script: ScriptBlock[]): { minutes: number; seconds: nu
 
 const generateScript = (prompt: string): ScriptBlock[] => [
   { id: "1", type: "voice", text: "Find a comfortable position. Let your body settle into wherever you are right now." },
-  { id: "2", type: "pause", text: "Settle in", pauseDuration: 2 },
+  { id: "2", type: "pause", text: "Pause", pauseDuration: 2 },
   { id: "3", type: "voice", text: "Gently close your eyes. Take a moment to notice how you\u2019re feeling without judgment." },
-  { id: "4", type: "pause", text: "Awareness", pauseDuration: 5 },
+  { id: "4", type: "pause", text: "Pause", pauseDuration: 5 },
   { id: "5", type: "voice", text: "Now take a slow, deep breath in through your nose\u2026" },
-  { id: "6", type: "breath", text: "Inhale \u2014 4 seconds" },
+  { id: "6", type: "pause", text: "Pause", pauseDuration: 4 },
   { id: "7", type: "voice", text: "And release it slowly through your mouth. Let everything go." },
-  { id: "8", type: "breath", text: "Exhale \u2014 6 seconds" },
+  { id: "8", type: "pause", text: "Pause", pauseDuration: 6 },
   { id: "9", type: "voice", text: "Notice any tension in your shoulders. With each exhale, let them drop a little lower." },
-  { id: "10", type: "pause", text: "Body responds", pauseDuration: 5 },
+  { id: "10", type: "pause", text: "Pause", pauseDuration: 5 },
   { id: "11", type: "voice", text: "You\u2019re doing great. There\u2019s nowhere else you need to be right now." },
-  { id: "12", type: "pause", text: "Rest", pauseDuration: 2 },
+  { id: "12", type: "pause", text: "Pause", pauseDuration: 2 },
   { id: "13", type: "voice", text: "Let\u2019s continue with another deep breath. In through the nose\u2026" },
-  { id: "14", type: "breath", text: "Inhale \u2014 4 seconds" },
+  { id: "14", type: "pause", text: "Pause", pauseDuration: 4 },
   { id: "15", type: "voice", text: "And out through the mouth. Feel your body becoming heavier, more relaxed." },
-  { id: "16", type: "breath", text: "Exhale \u2014 6 seconds" },
-  { id: "17", type: "pause", text: "Integration", pauseDuration: 4 },
-  { id: "18", type: "voice", text: "When you\u2019re ready, slowly begin to bring your awareness back. Take your time." },
+  { id: "16", type: "pause", text: "Pause", pauseDuration: 6 },
+  { id: "17", type: "voice", text: "Allow this feeling of calm to spread through your entire body. You are safe here." },
+  { id: "18", type: "pause", text: "Pause", pauseDuration: 4 },
+  { id: "19", type: "voice", text: "When you\u2019re ready, slowly begin to bring your awareness back. Take your time." },
 ];
 
 /* ─── Session Card ─── */
@@ -464,6 +492,9 @@ function StudioSession({ prompt, voice, duration, sound, onBack }: {
   const [soundVolume, setSoundVolume] = useState(70);
 
   const [showDurationInfo, setShowDurationInfo] = useState(false);
+  const [editingPauseId, setEditingPauseId] = useState<string | null>(null);
+  const [generateWarning, setGenerateWarning] = useState<string | null>(null);
+  const [rightTab, setRightTab] = useState<"settings" | "history">("settings");
   const [isGenerating, setIsGenerating] = useState(false);
   const [studioPlaying, setStudioPlaying] = useState(false);
   const [showStudioPlayer, setShowStudioPlayer] = useState(false);
@@ -474,6 +505,12 @@ function StudioSession({ prompt, voice, duration, sound, onBack }: {
   const estimated = estimateDuration(script);
 
   const handleGenerateAudio = useCallback(() => {
+    const emptyPauses = script.filter(b => b.type === "pause" && (!b.pauseDuration || b.pauseDuration === 0));
+    if (emptyPauses.length > 0) {
+      setGenerateWarning(`${emptyPauses.length} pause${emptyPauses.length > 1 ? "s have" : " has"} no duration set. Set a value or remove the segment.`);
+      return;
+    }
+    setGenerateWarning(null);
     setIsGenerating(true);
     setTimeout(() => {
       setIsGenerating(false);
@@ -481,7 +518,7 @@ function StudioSession({ prompt, voice, duration, sound, onBack }: {
       setStudioPlaying(true);
       setHasGenerated(true);
     }, 2000);
-  }, []);
+  }, [script]);
 
   // Build a mock session for the player
   const intent = prompt.toLowerCase().includes("sleep") ? "sleep" : prompt.toLowerCase().includes("focus") ? "focus" : prompt.toLowerCase().includes("stress") || prompt.toLowerCase().includes("anxi") ? "stress" : "focus";
@@ -494,6 +531,8 @@ function StudioSession({ prompt, voice, duration, sound, onBack }: {
     protocol: "Custom",
     sound: sessionSound,
     createdAt: "Just now",
+    createdAtShort: "Just now",
+    accessedAt: "Just now",
     category: intent,
     icon: iconMap[intent] || Brain,
   };
@@ -502,22 +541,99 @@ function StudioSession({ prompt, voice, duration, sound, onBack }: {
 
   const markEdited = useCallback(() => setHasGenerated(false), []);
 
+  const nextId = useRef(100);
+
   const setPauseDuration = useCallback((id: string, seconds: number) => {
     setScript(prev => prev.map(b =>
-      b.id === id ? { ...b, pauseDuration: Math.max(1, seconds) } : b
+      b.id === id ? { ...b, pauseDuration: Math.max(0, seconds) } : b
     ));
-    markEdited();
-  }, [markEdited]);
-
-  const togglePauseType = useCallback((id: string) => {
-    setScript(prev => prev.map(b =>
-      b.id === id ? { ...b, pauseDuration: (b.pauseDuration || 2) < 3 ? 4 : 2 } : b
-    ));
+    setGenerateWarning(null);
     markEdited();
   }, [markEdited]);
 
   const updateBlockText = useCallback((id: string, text: string) => {
     setScript(prev => prev.map(b => b.id === id ? { ...b, text } : b));
+    markEdited();
+  }, [markEdited]);
+
+
+  // Only voice blocks can be deleted — the associated pause is removed with it
+  const deleteBlock = useCallback((id: string) => {
+    setScript(prev => {
+      const idx = prev.findIndex(b => b.id === id);
+      if (idx === -1 || prev[idx].type !== "voice") return prev;
+      const next = [...prev];
+      // Remove the voice block and its following pause (if exists)
+      if (idx + 1 < next.length && next[idx + 1].type === "pause") {
+        next.splice(idx, 2);
+      } else if (idx - 1 >= 0 && next[idx - 1].type === "pause") {
+        // Or the preceding pause if no following one
+        next.splice(idx - 1, 2);
+      } else {
+        next.splice(idx, 1);
+      }
+      return next;
+    });
+    setSelectedBlock(null);
+    markEdited();
+  }, [markEdited]);
+
+  const addBlockAfter = useCallback((afterId: string, type: "voice" | "pause") => {
+    const voiceBlock: ScriptBlock = {
+      id: String(nextId.current++),
+      type: "voice",
+      text: "New text segment...",
+    };
+    const pauseBlock: ScriptBlock = {
+      id: String(nextId.current++),
+      type: "pause",
+      text: "Pause",
+      pauseDuration: 3,
+    };
+    setScript(prev => {
+      const idx = prev.findIndex(b => b.id === afterId);
+      const next = [...prev];
+      const currentBlock = prev[idx];
+      // Always insert a pair to maintain alternation
+      if (currentBlock.type === "voice") {
+        // After voice → insert pause then voice
+        next.splice(idx + 1, 0, pauseBlock, voiceBlock);
+        setSelectedBlock(voiceBlock.id);
+      } else {
+        // After pause → insert voice then pause
+        next.splice(idx + 1, 0, voiceBlock, pauseBlock);
+        setSelectedBlock(voiceBlock.id);
+      }
+      return next;
+    });
+    markEdited();
+  }, [markEdited]);
+
+  // Swap with the nearest same-type block in the given direction
+  const moveBlock = useCallback((id: string, direction: "up" | "down") => {
+    setScript(prev => {
+      const idx = prev.findIndex(b => b.id === id);
+      if (idx === -1) return prev;
+      const blockType = prev[idx].type;
+      // Find the nearest same-type block
+      let swapIdx = -1;
+      if (direction === "up") {
+        for (let i = idx - 1; i >= 0; i--) {
+          if (prev[i].type === blockType) { swapIdx = i; break; }
+        }
+      } else {
+        for (let i = idx + 1; i < prev.length; i++) {
+          if (prev[i].type === blockType) { swapIdx = i; break; }
+        }
+      }
+      if (swapIdx === -1) return prev;
+      // Swap the content of the two same-type blocks (keep positions intact)
+      const next = [...prev];
+      const temp = { text: next[idx].text, pauseDuration: next[idx].pauseDuration };
+      next[idx] = { ...next[idx], text: next[swapIdx].text, pauseDuration: next[swapIdx].pauseDuration };
+      next[swapIdx] = { ...next[swapIdx], text: temp.text, pauseDuration: temp.pauseDuration };
+      return next;
+    });
     markEdited();
   }, [markEdited]);
 
@@ -553,94 +669,231 @@ function StudioSession({ prompt, voice, duration, sound, onBack }: {
               {sessionName}
             </h2>
           )}
-          <div className="flex items-center gap-4">
-            <span className="text-[10px] text-[#a1a1aa]" style={{ fontFamily: "var(--font-body)" }}>
-              {script.filter(b => b.type === "voice").length} segments · {script.filter(b => b.type === "pause").length} pauses · {script.filter(b => b.type === "breath").length} breaths
+          <div className="flex items-center gap-3">
+            <span className="text-[10px] text-[#a1a1aa] tabular-nums" style={{ fontFamily: "var(--font-body)" }}>
+              {script.filter(b => b.type === "voice").length} segments · {script.filter(b => b.type === "pause").length} pauses · ~{estimated.minutes}m {estimated.seconds > 0 ? `${estimated.seconds}s` : ""}
             </span>
           </div>
         </div>
 
         {/* Script blocks */}
-        <div className="flex-1 overflow-y-auto px-6 py-4 space-y-0.5 studio-scroll">
+        <div className="flex-1 overflow-y-auto px-6 py-5 studio-scroll">
           {script.map((block, index) => {
             const isSelected = selectedBlock === block.id;
 
-            if (block.type === "pause" || block.type === "breath") {
+            if (block.type === "pause") {
+              const dur = block.pauseDuration ?? 0;
+              const isEmpty = dur === 0;
+              const isLong = dur >= 3;
+              const isEditingDur = editingPauseId === block.id;
+              // Check if reorder is possible
+              const canMoveUp = script.slice(0, index).some(b => b.type === "pause");
+              const canMoveDown = script.slice(index + 1).some(b => b.type === "pause");
               return (
-                <div key={block.id}
-                  onClick={() => setSelectedBlock(isSelected ? null : block.id)}
-                  className={`flex items-center gap-3 px-4 py-2.5 rounded-lg cursor-pointer transition-all ${
-                    isSelected ? "bg-white shadow-sm border border-[#e4e4e7]" : "hover:bg-white/80"
-                  }`}>
-                  <span className="text-[10px] text-[#a1a1aa] w-5 text-right tabular-nums shrink-0" style={{ fontFamily: "var(--font-body)" }}>{index + 1}</span>
-                  <div className="w-5 h-5 rounded-full flex items-center justify-center shrink-0"
-                    style={{ background: block.type === "pause" ? "#f0ecf5" : "#e8f2f7" }}>
-                    <div className="w-1.5 h-1.5 rounded-full"
-                      style={{ background: block.type === "pause" ? "#8b7ea6" : "#6d9ab5" }} />
-                  </div>
-                  <span className="text-xs italic flex-1" style={{ fontFamily: "var(--font-body)", color: block.type === "pause" ? "#7c6f96" : "#5a8aa5" }}>
-                    {block.type === "pause" ? `⏸ ${block.text}` : `🫁 ${block.text}`}
-                  </span>
-                  {block.type === "pause" && (
-                    <div className="flex items-center gap-2 shrink-0">
-                      <button
-                        onClick={(e) => { e.stopPropagation(); togglePauseType(block.id); }}
-                        className="text-[10px] px-2.5 py-1 rounded-full border transition-all cursor-pointer"
-                        style={{
-                          fontFamily: "var(--font-body)",
-                          borderColor: (block.pauseDuration || 2) >= 3 ? "#8b7ea6" : "#d4d4d8",
-                          color: (block.pauseDuration || 2) >= 3 ? "#7c6f96" : "#71717a",
-                          background: (block.pauseDuration || 2) >= 3 ? "#f0ecf5" : "transparent",
-                        }}>
-                        {(block.pauseDuration || 2) >= 3 ? "Long" : "Short"}
-                      </button>
-                      <div className="flex items-center gap-0.5 bg-[#f4f4f5] rounded-md px-1 py-0.5">
+                <div key={block.id} className="group/pause py-0.5">
+                  {/* Pause as a timeline divider */}
+                  <div
+                    onClick={() => setSelectedBlock(isSelected ? null : block.id)}
+                    className="relative flex items-center gap-0 cursor-pointer group/row py-1"
+                  >
+                    <div className="flex-1 h-px" style={{ background: isEmpty ? "#e8e8ec" : isLong ? "var(--color-dusk)" : "#d4d4d8", opacity: isEmpty ? 0.3 : isLong ? 0.5 : 0.4 }} />
+
+                    <div className={`flex items-center gap-2 px-3.5 py-1.5 rounded-full mx-2 transition-all border ${
+                      isEmpty
+                        ? "border-dashed border-[#d4d4d8] bg-[#fafafa]"
+                        : isSelected
+                          ? "border-[var(--color-dusk)] bg-[var(--color-dusk-light)]"
+                          : isLong
+                            ? "border-[rgba(139,126,166,0.25)] bg-[rgba(139,126,166,0.08)] hover:bg-[var(--color-dusk-light)]"
+                            : "border-[#e4e4e7] bg-white hover:bg-[#f9f9fb]"
+                    }`}>
+                      {/* Reorder arrows — always visible, dim when disabled */}
+                      <div className="flex flex-col gap-px">
                         <button
-                          onClick={(e) => { e.stopPropagation(); setPauseDuration(block.id, (block.pauseDuration || 2) - 1); }}
-                          className="w-5 h-5 rounded flex items-center justify-center text-[#a1a1aa] hover:text-[#18181b] hover:bg-white transition-all cursor-pointer text-xs"
-                        >−</button>
-                        <span className="text-[10px] text-[#52525b] w-5 text-center tabular-nums" style={{ fontFamily: "var(--font-body)" }}>{block.pauseDuration || 2}s</span>
+                          onClick={(e) => { e.stopPropagation(); if (canMoveUp) moveBlock(block.id, "up"); }}
+                          className={`w-5 h-3.5 flex items-center justify-center rounded-sm transition-all ${
+                            canMoveUp
+                              ? "text-[var(--color-dusk)] hover:bg-[rgba(139,126,166,0.15)] cursor-pointer"
+                              : "text-[#d8d8dc] cursor-default"
+                          }`}
+                        >
+                          <svg width="10" height="6" viewBox="0 0 10 6" fill="none"><path d="M5 0L0 5h10L5 0z" fill="currentColor"/></svg>
+                        </button>
                         <button
-                          onClick={(e) => { e.stopPropagation(); setPauseDuration(block.id, (block.pauseDuration || 2) + 1); }}
-                          className="w-5 h-5 rounded flex items-center justify-center text-[#a1a1aa] hover:text-[#18181b] hover:bg-white transition-all cursor-pointer text-xs"
-                        >+</button>
+                          onClick={(e) => { e.stopPropagation(); if (canMoveDown) moveBlock(block.id, "down"); }}
+                          className={`w-5 h-3.5 flex items-center justify-center rounded-sm transition-all ${
+                            canMoveDown
+                              ? "text-[var(--color-dusk)] hover:bg-[rgba(139,126,166,0.15)] cursor-pointer"
+                              : "text-[#d8d8dc] cursor-default"
+                          }`}
+                        >
+                          <svg width="10" height="6" viewBox="0 0 10 6" fill="none"><path d="M5 6L0 1h10L5 6z" fill="currentColor"/></svg>
+                        </button>
                       </div>
+
+                      <span className="text-[11px]" style={{
+                        fontFamily: "var(--font-body)", fontWeight: 600,
+                        color: isEmpty ? "#c4c4c4" : isLong ? "var(--color-dusk)" : "#91919b",
+                      }}>
+                        {isEmpty ? "Empty" : isLong ? "Long" : "Short"}
+                      </span>
+
+                      <div className="w-px h-3.5" style={{ background: isEmpty ? "#e4e4e7" : isLong ? "rgba(139,126,166,0.25)" : "#e4e4e7" }} />
+
+                      <button
+                        onClick={(e) => { e.stopPropagation(); setPauseDuration(block.id, dur - 1); }}
+                        className="w-6 h-6 rounded-md flex items-center justify-center hover:bg-white/80 transition-all cursor-pointer text-sm font-medium"
+                        style={{ color: isEmpty ? "#d4d4d4" : isLong ? "var(--color-dusk)" : "#91919b" }}
+                      >−</button>
+                      {isEditingDur ? (
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          autoFocus
+                          value={dur || ""}
+                          onChange={(e) => {
+                            const val = e.target.value.replace(/[^0-9]/g, "");
+                            setPauseDuration(block.id, val === "" ? 0 : Math.min(99, parseInt(val)));
+                          }}
+                          onBlur={() => setEditingPauseId(null)}
+                          onKeyDown={(e) => { if (e.key === "Enter" || e.key === "Escape") setEditingPauseId(null); }}
+                          onClick={(e) => e.stopPropagation()}
+                          className="w-7 text-center text-[12px] tabular-nums bg-white border border-[var(--color-dusk)] rounded-md outline-none py-0.5"
+                          style={{ fontFamily: "var(--font-body)", fontWeight: 700, color: "var(--color-dusk)" }}
+                        />
+                      ) : (
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setEditingPauseId(block.id); }}
+                          className={`text-[12px] w-7 text-center tabular-nums rounded-md py-0.5 transition-all cursor-text ${
+                            isEmpty ? "text-[#c4c4c4] hover:bg-white hover:ring-1 hover:ring-[#d4d4d8]" : "hover:bg-white hover:ring-1 hover:ring-[var(--color-dusk)]"
+                          }`}
+                          style={{ fontFamily: "var(--font-body)", fontWeight: 700, color: isEmpty ? undefined : isLong ? "var(--color-dusk)" : "#52525b" }}
+                          title="Click to edit duration"
+                        >
+                          {isEmpty ? "—" : `${dur}s`}
+                        </button>
+                      )}
+                      <button
+                        onClick={(e) => { e.stopPropagation(); setPauseDuration(block.id, dur + 1); }}
+                        className="w-6 h-6 rounded-md flex items-center justify-center hover:bg-white/80 transition-all cursor-pointer text-sm font-medium"
+                        style={{ color: isEmpty ? "#d4d4d4" : isLong ? "var(--color-dusk)" : "#91919b" }}
+                      >+</button>
                     </div>
-                  )}
+
+                    <div className="flex-1 h-px" style={{ background: isEmpty ? "#e8e8ec" : isLong ? "var(--color-dusk)" : "#d4d4d8", opacity: isEmpty ? 0.3 : isLong ? 0.5 : 0.4 }} />
+                  </div>
                 </div>
               );
             }
 
+            const canMoveVoiceUp = script.slice(0, index).some(b => b.type === "voice");
+            const canMoveVoiceDown = script.slice(index + 1).some(b => b.type === "voice");
+
             return (
-              <div key={block.id}
-                onClick={() => setSelectedBlock(isSelected ? null : block.id)}
-                className={`group/block px-4 py-3 rounded-lg cursor-pointer transition-all ${
-                  isSelected ? "bg-white shadow-sm border border-[#e4e4e7]" : "hover:bg-white/80"
-                }`}>
-                <div className="flex items-start gap-3">
-                  <span className="text-[10px] text-[#a1a1aa] w-5 text-right tabular-nums shrink-0 mt-1" style={{ fontFamily: "var(--font-body)" }}>{index + 1}</span>
-                  <div className="w-5 h-5 rounded-full flex items-center justify-center shrink-0 mt-0.5"
-                    style={{ background: "#e8f0e9" }}>
-                    <div className="w-1.5 h-1.5 rounded-full" style={{ background: "#6b9a70" }} />
+              <div key={block.id} className="group/row">
+                <div
+                  onClick={() => setSelectedBlock(isSelected ? null : block.id)}
+                  className={`relative rounded-xl cursor-pointer transition-all ${
+                    isSelected
+                      ? "shadow-[0_2px_12px_rgba(107,154,112,0.12)]"
+                      : "hover:shadow-[0_1px_4px_rgba(0,0,0,0.04)]"
+                  }`}
+                  style={{
+                    borderLeft: `3.5px solid ${isSelected ? "var(--color-sage)" : "rgba(122,158,126,0.35)"}`,
+                    background: isSelected ? "var(--color-sage-light)" : "#fff",
+                    border: isSelected ? "1.5px solid rgba(122,158,126,0.3)" : "1.5px solid transparent",
+                    borderLeftWidth: "3.5px",
+                    borderLeftColor: isSelected ? "var(--color-sage)" : "rgba(122,158,126,0.35)",
+                  }}
+                >
+                  <div className="flex items-start gap-2 pl-4 pr-3 py-3.5">
+                    {/* Content */}
+                    <div className="flex-1 min-w-0">
+                      {isSelected ? (
+                        <textarea
+                          value={block.text}
+                          onChange={(e) => updateBlockText(block.id, e.target.value)}
+                          onClick={(e) => e.stopPropagation()}
+                          className="w-full text-[14px] text-[#1a1614] bg-transparent outline-none resize-none leading-[1.75]"
+                          style={{ fontFamily: "var(--font-body)" }}
+                          rows={Math.max(2, Math.ceil(block.text.length / 60))}
+                          autoFocus
+                        />
+                      ) : (
+                        <div className="flex items-start gap-2">
+                          <p className="text-[14px] text-[#2d2926] leading-[1.75] flex-1" style={{ fontFamily: "var(--font-body)" }}>
+                            {block.text}
+                          </p>
+                          <PenLine className="w-3.5 h-3.5 text-[#c4c4c8] opacity-0 group-hover/row:opacity-100 transition-opacity shrink-0 mt-1" />
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Reorder + Delete — on hover */}
+                    <div className="flex items-center gap-0.5 opacity-0 group-hover/row:opacity-100 transition-opacity shrink-0 mt-0.5">
+                      <div className="flex flex-col gap-px">
+                        <button
+                          onClick={(e) => { e.stopPropagation(); if (canMoveVoiceUp) moveBlock(block.id, "up"); }}
+                          className={`w-6 h-4 rounded-sm flex items-center justify-center transition-all ${
+                            canMoveVoiceUp
+                              ? "text-[var(--color-sage)] hover:bg-[var(--color-sage-light)] cursor-pointer"
+                              : "text-[#d8d8dc] cursor-default"
+                          }`}
+                          title="Move up"
+                        >
+                          <svg width="10" height="6" viewBox="0 0 10 6" fill="none"><path d="M5 0L0 5h10L5 0z" fill="currentColor"/></svg>
+                        </button>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); if (canMoveVoiceDown) moveBlock(block.id, "down"); }}
+                          className={`w-6 h-4 rounded-sm flex items-center justify-center transition-all ${
+                            canMoveVoiceDown
+                              ? "text-[var(--color-sage)] hover:bg-[var(--color-sage-light)] cursor-pointer"
+                              : "text-[#d8d8dc] cursor-default"
+                          }`}
+                          title="Move down"
+                        >
+                          <svg width="10" height="6" viewBox="0 0 10 6" fill="none"><path d="M5 6L0 1h10L5 6z" fill="currentColor"/></svg>
+                        </button>
+                      </div>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); deleteBlock(block.id); }}
+                        className="w-6 h-6 rounded-md flex items-center justify-center text-[#d4d4d4] hover:text-red-400 hover:bg-red-50 transition-all cursor-pointer"
+                        title="Delete segment"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
                   </div>
-                  {isSelected ? (
-                    <textarea
-                      value={block.text}
-                      onChange={(e) => updateBlockText(block.id, e.target.value)}
-                      onClick={(e) => e.stopPropagation()}
-                      className="flex-1 text-sm text-[#18181b] bg-transparent outline-none resize-none leading-relaxed"
-                      style={{ fontFamily: "var(--font-body)" }}
-                      rows={Math.max(2, Math.ceil(block.text.length / 70))}
-                    />
-                  ) : (
-                    <p className="flex-1 text-sm text-[#3f3f46] leading-relaxed" style={{ fontFamily: "var(--font-body)" }}>
-                      {block.text}
-                    </p>
-                  )}
+                </div>
+
+                {/* Add segment — hover zone between voice blocks */}
+                <div className="flex items-center justify-center h-5 relative group/add">
+                  <div className="absolute inset-x-6 top-1/2 border-t border-dashed border-transparent group-hover/add:border-[rgba(122,158,126,0.3)] transition-colors" />
+                  <button
+                    onClick={() => addBlockAfter(block.id, "voice")}
+                    className="absolute top-1/2 -translate-y-1/2 opacity-0 group-hover/add:opacity-100 w-6 h-6 rounded-full bg-white border-[1.5px] border-[rgba(122,158,126,0.3)] hover:border-[var(--color-sage)] hover:bg-[var(--color-sage-light)] flex items-center justify-center text-[var(--color-sage)] shadow-sm transition-all cursor-pointer z-10"
+                    title="Add segment"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                  </button>
                 </div>
               </div>
             );
           })}
+
+          {/* Add segment at end — connected to timeline */}
+          {script.length > 0 && (
+            <div className="flex flex-col items-center pt-1 pb-4">
+              <div className="w-px h-4" style={{ background: "rgba(122,158,126,0.2)" }} />
+              <button
+                onClick={() => addBlockAfter(script[script.length - 1].id, "voice")}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-full text-[11px] text-[var(--color-sage)] hover:bg-[var(--color-sage-light)] border-[1.5px] border-dashed border-[rgba(122,158,126,0.3)] hover:border-[var(--color-sage)] transition-all cursor-pointer"
+                style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}
+              >
+                <Plus className="w-3 h-3" /> Add segment
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Bottom bar */}
@@ -650,6 +903,13 @@ function StudioSession({ prompt, voice, duration, sound, onBack }: {
               3 credits remaining
             </span>
           </div>
+          <div className="flex items-center gap-3">
+            {generateWarning && (
+              <div className="flex items-center gap-1.5 text-[11px] text-amber-600 bg-amber-50 border border-amber-200 rounded-lg px-3 py-1.5" style={{ fontFamily: "var(--font-body)" }}>
+                <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                {generateWarning}
+              </div>
+            )}
           <button
             onClick={handleGenerateAudio}
             disabled={isGenerating}
@@ -674,6 +934,7 @@ function StudioSession({ prompt, voice, duration, sound, onBack }: {
               </>
             )}
           </button>
+          </div>
         </div>
 
         {/* Inline Studio Player */}
@@ -690,13 +951,32 @@ function StudioSession({ prompt, voice, duration, sound, onBack }: {
         </AnimatePresence>
       </div>
 
-      {/* ─── Settings Panel (right) ─── */}
+      {/* ─── Right Panel (Settings / History) ─── */}
       <div className="w-72 shrink-0 border-l border-[#e4e4e7] flex flex-col overflow-y-auto studio-scroll" style={{ background: "#fafafa" }}>
-        <div className="px-5 py-4 border-b border-[#e4e4e7]">
-          <h3 className="text-sm text-[#18181b]" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>Settings</h3>
+        <div className="px-4 pt-1 border-b border-[#e4e4e7] flex items-center gap-0">
+          <button
+            onClick={() => setRightTab("settings")}
+            className={`flex items-center gap-1.5 px-3 py-2.5 text-[12px] transition-all cursor-pointer border-b-2 -mb-px ${
+              rightTab === "settings" ? "border-[#18181b] text-[#18181b]" : "border-transparent text-[#a1a1aa] hover:text-[#52525b]"
+            }`}
+            style={{ fontFamily: "var(--font-body)", fontWeight: rightTab === "settings" ? 600 : 400 }}
+          >
+            <Settings className="w-3.5 h-3.5" />
+            Settings
+          </button>
+          <button
+            onClick={() => setRightTab("history")}
+            className={`flex items-center gap-1.5 px-3 py-2.5 text-[12px] transition-all cursor-pointer border-b-2 -mb-px ${
+              rightTab === "history" ? "border-[#18181b] text-[#18181b]" : "border-transparent text-[#a1a1aa] hover:text-[#52525b]"
+            }`}
+            style={{ fontFamily: "var(--font-body)", fontWeight: rightTab === "history" ? 600 : 400 }}
+          >
+            <Clock className="w-3.5 h-3.5" />
+            History
+          </button>
         </div>
 
-        <div className="px-5 py-4 space-y-6">
+        {rightTab === "settings" && <div className="px-5 py-4 space-y-6">
           {/* Voice */}
           <div>
             <label className="text-[10px] uppercase tracking-wider text-[#71717a] mb-2.5 block" style={{ fontFamily: "var(--font-body)" }}>Voice</label>
@@ -841,24 +1121,113 @@ function StudioSession({ prompt, voice, duration, sound, onBack }: {
             </div>
           </div>
 
-          {/* Legend */}
+          {/* Pause types */}
           <div>
-            <label className="text-[10px] uppercase tracking-wider text-[#71717a] mb-2.5 block" style={{ fontFamily: "var(--font-body)" }}>Legend</label>
-            <div className="space-y-2.5">
-              {[
-                { color: "#6b9a70", label: "Voice segment", desc: "Click to edit" },
-                { color: "#8b7ea6", label: "Pause", desc: "Adjust duration" },
-                { color: "#6d9ab5", label: "Breathing cue", desc: "Guided breath" },
-              ].map(item => (
-                <div key={item.label} className="flex items-center gap-2.5">
-                  <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: item.color }} />
-                  <span className="text-[11px] text-[#3f3f46]" style={{ fontFamily: "var(--font-body)" }}>{item.label}</span>
-                  <span className="text-[10px] text-[#a1a1aa]" style={{ fontFamily: "var(--font-body)" }}>— {item.desc}</span>
+            <label className="text-[10px] uppercase tracking-wider text-[#71717a] mb-2.5 block" style={{ fontFamily: "var(--font-body)" }}>Pause Types</label>
+            <div className="p-3 rounded-lg bg-[#f9f9fb] border border-[#f0f0f3] space-y-3">
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <div className="w-2 h-2 rounded-full shrink-0" style={{ background: "#a1a1aa" }} />
+                  <span className="text-[11px] text-[#71717a]" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>Short</span>
+                  <span className="text-[10px] text-[#a1a1aa]" style={{ fontFamily: "var(--font-body)" }}>under 3s</span>
                 </div>
-              ))}
+                <p className="text-[11px] text-[#a1a1aa] leading-relaxed pl-4" style={{ fontFamily: "var(--font-body)" }}>Voice continues naturally, like a brief breath between sentences</p>
+              </div>
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <div className="w-2 h-2 rounded-full shrink-0" style={{ background: "var(--color-dusk)" }} />
+                  <span className="text-[11px]" style={{ fontFamily: "var(--font-body)", fontWeight: 500, color: "var(--color-dusk)" }}>Long</span>
+                  <span className="text-[10px] text-[#a1a1aa]" style={{ fontFamily: "var(--font-body)" }}>3s or more</span>
+                </div>
+                <p className="text-[11px] text-[#a1a1aa] leading-relaxed pl-4" style={{ fontFamily: "var(--font-body)" }}>Creates a distinct break, voice re-entry is slightly more deliberate</p>
+              </div>
             </div>
           </div>
-        </div>
+        </div>}
+
+        {rightTab === "history" && (
+          <div className="flex-1 overflow-y-auto studio-scroll">
+            {/* Session created banner */}
+            <div className="px-5 py-3 border-b border-[#f0f0f3] bg-white/60">
+              <div className="flex items-center gap-2">
+                <div className="w-6 h-6 rounded-full bg-[#f0f7f1] flex items-center justify-center">
+                  <FileText className="w-3 h-3 text-[#5a9a62]" />
+                </div>
+                <div>
+                  <span className="text-[11px] text-[#18181b] block" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>Session created</span>
+                  <span className="text-[10px] text-[#a1a1aa]" style={{ fontFamily: "var(--font-body)" }}>Just now</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Generation history — grouped by date */}
+            {(() => {
+              // Group generations by date portion of timestamp
+              const groups: { date: string; items: typeof mockGenerations }[] = [];
+              let currentDate = "";
+              for (const gen of mockGenerations) {
+                const datePart = gen.timestamp.split(" · ")[0]; // e.g. "Mar 24, 2026"
+                if (datePart !== currentDate) {
+                  currentDate = datePart;
+                  groups.push({ date: datePart, items: [] });
+                }
+                groups[groups.length - 1].items.push(gen);
+              }
+              return groups.map((group) => (
+                <div key={group.date}>
+                  {/* Date separator */}
+                  <div className="flex items-center justify-center py-3">
+                    <span className="text-[10px] text-[#a1a1aa] px-2.5 py-1 rounded-full bg-white border border-[#e8e8ec]" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>{group.date}</span>
+                  </div>
+                  {/* Items */}
+                  {group.items.map((gen) => {
+                    const timePart = gen.timestamp.split(" · ")[1] || "";
+                    const genVoice = voices.find(v => v.name === gen.voice);
+                    const voiceColor = genVoice?.color || "#a1a1aa";
+                    return (
+                      <div
+                        key={gen.id}
+                        className={`group/item px-5 py-3 border-b border-[#f4f4f5] transition-colors ${(gen.status as string) === "failed" ? "bg-[#fffbfb]" : "hover:bg-white"}`}
+                      >
+                        {/* Prompt text */}
+                        <p className={`text-[13px] leading-snug mb-1.5 ${(gen.status as string) === "failed" ? "text-[#b91c1c]" : "text-[#18181b]"}`} style={{ fontFamily: "var(--font-body)", fontWeight: 450 }}>
+                          {gen.prompt}
+                        </p>
+                        {/* Metadata row */}
+                        <div className="flex items-center gap-1.5">
+                          <div className="w-3.5 h-3.5 rounded-full flex items-center justify-center shrink-0" style={{ background: voiceColor + "20" }}>
+                            <div className="w-1.5 h-1.5 rounded-full" style={{ background: voiceColor }} />
+                          </div>
+                          <span className="text-[11px] text-[#71717a]" style={{ fontFamily: "var(--font-body)" }}>
+                            {gen.voice} · {gen.protocol} · {gen.duration}
+                          </span>
+                          <span className="text-[11px] text-[#c4c4c8] ml-auto" style={{ fontFamily: "var(--font-body)" }}>{timePart}</span>
+                        </div>
+                        {/* Status badges */}
+                        {(gen.status as string) === "failed" && (
+                          <div className="mt-1.5">
+                            <span className="text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded bg-[#fef2f2] text-[#ef4444]" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>Generation failed</span>
+                          </div>
+                        )}
+                        {/* Hover actions */}
+                        {(gen.status as string) !== "failed" && (
+                          <div className="flex items-center gap-1 mt-2 opacity-0 group-hover/item:opacity-100 transition-opacity">
+                            <button className="h-7 px-2 rounded-md hover:bg-[#f0f0f3] flex items-center justify-center text-[#71717a] hover:text-[#18181b] transition-colors cursor-pointer">
+                              <Play className="w-3 h-3" />
+                            </button>
+                            <button className="h-7 px-2 rounded-md hover:bg-[#f0f0f3] flex items-center justify-center text-[#71717a] hover:text-[#18181b] transition-colors cursor-pointer">
+                              <Download className="w-3 h-3" />
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              ));
+            })()}
+          </div>
+        )}
       </div>
 
     </div>
@@ -926,6 +1295,10 @@ export default function StudioPage() {
   const [showGenAdvanced, setShowGenAdvanced] = useState(false);
   const [selectedGenProtocol, setSelectedGenProtocol] = useState<string | null>(null);
   const [showGenProtocolInfo, setShowGenProtocolInfo] = useState(false);
+  const [historyFilter, setHistoryFilter] = useState<HistoryFilter>("all");
+  const [sessionsPage, setSessionsPage] = useState(1);
+  const [generationsPage, setGenerationsPage] = useState(1);
+  const [confirmDialog, setConfirmDialog] = useState<{ type: "regenerate" | "delete"; sessionId: string; sessionTitle: string } | null>(null);
 
   const handleQuickGenerate = useCallback(() => {
     const intent = detectIntent(genConfig.prompt);
@@ -971,8 +1344,8 @@ export default function StudioPage() {
           </div>
           <div className="px-3 mb-4">
             <button onClick={() => { navigateTo("generate" as NavId); setGenStep("input"); }}
-              className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg text-sm transition-all cursor-pointer bg-[var(--color-sand-900)] text-[var(--color-sand-50)] shadow-sm"
-              style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>
+              className="w-full flex items-center justify-center gap-2 px-3 py-3 rounded-xl text-sm transition-all cursor-pointer shadow-[0_2px_8px_rgba(107,154,112,0.3)] hover:shadow-[0_4px_16px_rgba(107,154,112,0.4)] hover:scale-[1.02] active:scale-[0.98]"
+              style={{ fontFamily: "var(--font-body)", fontWeight: 600, background: "linear-gradient(135deg, #5a9a62, #6bb070)", color: "#fff" }}>
               <Sparkles className="w-4 h-4" />
               Generate
             </button>
@@ -1035,16 +1408,32 @@ export default function StudioPage() {
         </div>
 
         <div className="px-3 mb-4">
-          <button onClick={() => { navigateTo("generate" as NavId); setActiveNav("generate" as NavId); setGenStep("input"); }}
-            className={`w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg text-sm transition-all cursor-pointer ${
-              activeNav === ("generate" as NavId)
-                ? "bg-[var(--color-sand-900)] text-[var(--color-sand-50)] shadow-sm"
-                : "bg-[var(--color-sage-light)] text-[var(--color-sage)] hover:bg-[var(--color-sage)] hover:text-white"
-            }`}
-            style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>
-            <Sparkles className="w-4 h-4" />
-            Generate
-          </button>
+          <div className="relative">
+            {/* Animated gradient border glow — visible when active */}
+            <div
+              className={`absolute -inset-[2px] rounded-[14px] bg-[length:300%_300%] animate-[border-glow_4s_ease_infinite] transition-opacity duration-500 blur-[1px] ${
+                activeNav === ("generate" as NavId) ? "opacity-80" : "opacity-0"
+              }`}
+              style={{ background: "linear-gradient(135deg, var(--color-sage), var(--color-ocean), var(--color-dusk), var(--color-ember), var(--color-sage))", backgroundSize: "300% 300%" }}
+            />
+            <button onClick={() => { navigateTo("generate" as NavId); setActiveNav("generate" as NavId); setGenStep("input"); }}
+              className={`relative w-full flex items-center justify-center gap-2 px-3 py-3 rounded-xl text-sm transition-all cursor-pointer ${
+                activeNav === ("generate" as NavId)
+                  ? "shadow-[inset_0_2px_4px_rgba(0,0,0,0.15),0_1px_2px_rgba(107,154,112,0.2)]"
+                  : "shadow-[0_2px_8px_rgba(107,154,112,0.3)] hover:shadow-[0_4px_16px_rgba(107,154,112,0.4)] hover:scale-[1.02] active:scale-[0.98]"
+              }`}
+              style={{
+                fontFamily: "var(--font-body)",
+                fontWeight: 600,
+                background: activeNav === ("generate" as NavId)
+                  ? "linear-gradient(135deg, #3d6b43, #4a7c50)"
+                  : "linear-gradient(135deg, #5a9a62, #6bb070)",
+                color: activeNav === ("generate" as NavId) ? "rgba(255,255,255,0.95)" : "#fff",
+              }}>
+              <Sparkles className="w-4 h-4" />
+              Generate
+            </button>
+          </div>
         </div>
 
         <nav className="flex-1 px-3 space-y-0.5">
@@ -1140,67 +1529,223 @@ export default function StudioPage() {
             {/* History */}
             {activeNav === "history" && (
               <motion.div key="history" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
-                <div className="bg-white rounded-xl border border-[#e8e8ec] overflow-hidden">
-                  {/* Table header */}
-                  <div className="grid grid-cols-[1fr_100px_80px_80px_100px_100px_130px] gap-4 px-5 py-3 border-b border-[#f0f0f3] bg-[#fafafa]">
-                    {["Session", "Protocol", "Duration", "Voice", "Created", "Accessed", ""].map((h) => (
-                      <span key={h} className="text-[10px] uppercase tracking-wider text-[#a1a1aa]" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>{h}</span>
-                    ))}
-                  </div>
-                  {/* Rows */}
-                  {mockSessions.map((session, i) => {
-                    const accent = (categoryColors[session.category] || categoryColors.focus).accent;
-                    const isRowPlaying = nowPlayingId === session.id && playerPlaying;
-                    return (
-                      <motion.div
-                        key={session.id}
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ delay: i * 0.04, duration: 0.25 }}
-                        onClick={() => {
-                          setGenConfig({ prompt: session.title, voice: session.voice.toLowerCase(), duration: parseInt(session.duration), sound: session.sound });
-                          setActiveNav("generate" as NavId);
-                          setGenStep("studio");
-                        }}
-                        className="group grid grid-cols-[1fr_100px_80px_80px_100px_100px_130px] gap-4 items-center px-5 py-3.5 border-b border-[#f4f4f5] last:border-b-0 hover:bg-[#fafafa] transition-colors cursor-pointer"
-                      >
-                        <div className="flex items-center gap-3 min-w-0">
-                          <div className="w-2 h-2 rounded-full shrink-0" style={{ background: isRowPlaying ? accent : "#d4d4d8" }} />
-                          <span className="text-[13px] text-[#18181b] truncate" style={{ fontFamily: "var(--font-body)", fontWeight: 450 }}>{session.title}</span>
-                        </div>
-                        <span className="text-[11px] text-[#71717a] truncate" style={{ fontFamily: "var(--font-body)" }}>{session.protocol}</span>
-                        <span className="text-[11px] text-[#71717a] tabular-nums" style={{ fontFamily: "var(--font-body)" }}>{session.duration}</span>
-                        <span className="text-[11px] text-[#71717a]" style={{ fontFamily: "var(--font-body)" }}>{session.voice}</span>
-                        <span className="text-[11px] text-[#a1a1aa]" style={{ fontFamily: "var(--font-body)" }}>{session.createdAt}</span>
-                        <span className="text-[11px] text-[#a1a1aa]" style={{ fontFamily: "var(--font-body)" }}>{session.accessedAt}</span>
-                        <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-all duration-200">
-                          <button
-                            onClick={(e) => { e.stopPropagation(); handlePlaySession(session.id); }}
-                            title={isRowPlaying ? "Pause" : "Play"}
-                            className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-[#27272a] transition-colors shadow-sm"
-                            style={{ background: isRowPlaying ? accent : "#18181b", color: "#fff" }}
-                          >
-                            {isRowPlaying ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5 ml-0.5" />}
-                          </button>
-                          <button
-                            onClick={(e) => { e.stopPropagation(); setGenConfig({ prompt: session.title, voice: session.voice.toLowerCase(), duration: parseInt(session.duration), sound: session.sound }); setActiveNav("generate" as NavId); setGenStep("studio"); }}
-                            title="Edit in Studio"
-                            className="w-8 h-8 rounded-lg hover:bg-[#f0f0f3] flex items-center justify-center text-[#71717a] hover:text-[#18181b] transition-colors"
-                          >
-                            <PenLine className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={(e) => { e.stopPropagation(); }}
-                            title="Download"
-                            className="w-8 h-8 rounded-lg hover:bg-[#f0f0f3] flex items-center justify-center text-[#71717a] hover:text-[#18181b] transition-colors"
-                          >
-                            <Download className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </motion.div>
-                    );
-                  })}
+                {/* Filter tabs */}
+                <div className="flex items-center gap-1 mb-5 bg-[#f4f4f5] rounded-lg p-1 w-fit">
+                  {([["all", "All"], ["generations", "Generations"], ["sessions", "Sessions"]] as const).map(([key, label]) => (
+                    <button
+                      key={key}
+                      onClick={() => { setHistoryFilter(key); setSessionsPage(1); setGenerationsPage(1); }}
+                      className={`px-3.5 py-1.5 rounded-md text-[12px] transition-all cursor-pointer ${
+                        historyFilter === key
+                          ? "bg-white text-[#18181b] shadow-sm"
+                          : "text-[#71717a] hover:text-[#18181b]"
+                      }`}
+                      style={{ fontFamily: "var(--font-body)", fontWeight: historyFilter === key ? 500 : 400 }}
+                    >
+                      {label}
+                    </button>
+                  ))}
                 </div>
+
+                {/* Generations section (first) */}
+                {(historyFilter === "all" || historyFilter === "generations") && (() => {
+                  const perPage = 5;
+                  const totalPages = Math.ceil(mockGenerations.length / perPage);
+                  const paged = mockGenerations.slice((generationsPage - 1) * perPage, generationsPage * perPage);
+                  return (
+                  <div className="mb-6">
+                    {historyFilter === "all" && (
+                      <h3 className="text-[11px] uppercase tracking-wider text-[#a1a1aa] mb-3" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>Generations</h3>
+                    )}
+                    <div className="bg-white rounded-xl border border-[#e8e8ec] overflow-hidden">
+                      <div className="grid grid-cols-[1fr_80px_70px_90px_70px_130px] gap-4 px-5 py-3 border-b border-[#f0f0f3] bg-[#fafafa]">
+                        {["Prompt", "Voice", "Duration", "Protocol", "Credit", ""].map((h) => (
+                          <span key={h} className="text-[10px] uppercase tracking-wider text-[#a1a1aa]" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>{h}</span>
+                        ))}
+                      </div>
+                      {paged.map((gen, i) => {
+                        const isGenPlaying = gen.sessionId ? nowPlayingId === gen.sessionId && playerPlaying : false;
+                        const genSession = gen.sessionId ? mockSessions.find(s => s.id === gen.sessionId) : null;
+                        const genAccent = genSession ? (categoryColors[genSession.category] || categoryColors.focus).accent : "#18181b";
+                        return (
+                        <motion.div
+                          key={gen.id}
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          transition={{ delay: i * 0.04, duration: 0.25 }}
+                          className="group grid grid-cols-[1fr_80px_70px_90px_70px_130px] gap-4 items-center px-5 py-3.5 border-b border-[#f4f4f5] last:border-b-0 hover:bg-[#fafafa] transition-colors"
+                        >
+                          <div className="flex items-center gap-3 min-w-0">
+                            {gen.status === "failed" ? (
+                              <AlertCircle className="w-3.5 h-3.5 shrink-0 text-[#ef4444]" />
+                            ) : (
+                              <Sparkles className="w-3.5 h-3.5 shrink-0 text-[#a1a1aa]" />
+                            )}
+                            <div className="min-w-0">
+                              <span className={`text-[13px] truncate block ${gen.status === "failed" ? "text-[#ef4444]" : "text-[#18181b]"}`} style={{ fontFamily: "var(--font-body)", fontWeight: 450 }}>{gen.prompt}</span>
+                              <span className="text-[10px] text-[#a1a1aa] block" style={{ fontFamily: "var(--font-body)" }}>{gen.timestamp}</span>
+                            </div>
+                          </div>
+                          <span className="text-[11px] text-[#71717a]" style={{ fontFamily: "var(--font-body)" }}>{gen.voice}</span>
+                          <span className="text-[11px] text-[#71717a] tabular-nums" style={{ fontFamily: "var(--font-body)" }}>{gen.duration}</span>
+                          <div>
+                            <span className="text-[11px] text-[#71717a] truncate block" style={{ fontFamily: "var(--font-body)" }}>{gen.protocol}</span>
+                            {gen.status === "failed" && (
+                              <span className="text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded bg-[#fef2f2] text-[#ef4444] inline-block mt-0.5" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>Failed</span>
+                            )}
+                          </div>
+                          <span className="text-[11px] tabular-nums" style={{ fontFamily: "var(--font-body)", color: gen.creditUsed > 0 ? "#71717a" : "#a1a1aa" }}>{gen.creditUsed > 0 ? `-${gen.creditUsed}` : "0"}</span>
+                          <div className="flex items-center justify-end gap-1">
+                            <div className="relative group/tip">
+                              <button
+                                onClick={(e) => { e.stopPropagation(); handlePlaySession(gen.sessionId || ""); }}
+                                disabled={!gen.sessionId || (gen.status as string) === "failed"}
+                                className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-[#27272a] transition-colors shadow-sm disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+                                style={{ background: isGenPlaying ? genAccent : "#18181b", color: "#fff" }}
+                              >
+                                {isGenPlaying ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5 ml-0.5" />}
+                              </button>
+                              <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 px-2 py-1 rounded-md bg-[#18181b] text-white text-[10px] whitespace-nowrap opacity-0 group-hover/tip:opacity-100 transition-opacity pointer-events-none z-10" style={{ fontFamily: "var(--font-body)" }}>{isGenPlaying ? "Pause" : "Play"}</span>
+                            </div>
+                            <div className="relative group/tip">
+                              <button
+                                onClick={(e) => { e.stopPropagation(); }}
+                                disabled={(gen.status as string) === "failed"}
+                                className="w-8 h-8 rounded-lg hover:bg-[#f0f0f3] flex items-center justify-center text-[#71717a] hover:text-[#18181b] transition-colors disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+                              >
+                                <Download className="w-4 h-4" />
+                              </button>
+                              <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 px-2 py-1 rounded-md bg-[#18181b] text-white text-[10px] whitespace-nowrap opacity-0 group-hover/tip:opacity-100 transition-opacity pointer-events-none z-10" style={{ fontFamily: "var(--font-body)" }}>Download</span>
+                            </div>
+                          </div>
+                        </motion.div>
+                        );
+                      })}
+                    </div>
+                    {/* Pagination */}
+                    {totalPages > 1 && (
+                      <div className="flex items-center justify-center gap-3 mt-4">
+                        <button
+                          onClick={() => setGenerationsPage(p => Math.max(1, p - 1))}
+                          disabled={generationsPage === 1}
+                          className="w-8 h-8 rounded-lg flex items-center justify-center text-[#52525b] hover:text-[#18181b] hover:bg-white border border-[#e4e4e7] hover:border-[#d4d4d8] transition-all disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+                        >
+                          <ChevronLeft className="w-4 h-4" />
+                        </button>
+                        <span className="text-[12px] text-[#52525b] tabular-nums" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>
+                          Page {generationsPage} of {totalPages}
+                        </span>
+                        <button
+                          onClick={() => setGenerationsPage(p => Math.min(totalPages, p + 1))}
+                          disabled={generationsPage === totalPages}
+                          className="w-8 h-8 rounded-lg flex items-center justify-center text-[#52525b] hover:text-[#18181b] hover:bg-white border border-[#e4e4e7] hover:border-[#d4d4d8] transition-all disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+                        >
+                          <ArrowRight className="w-4 h-4" />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                  );
+                })()}
+
+                {/* Sessions section (second) */}
+                {(historyFilter === "all" || historyFilter === "sessions") && (() => {
+                  const perPage = 5;
+                  const totalPages = Math.ceil(mockSessions.length / perPage);
+                  const paged = mockSessions.slice((sessionsPage - 1) * perPage, sessionsPage * perPage);
+                  return (
+                  <div className="mb-6">
+                    {historyFilter === "all" && (
+                      <h3 className="text-[11px] uppercase tracking-wider text-[#a1a1aa] mb-3" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>Sessions Created</h3>
+                    )}
+                    <div className="bg-white rounded-xl border border-[#e8e8ec] overflow-hidden">
+                      <div className="grid grid-cols-[1fr_100px_80px_80px_140px_130px] gap-4 px-5 py-3 border-b border-[#f0f0f3] bg-[#fafafa]">
+                        {["Session", "Protocol", "Duration", "Voice", "Created", ""].map((h) => (
+                          <span key={h} className="text-[10px] uppercase tracking-wider text-[#a1a1aa]" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>{h}</span>
+                        ))}
+                      </div>
+                      {paged.map((session, i) => {
+                        const accent = (categoryColors[session.category] || categoryColors.focus).accent;
+                        const isRowPlaying = nowPlayingId === session.id && playerPlaying;
+                        return (
+                          <motion.div
+                            key={session.id}
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            transition={{ delay: i * 0.04, duration: 0.25 }}
+                            onClick={() => {
+                              setGenConfig({ prompt: session.title, voice: session.voice.toLowerCase(), duration: parseInt(session.duration), sound: session.sound });
+                              setActiveNav("generate" as NavId);
+                              setGenStep("studio");
+                            }}
+                            className="group grid grid-cols-[1fr_100px_80px_80px_140px_130px] gap-4 items-center px-5 py-3.5 border-b border-[#f4f4f5] last:border-b-0 hover:bg-[#fafafa] transition-colors cursor-pointer"
+                          >
+                            <div className="flex items-center gap-3 min-w-0">
+                              <div className="w-2 h-2 rounded-full shrink-0" style={{ background: isRowPlaying ? accent : "#d4d4d8" }} />
+                              <span className="text-[13px] text-[#18181b] truncate" style={{ fontFamily: "var(--font-body)", fontWeight: 450 }}>{session.title}</span>
+                            </div>
+                            <span className="text-[11px] text-[#71717a] truncate" style={{ fontFamily: "var(--font-body)" }}>{session.protocol}</span>
+                            <span className="text-[11px] text-[#71717a] tabular-nums" style={{ fontFamily: "var(--font-body)" }}>{session.duration}</span>
+                            <span className="text-[11px] text-[#71717a]" style={{ fontFamily: "var(--font-body)" }}>{session.voice}</span>
+                            <span className="text-[11px] text-[#a1a1aa]" style={{ fontFamily: "var(--font-body)" }}>{session.createdAt}</span>
+                            <div className="flex items-center justify-end gap-1">
+                              <div className="relative group/tip">
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); setGenConfig({ prompt: session.title, voice: session.voice.toLowerCase(), duration: parseInt(session.duration), sound: session.sound }); setActiveNav("generate" as NavId); setGenStep("studio"); }}
+                                  className="w-8 h-8 rounded-lg hover:bg-[#f0f0f3] flex items-center justify-center text-[#71717a] hover:text-[#18181b] transition-colors cursor-pointer"
+                                >
+                                  <PenLine className="w-4 h-4" />
+                                </button>
+                                <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 px-2 py-1 rounded-md bg-[#18181b] text-white text-[10px] whitespace-nowrap opacity-0 group-hover/tip:opacity-100 transition-opacity pointer-events-none z-10" style={{ fontFamily: "var(--font-body)" }}>Edit in Studio</span>
+                              </div>
+                              <div className="relative group/tip">
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); setConfirmDialog({ type: "regenerate", sessionId: session.id, sessionTitle: session.title }); }}
+                                  className="w-8 h-8 rounded-lg hover:bg-[#f0f0f3] flex items-center justify-center text-[#71717a] hover:text-[#18181b] transition-colors cursor-pointer"
+                                >
+                                  <RotateCcw className="w-4 h-4" />
+                                </button>
+                                <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 px-2 py-1 rounded-md bg-[#18181b] text-white text-[10px] whitespace-nowrap opacity-0 group-hover/tip:opacity-100 transition-opacity pointer-events-none z-10" style={{ fontFamily: "var(--font-body)" }}>Regenerate</span>
+                              </div>
+                              <div className="relative group/tip">
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); setConfirmDialog({ type: "delete", sessionId: session.id, sessionTitle: session.title }); }}
+                                  className="w-8 h-8 rounded-lg hover:bg-[#fef2f2] flex items-center justify-center text-[#71717a] hover:text-[#ef4444] transition-colors cursor-pointer"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                                <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 px-2 py-1 rounded-md bg-[#18181b] text-white text-[10px] whitespace-nowrap opacity-0 group-hover/tip:opacity-100 transition-opacity pointer-events-none z-10" style={{ fontFamily: "var(--font-body)" }}>Delete</span>
+                              </div>
+                            </div>
+                          </motion.div>
+                        );
+                      })}
+                    </div>
+                    {/* Pagination */}
+                    {totalPages > 1 && (
+                      <div className="flex items-center justify-center gap-3 mt-4">
+                        <button
+                          onClick={() => setSessionsPage(p => Math.max(1, p - 1))}
+                          disabled={sessionsPage === 1}
+                          className="w-8 h-8 rounded-lg flex items-center justify-center text-[#52525b] hover:text-[#18181b] hover:bg-white border border-[#e4e4e7] hover:border-[#d4d4d8] transition-all disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+                        >
+                          <ChevronLeft className="w-4 h-4" />
+                        </button>
+                        <span className="text-[12px] text-[#52525b] tabular-nums" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>
+                          Page {sessionsPage} of {totalPages}
+                        </span>
+                        <button
+                          onClick={() => setSessionsPage(p => Math.min(totalPages, p + 1))}
+                          disabled={sessionsPage === totalPages}
+                          className="w-8 h-8 rounded-lg flex items-center justify-center text-[#52525b] hover:text-[#18181b] hover:bg-white border border-[#e4e4e7] hover:border-[#d4d4d8] transition-all disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+                        >
+                          <ArrowRight className="w-4 h-4" />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                  );
+                })()}
               </motion.div>
             )}
 
@@ -1563,6 +2108,75 @@ export default function StudioPage() {
             onTogglePlay={() => setPlayerPlaying(prev => !prev)}
             onClose={handleClosePlayer}
           />
+        )}
+      </AnimatePresence>
+
+      {/* Confirmation Dialog */}
+      <AnimatePresence>
+        {confirmDialog && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.15 }}
+            className="fixed inset-0 left-56 z-[500] flex items-center justify-center"
+          >
+            {/* Backdrop */}
+            <div className="absolute inset-0 -left-56 bg-black/40 backdrop-blur-[2px]" onClick={() => setConfirmDialog(null)} />
+            {/* Dialog */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 8 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 8 }}
+              transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+              className="relative bg-white rounded-2xl shadow-2xl border border-[#e4e4e7] w-full max-w-sm mx-4 overflow-hidden"
+            >
+              <div className="px-6 pt-6 pb-4">
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-4 ${
+                  confirmDialog.type === "delete" ? "bg-[#fef2f2]" : "bg-[#f0f7f1]"
+                }`}>
+                  {confirmDialog.type === "delete" ? (
+                    <Trash2 className="w-5 h-5 text-[#ef4444]" />
+                  ) : (
+                    <RotateCcw className="w-5 h-5 text-[#5a9a62]" />
+                  )}
+                </div>
+                <h3 className="text-[15px] text-[#18181b] mb-1.5" style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}>
+                  {confirmDialog.type === "delete" ? "Delete Session" : "Regenerate Session"}
+                </h3>
+                <p className="text-[13px] text-[#52525b] leading-relaxed" style={{ fontFamily: "var(--font-body)" }}>
+                  {confirmDialog.type === "delete" ? (
+                    <>Are you sure you want to delete <strong>&ldquo;{confirmDialog.sessionTitle}&rdquo;</strong>? This action is permanent and cannot be undone.</>
+                  ) : (
+                    <>Regenerating <strong>&ldquo;{confirmDialog.sessionTitle}&rdquo;</strong> will create a new version of this session. This will use <strong>1 credit</strong> from your balance.</>
+                  )}
+                </p>
+              </div>
+              <div className="px-6 pb-5 flex items-center gap-2.5">
+                <button
+                  onClick={() => setConfirmDialog(null)}
+                  className="flex-1 px-4 py-2.5 rounded-xl text-[13px] text-[#52525b] bg-[#f4f4f5] hover:bg-[#e8e8ec] transition-colors cursor-pointer"
+                  style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => {
+                    // Mock action — would trigger API call
+                    setConfirmDialog(null);
+                  }}
+                  className={`flex-1 px-4 py-2.5 rounded-xl text-[13px] text-white transition-colors cursor-pointer ${
+                    confirmDialog.type === "delete"
+                      ? "bg-[#ef4444] hover:bg-[#dc2626]"
+                      : "bg-[#5a9a62] hover:bg-[#4a7c50]"
+                  }`}
+                  style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}
+                >
+                  {confirmDialog.type === "delete" ? "Delete Permanently" : "Regenerate · 1 Credit"}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
         )}
       </AnimatePresence>
     </div>
