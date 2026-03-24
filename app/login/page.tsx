@@ -1,7 +1,19 @@
 "use client";
 
 import { useState } from "react";
-import { motion } from "motion/react";
+import { motion, AnimatePresence } from "motion/react";
+import {
+  Play,
+  Pause,
+  SkipBack,
+  SkipForward,
+  Scissors,
+  Volume2,
+  Layers,
+  Wand2,
+  Clock,
+  Mic,
+} from "lucide-react";
 import svgPaths from "@/lib/svg-paths";
 
 /* ─── Logo ─── */
@@ -16,7 +28,7 @@ function Logo() {
   );
 }
 
-/* ─── Google Icon ─── */
+/* ─── Icons ─── */
 
 function GoogleIcon() {
   return (
@@ -29,8 +41,6 @@ function GoogleIcon() {
   );
 }
 
-/* ─── Apple Icon ─── */
-
 function AppleIcon() {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
@@ -39,24 +49,296 @@ function AppleIcon() {
   );
 }
 
-/* ─── Background ─── */
+/* ─── Studio Timeline Track ─── */
 
-function AmbientBackground() {
+function TimelineTrack({
+  label,
+  icon: Icon,
+  color,
+  segments,
+  delay,
+}: {
+  label: string;
+  icon: React.ElementType;
+  color: string;
+  segments: { start: number; width: number; opacity?: number }[];
+  delay: number;
+}) {
   return (
-    <div className="fixed inset-0 pointer-events-none overflow-hidden">
-      <div className="grain-overlay absolute inset-0" />
-      <div
-        className="absolute w-[800px] h-[800px] rounded-full blur-[180px] opacity-30"
-        style={{ top: "5%", right: "-15%", background: "#d4cfc6" }}
-      />
-      <div
-        className="absolute w-[600px] h-[600px] rounded-full blur-[160px] opacity-25"
-        style={{ bottom: "-5%", left: "-10%", background: "#e8e4de" }}
-      />
-      <div
-        className="animate-breathe absolute w-[300px] h-[300px] rounded-full blur-[120px] opacity-15"
-        style={{ top: "40%", left: "50%", transform: "translate(-50%, -50%)", background: "#c8d5ca" }}
-      />
+    <motion.div
+      initial={{ opacity: 0, x: 20 }}
+      animate={{ opacity: 1, x: 0 }}
+      transition={{ delay, duration: 0.4 }}
+      className="flex items-center gap-3"
+    >
+      <div className="w-24 flex items-center gap-2 shrink-0">
+        <Icon className="w-3.5 h-3.5 text-[var(--color-sand-500)]" />
+        <span className="text-xs text-[var(--color-sand-600)] truncate" style={{ fontFamily: "var(--font-body)" }}>
+          {label}
+        </span>
+      </div>
+      <div className="flex-1 h-8 rounded-lg bg-[var(--color-sand-100)] relative overflow-hidden">
+        {segments.map((seg, i) => (
+          <motion.div
+            key={i}
+            className="absolute top-1 bottom-1 rounded-md"
+            style={{
+              left: `${seg.start}%`,
+              width: `${seg.width}%`,
+              background: color,
+              opacity: seg.opacity ?? 0.7,
+            }}
+            initial={{ scaleX: 0 }}
+            animate={{ scaleX: 1 }}
+            transition={{ delay: delay + 0.1 + i * 0.08, duration: 0.4, ease: "easeOut" }}
+          />
+        ))}
+      </div>
+    </motion.div>
+  );
+}
+
+/* ─── Interactive Studio Preview ─── */
+
+function StudioPreview() {
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [playheadPos, setPlayheadPos] = useState(32);
+  const [activeTab, setActiveTab] = useState<"timeline" | "mix">("timeline");
+
+  return (
+    <div className="w-full h-full flex flex-col">
+      {/* Studio Header */}
+      <motion.div
+        initial={{ opacity: 0, y: -8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.3 }}
+        className="flex items-center justify-between mb-5"
+      >
+        <div>
+          <h3 className="text-lg text-[var(--color-sand-900)]" style={{ fontFamily: "var(--font-display)" }}>
+            Kilt Studio
+          </h3>
+          <p className="text-xs text-[var(--color-sand-500)]" style={{ fontFamily: "var(--font-body)" }}>
+            Edit, remix, and perfect your meditations
+          </p>
+        </div>
+        <div className="flex gap-1">
+          {(["timeline", "mix"] as const).map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`px-3 py-1.5 rounded-lg text-xs capitalize transition-all cursor-pointer ${
+                activeTab === tab
+                  ? "bg-[var(--color-sand-900)] text-[var(--color-sand-50)]"
+                  : "text-[var(--color-sand-500)] hover:bg-[var(--color-sand-100)]"
+              }`}
+              style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}
+            >
+              {tab}
+            </button>
+          ))}
+        </div>
+      </motion.div>
+
+      {/* Session Info Bar */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.4 }}
+        className="flex items-center gap-2 mb-4"
+      >
+        <span className="px-2.5 py-1 rounded-full bg-[var(--color-sage-light)] text-[var(--color-sage)] text-xs" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>
+          Stress Relief
+        </span>
+        <span className="px-2.5 py-1 rounded-full bg-[var(--color-sand-100)] text-[var(--color-sand-700)] text-xs" style={{ fontFamily: "var(--font-body)" }}>
+          10 min
+        </span>
+        <span className="px-2.5 py-1 rounded-full bg-[var(--color-sand-100)] text-[var(--color-sand-700)] text-xs" style={{ fontFamily: "var(--font-body)" }}>
+          Serene voice
+        </span>
+      </motion.div>
+
+      <AnimatePresence mode="wait">
+        {activeTab === "timeline" ? (
+          <motion.div
+            key="timeline"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="flex-1 flex flex-col"
+          >
+            {/* Timeline Ruler */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.5 }}
+              className="flex items-center gap-3 mb-3"
+            >
+              <div className="w-24 shrink-0" />
+              <div className="flex-1 flex justify-between px-1">
+                {["0:00", "2:30", "5:00", "7:30", "10:00"].map((t) => (
+                  <span key={t} className="text-[10px] text-[var(--color-sand-400)]" style={{ fontFamily: "var(--font-body)" }}>
+                    {t}
+                  </span>
+                ))}
+              </div>
+            </motion.div>
+
+            {/* Tracks */}
+            <div className="flex-1 space-y-2 relative">
+              <TimelineTrack
+                label="Voice"
+                icon={Mic}
+                color="var(--color-sage)"
+                segments={[
+                  { start: 2, width: 22 },
+                  { start: 28, width: 18 },
+                  { start: 52, width: 25 },
+                  { start: 82, width: 15 },
+                ]}
+                delay={0.5}
+              />
+              <TimelineTrack
+                label="Guidance"
+                icon={Wand2}
+                color="var(--color-dusk)"
+                segments={[
+                  { start: 0, width: 30, opacity: 0.5 },
+                  { start: 35, width: 20, opacity: 0.7 },
+                  { start: 60, width: 35, opacity: 0.5 },
+                ]}
+                delay={0.6}
+              />
+              <TimelineTrack
+                label="Pauses"
+                icon={Clock}
+                color="var(--color-sand-400)"
+                segments={[
+                  { start: 24, width: 4, opacity: 0.4 },
+                  { start: 47, width: 5, opacity: 0.4 },
+                  { start: 78, width: 4, opacity: 0.4 },
+                ]}
+                delay={0.7}
+              />
+              <TimelineTrack
+                label="Ambient"
+                icon={Volume2}
+                color="var(--color-ocean)"
+                segments={[{ start: 0, width: 100, opacity: 0.3 }]}
+                delay={0.8}
+              />
+              <TimelineTrack
+                label="Binaural"
+                icon={Layers}
+                color="var(--color-ember)"
+                segments={[
+                  { start: 5, width: 40, opacity: 0.4 },
+                  { start: 50, width: 45, opacity: 0.5 },
+                ]}
+                delay={0.9}
+              />
+
+              {/* Playhead */}
+              <motion.div
+                className="absolute top-0 bottom-0 w-[2px] bg-[var(--color-sand-900)] z-10 pointer-events-none"
+                style={{ left: `calc(${playheadPos}% + 108px - ${playheadPos * 1.08}px + ${playheadPos}% * 0)` }}
+                initial={{ opacity: 0 }}
+                animate={{
+                  opacity: 1,
+                  left: isPlaying ? "calc(100%)" : `calc(24px + ${playheadPos}% * 0.76 + 72px)`,
+                }}
+                transition={isPlaying ? { duration: 8, ease: "linear" } : { duration: 0.3 }}
+              >
+                <div className="w-2 h-2 rounded-full bg-[var(--color-sand-900)] -translate-x-[3px] -translate-y-1" />
+              </motion.div>
+            </div>
+          </motion.div>
+        ) : (
+          <motion.div
+            key="mix"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="flex-1 flex flex-col gap-3"
+          >
+            {/* Mix Sliders */}
+            {[
+              { label: "Voice Volume", value: 80, color: "var(--color-sage)" },
+              { label: "Ambient Level", value: 45, color: "var(--color-ocean)" },
+              { label: "Binaural Depth", value: 30, color: "var(--color-ember)" },
+              { label: "Reverb", value: 55, color: "var(--color-dusk)" },
+              { label: "Fade In/Out", value: 65, color: "var(--color-sand-500)" },
+            ].map((slider, i) => (
+              <motion.div
+                key={slider.label}
+                initial={{ opacity: 0, x: 12 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.1 + i * 0.06 }}
+                className="flex items-center gap-3"
+              >
+                <span className="w-28 text-xs text-[var(--color-sand-600)] shrink-0" style={{ fontFamily: "var(--font-body)" }}>
+                  {slider.label}
+                </span>
+                <div className="flex-1 h-2 rounded-full bg-[var(--color-sand-100)] relative overflow-hidden">
+                  <motion.div
+                    className="h-full rounded-full"
+                    style={{ background: slider.color }}
+                    initial={{ width: 0 }}
+                    animate={{ width: `${slider.value}%` }}
+                    transition={{ delay: 0.2 + i * 0.08, duration: 0.5, ease: "easeOut" }}
+                  />
+                </div>
+                <span className="w-8 text-right text-xs text-[var(--color-sand-500)]" style={{ fontFamily: "var(--font-body)" }}>
+                  {slider.value}%
+                </span>
+              </motion.div>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Transport Controls */}
+      <motion.div
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 1 }}
+        className="mt-5 pt-4 border-t border-[var(--color-sand-200)] flex items-center justify-between"
+      >
+        <div className="flex items-center gap-1">
+          {[
+            { icon: Scissors, label: "Split" },
+            { icon: Wand2, label: "Regenerate" },
+            { icon: Layers, label: "Layers" },
+          ].map((tool) => (
+            <button
+              key={tool.label}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[var(--color-sand-500)] hover:bg-[var(--color-sand-100)] hover:text-[var(--color-sand-700)] transition-all cursor-pointer"
+            >
+              <tool.icon className="w-3.5 h-3.5" />
+              <span className="text-[10px]" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>{tool.label}</span>
+            </button>
+          ))}
+        </div>
+
+        <div className="flex items-center gap-2">
+          <button className="w-8 h-8 flex items-center justify-center rounded-lg text-[var(--color-sand-500)] hover:bg-[var(--color-sand-100)] transition-colors cursor-pointer">
+            <SkipBack className="w-3.5 h-3.5" />
+          </button>
+          <button
+            onClick={() => setIsPlaying(!isPlaying)}
+            className="w-10 h-10 flex items-center justify-center rounded-xl bg-[var(--color-sand-900)] text-[var(--color-sand-50)] hover:bg-[var(--color-sand-800)] transition-colors cursor-pointer shadow-sm"
+          >
+            {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4 ml-0.5" />}
+          </button>
+          <button className="w-8 h-8 flex items-center justify-center rounded-lg text-[var(--color-sand-500)] hover:bg-[var(--color-sand-100)] transition-colors cursor-pointer">
+            <SkipForward className="w-3.5 h-3.5" />
+          </button>
+        </div>
+
+        <span className="text-xs text-[var(--color-sand-500)] tabular-nums" style={{ fontFamily: "var(--font-body)" }}>
+          3:12 / 10:00
+        </span>
+      </motion.div>
     </div>
   );
 }
@@ -67,52 +349,98 @@ export default function LoginPage() {
   const [isHovered, setIsHovered] = useState(false);
 
   return (
-    <div className="min-h-screen relative overflow-hidden" style={{ background: "var(--color-sand-50)" }}>
-      <AmbientBackground />
+    <div className="min-h-screen relative overflow-hidden flex" style={{ background: "var(--color-sand-50)" }}>
+      {/* Ambient bg for right side */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden">
+        <div className="grain-overlay absolute inset-0" />
+        <div
+          className="absolute w-[600px] h-[600px] rounded-full blur-[180px] opacity-25"
+          style={{ top: "10%", right: "-10%", background: "#c8d5ca" }}
+        />
+        <div
+          className="absolute w-[400px] h-[400px] rounded-full blur-[140px] opacity-20"
+          style={{ bottom: "10%", right: "20%", background: "#e8e4de" }}
+        />
+      </div>
 
-      <main className="relative z-10 min-h-screen flex items-center justify-center px-6">
+      {/* ─── Left: Studio Preview ─── */}
+      <div className="hidden md:flex relative w-[55%] lg:w-[60%] min-h-screen items-center justify-center p-8 lg:p-12">
+        {/* Background for left panel */}
+        <div className="absolute inset-0 bg-white/40 border-r border-[var(--color-sand-200)]" />
+
+        {/* Back to home */}
+        <motion.a
+          href="/"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.1 }}
+          className="absolute top-6 left-6 z-20 flex items-center gap-2 text-[var(--color-sand-900)] cursor-pointer"
+        >
+          <Logo />
+          <span className="text-lg tracking-tight" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>
+            MindFlow
+          </span>
+        </motion.a>
+
+        <motion.div
+          initial={{ opacity: 0, x: -30 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 0.3, duration: 0.5 }}
+          className="relative z-10 w-full max-w-2xl bg-white rounded-3xl p-7 lg:p-9 shadow-sm border border-[var(--color-sand-200)]"
+          style={{ minHeight: 420 }}
+        >
+          <StudioPreview />
+        </motion.div>
+      </div>
+
+      {/* ─── Right: Sign In ─── */}
+      <div className="relative z-10 w-full md:w-[45%] lg:w-[40%] min-h-screen flex flex-col items-center justify-center px-8 md:px-12 lg:px-16">
+        {/* Logo on mobile only */}
+        <motion.a
+          href="/"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.1 }}
+          className="absolute top-6 left-6 flex md:hidden items-center gap-2 text-[var(--color-sand-900)] cursor-pointer"
+        >
+          <Logo />
+          <span className="text-lg tracking-tight" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>
+            MindFlow
+          </span>
+        </motion.a>
+
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4 }}
-          className="w-full max-w-sm mx-auto flex flex-col items-center"
+          className="w-full max-w-sm"
         >
-          {/* Logo */}
-          <motion.div
-            initial={{ opacity: 0, y: -8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            className="text-[var(--color-sand-900)] mb-6"
-          >
-            <Logo />
-          </motion.div>
-
           {/* Title */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.1, duration: 0.5 }}
-            className="text-center mb-10"
+            className="mb-10"
           >
-            <h1 className="text-[2.5rem] md:text-[3.25rem] text-[var(--color-sand-900)] leading-tight mb-3">
+            <h1 className="text-[2.25rem] md:text-[2.75rem] text-[var(--color-sand-900)] leading-tight mb-3">
               Welcome to
               <br />
-              <span className="italic">MindFlow</span>
+              <span className="italic">Kilt Studio</span>
             </h1>
-            <p className="text-[var(--color-sand-500)] text-sm" style={{ fontFamily: "var(--font-body)" }}>
-              AI-crafted meditations that adapt to you.
+            <p className="text-[var(--color-sand-500)] text-sm leading-relaxed" style={{ fontFamily: "var(--font-body)" }}>
+              Sign in to edit, remix, and perfect your AI-generated meditations.
             </p>
           </motion.div>
 
-          {/* Card */}
+          {/* Auth Card */}
           <motion.div
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2, duration: 0.4 }}
-            className="w-full bg-white rounded-3xl p-8 shadow-sm border border-[var(--color-sand-200)]"
+            className="w-full"
           >
             <p
-              className="text-xs uppercase tracking-widest text-[var(--color-sand-500)] mb-4 font-medium text-center"
+              className="text-xs uppercase tracking-widest text-[var(--color-sand-500)] mb-4 font-medium"
               style={{ fontFamily: "var(--font-body)" }}
             >
               Sign in to continue
@@ -149,7 +477,7 @@ export default function LoginPage() {
 
             {/* Terms */}
             <p
-              className="text-center text-[var(--color-sand-500)] text-xs mt-5 leading-relaxed"
+              className="text-[var(--color-sand-500)] text-xs mt-6 leading-relaxed"
               style={{ fontFamily: "var(--font-body)" }}
             >
               By continuing, you agree to our{" "}
@@ -163,7 +491,7 @@ export default function LoginPage() {
             </p>
           </motion.div>
         </motion.div>
-      </main>
+      </div>
     </div>
   );
 }

@@ -47,6 +47,30 @@ const ambients = [
   { id: "wind", label: "Wind", icon: Wind },
 ];
 
+/* Protocol-aware soundscape suggestions — auto-selected based on session intent */
+const soundscapePresets: Record<string, { label: string; description: string; layers: string[]; protocol: string; color: string }[]> = {
+  sleep: [
+    { label: "Deep Night", description: "Engineered for CBT-I sleep onset", layers: ["Low drone", "Distant rain", "Delta wave undertone"], protocol: "CBT-I", color: "var(--color-dusk)" },
+    { label: "Soft Drift", description: "NSDR-optimized descent into rest", layers: ["White noise fade", "Heartbeat sync", "Ocean bed"], protocol: "NSDR", color: "var(--color-ocean)" },
+    { label: "Moonlit Forest", description: "PMR tension release atmosphere", layers: ["Night crickets", "Gentle stream", "Warm pad"], protocol: "PMR", color: "var(--color-sage)" },
+  ],
+  focus: [
+    { label: "Flow State", description: "MBSR sustained attention scaffold", layers: ["Brown noise", "Minimal piano", "Room tone"], protocol: "MBSR", color: "var(--color-sage)" },
+    { label: "Deep Work", description: "HRV-BF coherence at 0.1Hz", layers: ["Binaural 40Hz", "Soft static", "Clock pulse"], protocol: "HRV-BF", color: "var(--color-ocean)" },
+    { label: "Morning Clear", description: "ACT present-moment grounding", layers: ["Bird dawn chorus", "Wind through leaves", "Singing bowl"], protocol: "ACT", color: "var(--color-ember)" },
+  ],
+  stress: [
+    { label: "Safe Harbor", description: "PMR progressive release sequence", layers: ["Ocean waves", "Warm sub-bass", "Breath guide tone"], protocol: "PMR", color: "var(--color-ocean)" },
+    { label: "Forest Floor", description: "MBSR body scan environment", layers: ["Rain on canopy", "Earth resonance", "Distant thunder"], protocol: "MBSR", color: "var(--color-sage)" },
+    { label: "Letting Go", description: "ACT defusion through sound", layers: ["Tibetan bowls", "Wind", "Resonant hum"], protocol: "ACT", color: "var(--color-dusk)" },
+  ],
+  default: [
+    { label: "Sanctuary", description: "Adaptive all-purpose soundscape", layers: ["Ambient pad", "Nature blend", "Breath sync"], protocol: "MBSR", color: "var(--color-sage)" },
+    { label: "Still Water", description: "Minimal, spacious atmosphere", layers: ["Water droplets", "Room reverb", "Soft drone"], protocol: "PMR", color: "var(--color-ocean)" },
+    { label: "Open Sky", description: "Expansive, grounding presence", layers: ["Wind layers", "Distant chimes", "Earth tone"], protocol: "ACT", color: "var(--color-ember)" },
+  ],
+};
+
 const suggestions = [
   "A 10-minute meditation for stress relief after a long day",
   "Help me fall asleep with a calming body scan",
@@ -84,6 +108,13 @@ const protocols = [
     name: "Heart Rate Variability Biofeedback",
     description: "Resonance frequency breathing at 4.5-6.5 breaths per minute with precision-timed inhale/exhale ratio guidance.",
   },
+];
+
+const samples = [
+  { id: "sleep", label: "Deep Sleep", duration: "0:30", protocol: "CBT-I + NSDR", src: "/samples/sleep.mp3" },
+  { id: "focus", label: "Sharp Focus", duration: "0:25", protocol: "MBSR", src: "/samples/focus.mp3" },
+  { id: "stress", label: "Stress Relief", duration: "0:30", protocol: "PMR + ACT", src: "/samples/stress.mp3" },
+  { id: "anxiety", label: "Ease Anxiety", duration: "0:20", protocol: "HRV-BF", src: "/samples/anxiety.mp3" },
 ];
 
 /* ─── Logo ─── */
@@ -328,11 +359,27 @@ export default function HomePage() {
   const [voice, setVoice] = useState<string>("serene-f");
   const [ambient, setAmbient] = useState<string>("none");
   const [isPlaying, setIsPlaying] = useState(false);
+  const [soundscape, setSoundscape] = useState<string | null>(null);
+  const [detectedIntent, setDetectedIntent] = useState<string>("default");
+  const [playing, setPlaying] = useState<string | null>(null);
+  const [sampleProgress, setSampleProgress] = useState<Record<string, number>>({});
+  const sampleIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const infoRef = useRef<HTMLDivElement>(null);
 
   const handleSubmitPrompt = useCallback((text: string) => {
     if (!text.trim()) return;
-    setPrompt(text.trim());
+    const t = text.trim();
+    setPrompt(t);
+
+    // Detect intent for protocol-aware soundscapes
+    const lower = t.toLowerCase();
+    let intent = "default";
+    if (/sleep|insomnia|bed|night|dream|rest|tired/i.test(lower)) intent = "sleep";
+    else if (/focus|concentrat|work|study|morning|sharp|productivity|attention/i.test(lower)) intent = "focus";
+    else if (/stress|anxi|worry|overwhelm|calm|relax|tension|panic/i.test(lower)) intent = "stress";
+    setDetectedIntent(intent);
+    setSoundscape(null);
+
     setStage("options");
   }, []);
 
@@ -355,6 +402,38 @@ export default function HomePage() {
   const scrollToInfo = () => {
     infoRef.current?.scrollIntoView({ behavior: "smooth" });
   };
+
+  const handleSamplePlay = useCallback((id: string, durationStr: string) => {
+    if (sampleIntervalRef.current) clearInterval(sampleIntervalRef.current);
+
+    if (playing === id) {
+      setPlaying(null);
+      return;
+    }
+
+    setPlaying(id);
+    setSampleProgress((p) => ({ ...p, [id]: 0 }));
+
+    const parts = durationStr.split(":");
+    const totalMs = (parseInt(parts[0]) * 60 + parseInt(parts[1])) * 1000;
+    const tick = 50;
+    let elapsed = 0;
+
+    // TODO: Replace with actual audio playback
+    sampleIntervalRef.current = setInterval(() => {
+      elapsed += tick;
+      const pct = Math.min(elapsed / totalMs, 1);
+      setSampleProgress((p) => ({ ...p, [id]: pct }));
+      if (pct >= 1) {
+        if (sampleIntervalRef.current) clearInterval(sampleIntervalRef.current);
+        setPlaying(null);
+      }
+    }, tick);
+  }, [playing]);
+
+  useEffect(() => {
+    return () => { if (sampleIntervalRef.current) clearInterval(sampleIntervalRef.current); };
+  }, []);
 
   return (
     <div className="min-h-screen" style={{ background: "var(--color-sand-50)" }}>
@@ -387,7 +466,7 @@ export default function HomePage() {
                 className="px-4 py-2 rounded-xl bg-[var(--color-sand-900)] text-[var(--color-sand-50)] hover:bg-[var(--color-sand-800)] transition-colors text-sm cursor-pointer"
                 style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}
               >
-                Sign in
+                Sign in / Kilt Studio
               </a>
             </div>
           </div>
@@ -468,6 +547,65 @@ export default function HomePage() {
                     </svg>
                   </button>
                 </div>
+
+                {/* Hero sample teaser — 2 samples */}
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.5 }}
+                  className="w-full mt-8"
+                >
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <Headphones className="w-3.5 h-3.5 text-[var(--color-sand-400)]" />
+                      <p className="text-xs uppercase tracking-widest text-[var(--color-sand-500)] font-medium" style={{ fontFamily: "var(--font-body)" }}>
+                        Made with MindFlow
+                      </p>
+                    </div>
+                    <button
+                      onClick={scrollToInfo}
+                      className="text-xs text-[var(--color-sand-500)] hover:text-[var(--color-sand-900)] transition-colors cursor-pointer flex items-center gap-1"
+                      style={{ fontFamily: "var(--font-body)" }}
+                    >
+                      Hear all samples
+                      <ChevronDown className="w-3 h-3" />
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    {samples.slice(0, 2).map((s) => {
+                      const isActive = playing === s.id;
+                      const pct = sampleProgress[s.id] || 0;
+                      return (
+                        <button
+                          key={s.id}
+                          onClick={() => handleSamplePlay(s.id, s.duration)}
+                          className="group relative bg-white border border-[var(--color-sand-200)] rounded-xl p-3 text-left cursor-pointer hover:border-[var(--color-sand-300)] hover:shadow-sm transition-all overflow-hidden"
+                        >
+                          {isActive && (
+                            <motion.div
+                              className="absolute inset-y-0 left-0 bg-[var(--color-sage-light)] opacity-40"
+                              style={{ width: `${pct * 100}%` }}
+                            />
+                          )}
+                          <div className="relative z-10 flex items-center gap-3">
+                            <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-colors ${isActive ? "bg-[var(--color-sand-900)] text-[var(--color-sand-50)]" : "bg-[var(--color-sand-100)] text-[var(--color-sand-700)] group-hover:bg-[var(--color-sand-200)]"}`}>
+                              {isActive ? <Pause className="w-3 h-3" /> : <Play className="w-3 h-3 ml-0.5" />}
+                            </div>
+                            <div className="min-w-0">
+                              <p className="text-sm font-medium text-[var(--color-sand-900)] truncate" style={{ fontFamily: "var(--font-body)" }}>
+                                {s.label}
+                              </p>
+                              <p className="text-[10px] text-[var(--color-sand-400)]" style={{ fontFamily: "var(--font-body)" }}>
+                                {s.protocol} &middot; {s.duration}
+                              </p>
+                            </div>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </motion.div>
+
               </motion.div>
             )}
 
@@ -508,13 +646,50 @@ export default function HomePage() {
                 </motion.div>
 
                 <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="mb-10">
-                  <p className="text-xs uppercase tracking-widest text-[var(--color-sand-500)] mb-3 font-medium" style={{ fontFamily: "var(--font-body)" }}>Ambient Sound</p>
-                  <div className="flex gap-2">
-                    {ambients.map((a) => { const Icon = a.icon; return (
-                      <button key={a.id} onClick={() => setAmbient(a.id)} className={`flex flex-col items-center gap-1.5 py-2.5 px-3 rounded-xl transition-all flex-1 cursor-pointer ${ambient === a.id ? "bg-[var(--color-sand-900)] text-[var(--color-sand-50)] shadow-sm" : "bg-white/60 text-[var(--color-sand-700)] hover:bg-white"}`}>
-                        <Icon className="w-4 h-4" /><span className="text-xs" style={{ fontFamily: "var(--font-body)" }}>{a.label}</span>
-                      </button>
-                    ); })}
+                  <div className="flex items-center gap-2 mb-3">
+                    <p className="text-xs uppercase tracking-widest text-[var(--color-sand-500)] font-medium" style={{ fontFamily: "var(--font-body)" }}>Soundscape</p>
+                    <span className="px-2 py-0.5 rounded-full bg-[var(--color-sage-light)] text-[var(--color-sage)] text-[10px] font-medium" style={{ fontFamily: "var(--font-body)" }}>
+                      Auto-selected for your session
+                    </span>
+                  </div>
+                  <div className="space-y-2">
+                    {(soundscapePresets[detectedIntent] || soundscapePresets.default).map((preset) => {
+                      const isSelected = soundscape === preset.label;
+                      return (
+                        <button
+                          key={preset.label}
+                          onClick={() => setSoundscape(preset.label)}
+                          className={`w-full flex items-start gap-4 p-4 rounded-xl transition-all cursor-pointer text-left ${isSelected ? "bg-[var(--color-sand-900)] text-[var(--color-sand-50)] shadow-sm" : "bg-white/60 text-[var(--color-sand-900)] hover:bg-white"}`}
+                        >
+                          <div
+                            className="w-2 h-2 rounded-full mt-1.5 shrink-0"
+                            style={{ background: isSelected ? "var(--color-sand-50)" : preset.color }}
+                          />
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-0.5">
+                              <span className="text-sm font-medium" style={{ fontFamily: "var(--font-body)" }}>{preset.label}</span>
+                              <span className={`px-1.5 py-0.5 rounded text-[10px] font-mono ${isSelected ? "bg-white/15 text-white/60" : "bg-[var(--color-sand-100)] text-[var(--color-sand-500)]"}`}>
+                                {preset.protocol}
+                              </span>
+                            </div>
+                            <p className={`text-xs mb-1.5 ${isSelected ? "opacity-60" : "text-[var(--color-sand-500)]"}`} style={{ fontFamily: "var(--font-body)" }}>
+                              {preset.description}
+                            </p>
+                            <div className="flex flex-wrap gap-1">
+                              {preset.layers.map((layer) => (
+                                <span
+                                  key={layer}
+                                  className={`px-1.5 py-0.5 rounded text-[10px] ${isSelected ? "bg-white/10 text-white/50" : "bg-[var(--color-sand-50)] text-[var(--color-sand-400)]"}`}
+                                  style={{ fontFamily: "var(--font-body)" }}
+                                >
+                                  {layer}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        </button>
+                      );
+                    })}
                   </div>
                 </motion.div>
 
@@ -589,31 +764,149 @@ export default function HomePage() {
           </AnimatePresence>
         </div>
 
-        {/* Scroll hint — only on input stage */}
+        {/* Scroll hint — prominent samples CTA */}
         {stage === "input" && (
           <motion.button
             onClick={scrollToInfo}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 1 }}
-            className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-1 text-[var(--color-sand-400)] cursor-pointer"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.8 }}
+            className="absolute bottom-8 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-2 cursor-pointer group"
           >
-            <span className="text-xs" style={{ fontFamily: "var(--font-body)" }}>Learn more</span>
-            <motion.div animate={{ y: [0, 4, 0] }} transition={{ duration: 1.5, repeat: Infinity }}>
-              <ChevronDown className="w-4 h-4" />
+            <span
+              className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-white/80 backdrop-blur-sm border border-[var(--color-sand-200)] shadow-sm text-[var(--color-sand-700)] group-hover:bg-white group-hover:shadow-md transition-all"
+              style={{ fontFamily: "var(--font-body)" }}
+            >
+              <Headphones className="w-4 h-4 text-[var(--color-sand-500)]" />
+              <span className="text-sm font-medium">Hear what MindFlow sounds like</span>
+            </span>
+            <motion.div animate={{ y: [0, 5, 0] }} transition={{ duration: 1.5, repeat: Infinity }}>
+              <ChevronDown className="w-4 h-4 text-[var(--color-sand-400)]" />
             </motion.div>
           </motion.button>
         )}
       </section>
 
       {/* ════════════════════════════════════════════
+          SECTION 0 — AUDIO SAMPLES
+         ════════════════════════════════════════════ */}
+      <section ref={infoRef} className="relative py-20 px-6" style={{ background: "var(--color-sand-900)" }}>
+        <div className="max-w-5xl mx-auto">
+          <FadeIn className="text-center mb-10">
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 text-white/60 text-xs mb-5" style={{ fontFamily: "var(--font-body)" }}>
+              <Headphones className="w-3.5 h-3.5" />
+              Made with MindFlow
+            </div>
+            <h2 className="text-[2.5rem] md:text-[3.5rem] text-[var(--color-sand-50)] leading-tight mb-4">
+              Don&apos;t take our word for it.<br />Listen.
+            </h2>
+            <p className="text-base text-white/50 max-w-xl mx-auto leading-relaxed" style={{ fontFamily: "var(--font-body)" }}>
+              Every sample below was generated entirely by MindFlow &mdash; voice, pauses, ambient layers, and all.
+              Hit play and hear the difference.
+            </p>
+          </FadeIn>
+
+          <FadeIn>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {samples.map((s) => {
+                const isActive = playing === s.id;
+                const pct = sampleProgress[s.id] || 0;
+                return (
+                  <motion.button
+                    key={s.id}
+                    onClick={() => handleSamplePlay(s.id, s.duration)}
+                    className="group relative bg-white/5 border border-white/10 rounded-2xl p-5 text-left cursor-pointer hover:bg-white/10 hover:border-white/20 transition-all overflow-hidden"
+                    whileHover={{ y: -2 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    {/* Progress fill */}
+                    {isActive && (
+                      <motion.div
+                        className="absolute inset-y-0 left-0 bg-white/8"
+                        style={{ width: `${pct * 100}%` }}
+                      />
+                    )}
+                    <div className="relative z-10">
+                      <div className="flex items-center justify-between mb-4">
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${isActive ? "bg-white text-[var(--color-sand-900)]" : "bg-white/10 text-white/80 group-hover:bg-white/20"}`}>
+                          {isActive
+                            ? <Pause className="w-4 h-4" />
+                            : <Play className="w-4 h-4 ml-0.5" />
+                          }
+                        </div>
+                        <span className="text-xs font-mono text-white/30">{s.duration}</span>
+                      </div>
+                      <p className="text-base font-medium text-white/90 mb-1" style={{ fontFamily: "var(--font-body)" }}>
+                        {s.label}
+                      </p>
+                      <div className="flex items-center gap-1.5">
+                        <span className="px-2 py-0.5 rounded-full bg-white/8 text-white/40 text-[10px]" style={{ fontFamily: "var(--font-body)" }}>
+                          {s.protocol}
+                        </span>
+                      </div>
+                      {/* Mini waveform */}
+                      <div className="flex items-end gap-[2px] h-6 mt-4">
+                        {Array.from({ length: 20 }).map((_, i) => {
+                          const h = 20 + Math.sin(i * 0.6 + samples.indexOf(s) * 2) * 30 + Math.cos(i * 0.9) * 20;
+                          return (
+                            <motion.div
+                              key={i}
+                              className="w-[2px] rounded-full"
+                              style={{
+                                height: `${h}%`,
+                                background: isActive ? "rgba(255,255,255,0.5)" : "rgba(255,255,255,0.15)",
+                              }}
+                              animate={isActive ? { height: [`${h}%`, `${20 + Math.random() * 60}%`, `${h}%`] } : {}}
+                              transition={isActive ? { duration: 0.6 + Math.random() * 0.4, repeat: Infinity, ease: "easeInOut" } : {}}
+                            />
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </motion.button>
+                );
+              })}
+            </div>
+          </FadeIn>
+        </div>
+      </section>
+
+      {/* ════════════════════════════════════════════
+          TRANSITION — Why We Sound Different
+         ════════════════════════════════════════════ */}
+      <div className="relative overflow-hidden" style={{ background: "var(--color-sand-900)" }}>
+        {/* Horizontal animated line */}
+        <motion.div
+          className="absolute top-0 left-0 h-[1px] bg-gradient-to-r from-transparent via-white/30 to-transparent"
+          initial={{ width: "0%", left: "50%" }}
+          whileInView={{ width: "100%", left: "0%" }}
+          transition={{ duration: 1.2, ease: "easeOut" }}
+          viewport={{ once: true }}
+        />
+        <div className="py-14 px-6 flex items-center justify-center">
+          <FadeIn>
+            <p className="text-[1.5rem] md:text-[2.25rem] text-center text-white/90 leading-snug" style={{ fontFamily: "var(--font-display)" }}>
+              Why our AI sessions sound different
+            </p>
+          </FadeIn>
+        </div>
+        <motion.div
+          className="absolute bottom-0 left-0 h-[1px] bg-gradient-to-r from-transparent via-white/30 to-transparent"
+          initial={{ width: "0%", left: "50%" }}
+          whileInView={{ width: "100%", left: "0%" }}
+          transition={{ duration: 1.2, ease: "easeOut", delay: 0.2 }}
+          viewport={{ once: true }}
+        />
+      </div>
+
+      {/* ════════════════════════════════════════════
           SECTION 1 — LIVE PAUSE DEMO
          ════════════════════════════════════════════ */}
-      <section ref={infoRef} className="relative py-32 px-6 overflow-hidden" style={{ background: "var(--color-sand-50)" }}>
+      <section className="relative py-20 px-6 overflow-hidden" style={{ background: "var(--color-sand-50)" }}>
         <div className="max-w-5xl mx-auto">
           <FadeIn className="text-center mb-6">
             <p className="text-xs uppercase tracking-[0.2em] text-[var(--color-sand-500)] mb-4 font-medium" style={{ fontFamily: "var(--font-body)" }}>
-              See the Difference
+              Pause &amp; Semantics Awareness
             </p>
             <h2 className="text-[2.5rem] md:text-[3.5rem] text-[var(--color-sand-900)] leading-tight mb-6">
               Most AI reads text.<br />Ours understands silence.
@@ -685,13 +978,13 @@ export default function HomePage() {
       {/* ════════════════════════════════════════════
           SECTION 2 — STUDIO AUDIO
          ════════════════════════════════════════════ */}
-      <section className="relative py-32 px-6" style={{ background: "var(--color-sand-900)" }}>
+      <section className="relative py-20 px-6" style={{ background: "var(--color-sand-900)" }}>
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <div className="absolute w-[600px] h-[600px] rounded-full blur-[200px] opacity-8" style={{ top: "-10%", left: "20%", background: "#4a7a5a" }} />
           <div className="absolute w-[500px] h-[500px] rounded-full blur-[180px] opacity-6" style={{ bottom: "-10%", right: "10%", background: "#5a6a8a" }} />
         </div>
         <div className="max-w-5xl mx-auto relative z-10">
-          <FadeIn className="text-center mb-16">
+          <FadeIn className="text-center mb-12">
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 text-white/70 text-xs mb-5" style={{ fontFamily: "var(--font-body)" }}>
               <Mic className="w-3.5 h-3.5" />
               Professional Audio Pipeline
@@ -762,7 +1055,7 @@ export default function HomePage() {
       {/* ════════════════════════════════════════════
           SECTION 3 — SCIENTIFIC PROTOCOLS
          ════════════════════════════════════════════ */}
-      <section className="relative py-32 px-6" style={{ background: "var(--color-sand-50)" }}>
+      <section className="relative py-20 px-6" style={{ background: "var(--color-sand-50)" }}>
         <div className="max-w-5xl mx-auto">
           <FadeIn className="text-center mb-6">
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[var(--color-sand-100)] text-[var(--color-sand-700)] text-xs mb-5" style={{ fontFamily: "var(--font-body)" }}>
