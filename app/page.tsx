@@ -757,13 +757,9 @@ export default function HomePage() {
       {/* ════════════════════════════════════════════
           SECTION 0 — AUDIO SAMPLES
          ════════════════════════════════════════════ */}
-      <section ref={infoRef} className="relative min-h-screen pt-16 pb-24 px-6 flex flex-col justify-start" style={{ background: "var(--color-sand-900)" }}>
+      <section ref={infoRef} className="relative min-h-screen pt-10 pb-24 px-6 flex flex-col justify-start" style={{ background: "var(--color-sand-900)" }}>
         <div className="max-w-6xl mx-auto w-full">
-          <FadeIn className="text-center mb-14">
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 text-white/60 text-xs mb-5" style={{ fontFamily: "var(--font-body)" }}>
-              <Headphones className="w-3.5 h-3.5" />
-              Made with MindFlow
-            </div>
+          <FadeIn className="text-center mb-10">
             <h2 className="text-[2.5rem] md:text-[3.5rem] text-[var(--color-sand-50)] leading-tight mb-4">
               Don&apos;t take our word for it.<br />Listen.
             </h2>
