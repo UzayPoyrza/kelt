@@ -12,9 +12,7 @@ import {
   Download,
   MoreHorizontal,
   Search,
-  Plus,
   LogOut,
-  ChevronLeft,
   Moon,
   Sun,
   Brain,
@@ -139,11 +137,11 @@ function SessionCard({
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
       transition={{ delay, duration: 0.3 }}
-      onHoverStart={() => setIsHovered(true)}
-      onHoverEnd={() => setIsHovered(false)}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
       className="group bg-white rounded-xl border border-[var(--color-sand-200)] hover:border-[var(--color-sand-300)] hover:shadow-md transition-all cursor-pointer overflow-hidden"
     >
       {/* Top accent */}
@@ -232,9 +230,7 @@ function SessionCard({
 
 function EmptyState({ label }: { label: string }) {
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
+    <div
       className="flex flex-col items-center justify-center py-24 text-center"
     >
       <div className="w-16 h-16 rounded-2xl bg-[var(--color-sand-100)] flex items-center justify-center mb-5">
@@ -252,7 +248,7 @@ function EmptyState({ label }: { label: string }) {
       >
         Generate your first meditation to see it here.
       </p>
-    </motion.div>
+    </div>
   );
 }
 
@@ -261,6 +257,7 @@ function EmptyState({ label }: { label: string }) {
 export default function StudioPage() {
   const [activeNav, setActiveNav] = useState<NavId>("sessions");
   const [searchQuery, setSearchQuery] = useState("");
+  const [generatePrompt, setGeneratePrompt] = useState("");
 
   const filteredSessions = mockSessions.filter((s) =>
     s.title.toLowerCase().includes(searchQuery.toLowerCase())
@@ -270,9 +267,9 @@ export default function StudioPage() {
     <div className="min-h-screen flex" style={{ background: "var(--color-sand-50)" }}>
       {/* ─── Sidebar ─── */}
       <motion.aside
-        initial={{ x: -20, opacity: 0 }}
-        animate={{ x: 0, opacity: 1 }}
-        transition={{ duration: 0.4 }}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.35 }}
         className="w-56 shrink-0 border-r border-[var(--color-sand-200)] bg-white flex flex-col"
         style={{ minHeight: "100vh" }}
       >
@@ -297,16 +294,29 @@ export default function StudioPage() {
           </a>
         </div>
 
+        {/* Generate — prominent top action */}
+        <div className="px-3 mb-4">
+          <button
+            onClick={() => setActiveNav("generate")}
+            className={`w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg text-sm transition-all cursor-pointer ${
+              activeNav === "generate"
+                ? "bg-[var(--color-sand-900)] text-[var(--color-sand-50)] shadow-sm"
+                : "bg-[var(--color-sage-light)] text-[var(--color-sage)] hover:bg-[var(--color-sage)] hover:text-white"
+            }`}
+            style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}
+          >
+            <Sparkles className="w-4 h-4" />
+            Generate
+          </button>
+        </div>
+
         {/* Nav */}
         <nav className="flex-1 px-3 space-y-0.5">
           {navItems.map((item, i) => {
             const isActive = activeNav === item.id;
             return (
-              <motion.button
+              <button
                 key={item.id}
-                initial={{ opacity: 0, x: -8 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.1 + i * 0.05 }}
                 onClick={() => setActiveNav(item.id)}
                 className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm transition-all cursor-pointer ${
                   isActive
@@ -317,7 +327,7 @@ export default function StudioPage() {
               >
                 <item.icon className="w-4 h-4" />
                 {item.label}
-              </motion.button>
+              </button>
             );
           })}
         </nav>
@@ -365,9 +375,9 @@ export default function StudioPage() {
       <main className="flex-1 min-h-screen">
         {/* Top bar */}
         <motion.header
-          initial={{ opacity: 0, y: -8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.15, duration: 0.3 }}
           className="sticky top-0 z-10 bg-[var(--color-sand-50)]/80 backdrop-blur-md border-b border-[var(--color-sand-200)] px-8 py-4"
         >
           <div className="flex items-center justify-between">
@@ -381,31 +391,19 @@ export default function StudioPage() {
               {activeNav === "settings" && "Settings"}
             </h1>
 
-            <div className="flex items-center gap-3">
-              {activeNav === "sessions" && (
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[var(--color-sand-400)]" />
-                  <input
-                    type="text"
-                    placeholder="Search sessions..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-56 pl-9 pr-3 py-2 rounded-lg bg-white border border-[var(--color-sand-200)] text-sm text-[var(--color-sand-900)] placeholder:text-[var(--color-sand-400)] focus:outline-none focus:border-[var(--color-sand-400)] transition-colors"
-                    style={{ fontFamily: "var(--font-body)" }}
-                  />
-                </div>
-              )}
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={() => setActiveNav("generate")}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[var(--color-sand-900)] text-[var(--color-sand-50)] hover:bg-[var(--color-sand-800)] transition-colors text-sm cursor-pointer shadow-sm"
-                style={{ fontFamily: "var(--font-body)" }}
-              >
-                <Plus className="w-4 h-4" />
-                New Session
-              </motion.button>
-            </div>
+            {activeNav === "sessions" && (
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[var(--color-sand-400)]" />
+                <input
+                  type="text"
+                  placeholder="Search sessions..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-56 pl-9 pr-3 py-2 rounded-lg bg-white border border-[var(--color-sand-200)] text-sm text-[var(--color-sand-900)] placeholder:text-[var(--color-sand-400)] focus:outline-none focus:border-[var(--color-sand-400)] transition-colors"
+                  style={{ fontFamily: "var(--font-body)" }}
+                />
+              </div>
+            )}
           </div>
         </motion.header>
 
@@ -414,12 +412,7 @@ export default function StudioPage() {
           <AnimatePresence mode="wait">
             {/* All Sessions */}
             {activeNav === "sessions" && (
-              <motion.div
-                key="sessions"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-              >
+              <motion.div key="sessions" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
                 {filteredSessions.length > 0 ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                     {filteredSessions.map((session, i) => (
@@ -434,19 +427,11 @@ export default function StudioPage() {
 
             {/* History */}
             {activeNav === "history" && (
-              <motion.div
-                key="history"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-              >
+              <motion.div key="history" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
                 <div className="space-y-2">
                   {mockSessions.map((session, i) => (
-                    <motion.div
+                    <div
                       key={session.id}
-                      initial={{ opacity: 0, x: -8 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: i * 0.04 }}
                       className="flex items-center gap-4 px-4 py-3 rounded-lg hover:bg-white hover:shadow-sm border border-transparent hover:border-[var(--color-sand-200)] transition-all cursor-pointer group"
                     >
                       <div
@@ -498,7 +483,7 @@ export default function StudioPage() {
                           <Download className="w-3.5 h-3.5" />
                         </button>
                       </div>
-                    </motion.div>
+                    </div>
                   ))}
                 </div>
               </motion.div>
@@ -506,55 +491,76 @@ export default function StudioPage() {
 
             {/* Generate */}
             {activeNav === "generate" && (
-              <motion.div
-                key="generate"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="max-w-lg mx-auto py-12"
-              >
-                <div className="text-center mb-8">
+              <motion.div key="generate" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }} className="max-w-xl mx-auto py-16">
+                <div className="text-center mb-10">
                   <h2
-                    className="text-2xl text-[var(--color-sand-900)] mb-2"
+                    className="text-3xl text-[var(--color-sand-900)] mb-3"
                     style={{ fontFamily: "var(--font-display)" }}
                   >
-                    Create a new meditation
+                    What do you need right now?
                   </h2>
                   <p
                     className="text-sm text-[var(--color-sand-500)]"
                     style={{ fontFamily: "var(--font-body)" }}
                   >
-                    Describe what you need and we&apos;ll generate it for you.
+                    Describe how you&apos;re feeling and we&apos;ll create your session.
                   </p>
                 </div>
 
-                <div className="bg-white rounded-2xl border border-[var(--color-sand-200)] p-6 shadow-sm">
-                  <textarea
-                    placeholder="I need help winding down after a stressful day..."
-                    className="w-full h-28 resize-none rounded-xl bg-[var(--color-sand-50)] border border-[var(--color-sand-200)] px-4 py-3 text-sm text-[var(--color-sand-900)] placeholder:text-[var(--color-sand-400)] focus:outline-none focus:border-[var(--color-sand-400)] transition-colors mb-4"
-                    style={{ fontFamily: "var(--font-body)" }}
+                {/* Glowing input — matches landing page */}
+                <div className="w-full mb-6 relative rounded-xl group">
+                  <div
+                    className="absolute -inset-[2px] rounded-xl bg-[length:300%_300%] animate-[border-glow_4s_ease_infinite] opacity-80 group-focus-within:opacity-100 transition-opacity duration-300 blur-[0.5px]"
+                    style={{ background: "linear-gradient(135deg, var(--color-sage), var(--color-ocean), var(--color-dusk), var(--color-ember), var(--color-sage))", backgroundSize: "300% 300%" }}
                   />
+                  <div className="relative bg-white rounded-xl p-3 flex items-center gap-3">
+                    <input
+                      type="text"
+                      value={generatePrompt}
+                      onChange={(e) => setGeneratePrompt(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" && !e.shiftKey) {
+                          e.preventDefault();
+                        }
+                      }}
+                      placeholder="Create a guided meditation on..."
+                      className="flex-1 outline-none text-sm text-[var(--color-sand-900)] placeholder:text-[var(--color-sand-400)] bg-transparent"
+                      style={{ fontFamily: "var(--font-body)" }}
+                    />
+                    <button
+                      disabled={!generatePrompt.trim()}
+                      className="shrink-0 w-9 h-9 flex items-center justify-center rounded-full transition-all cursor-pointer disabled:opacity-30"
+                      style={{ background: generatePrompt.trim() ? "var(--color-sand-900)" : "transparent", color: generatePrompt.trim() ? "var(--color-sand-50)" : "var(--color-sand-400)" }}
+                    >
+                      <Sparkles className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
 
-                  <motion.button
-                    whileHover={{ scale: 1.01 }}
-                    whileTap={{ scale: 0.99 }}
-                    className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-[var(--color-sand-900)] text-[var(--color-sand-50)] hover:bg-[var(--color-sand-800)] transition-colors text-sm cursor-pointer shadow-sm"
-                    style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}
-                  >
-                    <Sparkles className="w-4 h-4" />
-                    Generate Meditation
-                  </motion.button>
+                {/* Suggestion pills */}
+                <div className="flex flex-col items-center gap-3">
+                  <span className="text-xs text-[var(--color-sand-400)]" style={{ fontFamily: "var(--font-body)" }}>
+                    or try one of these
+                  </span>
+                  <div className="flex flex-wrap gap-2 justify-center">
+                    {["\u201CI can\u2019t fall asleep\u201D", "\u201CAnxious before a meeting\u201D", "\u201CHelp me focus deeply\u201D", "\u201CStress relief after work\u201D"].map((s, i) => (
+                      <button
+                        key={i}
+                        onClick={() => setGeneratePrompt(s.replace(/[\u201C\u201D]/g, ""))}
+                        className="text-[var(--color-sand-600)] bg-white/70 hover:bg-white border border-[var(--color-sand-200)] text-xs px-3.5 py-2 rounded-full transition-all cursor-pointer"
+                        style={{ fontFamily: "var(--font-body)" }}
+                      >
+                        {s}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </motion.div>
             )}
 
             {/* Settings */}
             {activeNav === "settings" && (
-              <motion.div
-                key="settings"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
+              <motion.div key="settings" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}
                 className="max-w-lg"
               >
                 <div className="space-y-6">
