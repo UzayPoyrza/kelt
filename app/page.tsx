@@ -85,7 +85,7 @@ function CinematicTransition() {
           Now you&apos;ve heard it
         </motion.p>
 
-        {[<>Why our AI sessions</>, <>sound <span className="bg-clip-text text-transparent bg-[length:300%_300%] animate-[border-glow_4s_ease_infinite]" style={{ backgroundImage: "linear-gradient(135deg, var(--color-sage), var(--color-ocean), var(--color-dusk), var(--color-ember), var(--color-sage))", backgroundSize: "300% 300%" }}>different</span></>].map((line, lineIdx) => (
+        {["Why our AI sessions", "sound different"].map((line, lineIdx) => (
           <div key={lineIdx} className="overflow-hidden">
             <motion.p
               className="text-[2.5rem] md:text-[3.5rem] text-white leading-tight tracking-tight"
@@ -98,7 +98,7 @@ function CinematicTransition() {
                 ease: [0.16, 1, 0.3, 1],
               }}
             >
-              {line}
+              {line === "sound different" ? <>sound <span className="bg-clip-text text-transparent bg-[length:300%_300%] animate-[border-glow_4s_ease_infinite]" style={{ backgroundImage: "linear-gradient(135deg, var(--color-sage), var(--color-ocean), var(--color-dusk), var(--color-ember), var(--color-sage))", backgroundSize: "300% 300%" }}>different</span></> : line}
             </motion.p>
           </div>
         ))}
