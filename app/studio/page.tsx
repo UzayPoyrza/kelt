@@ -271,8 +271,8 @@ function SessionCard({ session, delay, isNowPlaying, onPlay, onOpenStudio, onDel
                 <div className="h-[3px]" />
               ) : line.startsWith("—") ? (
                 <div className="flex items-center gap-1 my-0.5">
-                  <div className="h-[1px] w-3 bg-[#d4d4d8]" />
-                  <span className="text-[7px] text-[#a1a1aa] tracking-wide" style={{ fontFamily: "var(--font-body)" }}>{line.replace(/—/g, "").trim()}</span>
+                  <div className="h-[1px] flex-1 bg-[#d4d4d8]" />
+                  <span className="text-[7px] text-[#a1a1aa] tracking-wide shrink-0" style={{ fontFamily: "var(--font-body)" }}>{line.replace(/—/g, "").trim()}</span>
                   <div className="h-[1px] flex-1 bg-[#d4d4d8]" />
                 </div>
               ) : (
@@ -607,6 +607,7 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, onBack }: {
   const [editingPauseId, setEditingPauseId] = useState<string | null>(null);
   const [generateWarning, setGenerateWarning] = useState<string | null>(null);
   const [errorPauseIds, setErrorPauseIds] = useState<Set<string>>(new Set());
+  const [swappedIds, setSwappedIds] = useState<Set<string>>(new Set());
   const [rightTab, setRightTab] = useState<"settings" | "history">("settings");
   const [isGenerating, setIsGenerating] = useState(false);
   const [studioPlaying, setStudioPlaying] = useState(false);
@@ -752,11 +753,11 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, onBack }: {
 
   // Swap with the nearest same-type block in the given direction
   const moveBlock = useCallback((id: string, direction: "up" | "down") => {
+    let swappedPair: [string, string] | null = null;
     setScript(prev => {
       const idx = prev.findIndex(b => b.id === id);
       if (idx === -1) return prev;
       const blockType = prev[idx].type;
-      // Find the nearest same-type block
       let swapIdx = -1;
       if (direction === "up") {
         for (let i = idx - 1; i >= 0; i--) {
@@ -768,13 +769,17 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, onBack }: {
         }
       }
       if (swapIdx === -1) return prev;
-      // Swap the content of the two same-type blocks (keep positions intact)
       const next = [...prev];
       const temp = { text: next[idx].text, pauseDuration: next[idx].pauseDuration };
       next[idx] = { ...next[idx], text: next[swapIdx].text, pauseDuration: next[swapIdx].pauseDuration };
       next[swapIdx] = { ...next[swapIdx], text: temp.text, pauseDuration: temp.pauseDuration };
+      swappedPair = [next[idx].id, next[swapIdx].id];
       return next;
     });
+    if (swappedPair) {
+      setSwappedIds(new Set(swappedPair));
+      setTimeout(() => setSwappedIds(new Set()), 500);
+    }
     markEdited();
   }, [markEdited]);
 
@@ -828,18 +833,19 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, onBack }: {
               const hasError = errorPauseIds.has(block.id);
               const isLong = dur >= 3;
               const isEditingDur = editingPauseId === block.id;
+              const isSwapped = swappedIds.has(block.id);
               // Check if reorder is possible
               const canMoveUp = script.slice(0, index).some(b => b.type === "pause");
               const canMoveDown = script.slice(index + 1).some(b => b.type === "pause");
               return (
-                <div key={block.id} className="group/pause" style={{ padding: isLong ? "4px 0" : "0" }}>
+                <div key={block.id} className="group/pause" style={{ margin: isLong ? "10px 0" : "6px 0", animation: isSwapped ? "swap-flash 0.5s ease" : undefined }}>
                   <div
                     onClick={() => setSelectedBlock(isSelected ? null : block.id)}
-                    className="relative flex items-center gap-0 cursor-pointer group/row"
-                    style={{ padding: isLong ? "4px 0" : "1px 0" }}
+                    className="relative flex items-center justify-center cursor-pointer group/row"
+                    style={{ padding: isLong ? "4px 0" : "2px 0" }}
                   >
-                    {/* Left line */}
-                    <div className="flex-1" style={{ height: isLong ? "2px" : "1px", background: hasError ? "#fca5a5" : isEmpty ? "#e8e8ec" : isLong ? "var(--color-dusk)" : "#d4d4d8", opacity: hasError ? 0.7 : isEmpty ? 0.3 : isLong ? 0.35 : 0.3 }} />
+                    {/* Left line — hidden for short, subtle for long */}
+                    <div className="flex-1" style={{ height: isLong ? "1.5px" : "1px", background: hasError ? "#fca5a5" : isEmpty ? "#e8e8ec" : isLong ? "#818cf8" : "#e5e5e5", opacity: hasError ? 0.6 : isEmpty ? 0.3 : isLong ? 0.3 : 0.4 }} />
 
                     {/* Pause pill */}
                     <div className={`flex items-center mx-2 transition-all border ${
@@ -849,11 +855,11 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, onBack }: {
                           ? "border-dashed border-[#d4d4d8] bg-[#fafafa] rounded-full px-3 py-1.5 gap-1.5"
                           : isSelected
                             ? isLong
-                              ? "border-[var(--color-dusk)] bg-[var(--color-dusk-light)] rounded-xl px-4 py-2 gap-2"
-                              : "border-[var(--color-dusk)] bg-[var(--color-dusk-light)] rounded-full px-3 py-1 gap-1.5"
+                              ? "border-[#818cf8] bg-[#eef2ff] ring-1 ring-[#818cf8]/30 rounded-xl px-4 py-2.5 gap-2"
+                              : "border-[#f59e0b] bg-[#fffbeb] ring-1 ring-[#f59e0b]/30 rounded-full px-3 py-1 gap-1.5"
                             : isLong
-                              ? "border-[rgba(139,126,166,0.3)] bg-[rgba(139,126,166,0.06)] hover:bg-[rgba(139,126,166,0.1)] rounded-xl px-4 py-2 gap-2"
-                              : "border-[#e4e4e7] bg-white hover:bg-[#f9f9fb] rounded-full px-3 py-1 gap-1.5"
+                              ? "border-[#a5b4fc] bg-[#eef2ff] hover:bg-[#e0e7ff] rounded-xl px-4 py-2.5 gap-2"
+                              : "border-[#fcd34d] bg-[#fffbeb] hover:bg-[#fef3c7] rounded-full px-3 py-1 gap-1.5"
                     }`}>
                       {/* Reorder arrows — only on hover */}
                       <div className="flex flex-col gap-px opacity-0 group-hover/pause:opacity-100 transition-opacity">
@@ -861,7 +867,7 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, onBack }: {
                           onClick={(e) => { e.stopPropagation(); if (canMoveUp) moveBlock(block.id, "up"); }}
                           className={`w-5 h-3.5 flex items-center justify-center rounded-sm transition-all ${
                             canMoveUp
-                              ? "text-[var(--color-dusk)] hover:bg-[rgba(139,126,166,0.15)] cursor-pointer"
+                              ? isLong ? "text-[#6366f1] hover:bg-[#e0e7ff] cursor-pointer" : "text-[#d97706] hover:bg-[#fef3c7] cursor-pointer"
                               : "text-[#d8d8dc] cursor-default"
                           }`}
                         >
@@ -871,7 +877,7 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, onBack }: {
                           onClick={(e) => { e.stopPropagation(); if (canMoveDown) moveBlock(block.id, "down"); }}
                           className={`w-5 h-3.5 flex items-center justify-center rounded-sm transition-all ${
                             canMoveDown
-                              ? "text-[var(--color-dusk)] hover:bg-[rgba(139,126,166,0.15)] cursor-pointer"
+                              ? isLong ? "text-[#6366f1] hover:bg-[#e0e7ff] cursor-pointer" : "text-[#d97706] hover:bg-[#fef3c7] cursor-pointer"
                               : "text-[#d8d8dc] cursor-default"
                           }`}
                         >
@@ -880,25 +886,25 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, onBack }: {
                       </div>
 
                       {/* Pause icon */}
-                      <svg width={isLong ? "12" : "9"} height={isLong ? "12" : "9"} viewBox="0 0 14 14" fill="none" style={{ opacity: hasError ? 0.5 : isEmpty ? 0.3 : isLong ? 0.6 : 0.3, flexShrink: 0 }}>
-                        <rect x="2" y="1" width="3.5" height="12" rx="1" fill={hasError ? "#dc2626" : isEmpty ? "#c4c4c4" : isLong ? "var(--color-dusk)" : "#a1a1aa"} />
-                        <rect x="8.5" y="1" width="3.5" height="12" rx="1" fill={hasError ? "#dc2626" : isEmpty ? "#c4c4c4" : isLong ? "var(--color-dusk)" : "#a1a1aa"} />
+                      <svg width={isLong ? "12" : "9"} height={isLong ? "12" : "9"} viewBox="0 0 14 14" fill="none" style={{ flexShrink: 0 }}>
+                        <rect x="2" y="1" width="3.5" height="12" rx="1" fill={hasError ? "#dc2626" : isEmpty ? "#c4c4c4" : isLong ? "#6366f1" : "#d97706"} />
+                        <rect x="8.5" y="1" width="3.5" height="12" rx="1" fill={hasError ? "#dc2626" : isEmpty ? "#c4c4c4" : isLong ? "#6366f1" : "#d97706"} />
                       </svg>
 
                       <span style={{
-                        fontFamily: "var(--font-body)", fontWeight: 600,
+                        fontFamily: "var(--font-body)", fontWeight: 700,
                         fontSize: isLong ? "11px" : "10px",
-                        color: hasError ? "#dc2626" : isEmpty ? "#c4c4c4" : isLong ? "var(--color-dusk)" : "#a1a1aa",
+                        color: hasError ? "#dc2626" : isEmpty ? "#c4c4c4" : isLong ? "#4f46e5" : "#b45309",
                       }}>
-                        {hasError ? "Empty" : isEmpty ? "Empty" : "pause"}
+                        {hasError ? "Empty" : isEmpty ? "Empty" : isLong ? "Long" : "Short"}
                       </span>
 
-                      <div className="w-px" style={{ height: isLong ? "16px" : "12px", background: isEmpty ? "#e4e4e7" : isLong ? "rgba(139,126,166,0.2)" : "#e4e4e7" }} />
+                      <div className="w-px" style={{ height: isLong ? "16px" : "12px", background: isEmpty ? "#e4e4e7" : isLong ? "#c7d2fe" : "#fde68a" }} />
 
                       <button
                         onClick={(e) => { e.stopPropagation(); setPauseDuration(block.id, dur - 1); }}
-                        className="w-5 h-5 rounded flex items-center justify-center hover:bg-white/80 transition-all cursor-pointer text-xs font-medium"
-                        style={{ color: isEmpty ? "#d4d4d4" : isLong ? "var(--color-dusk)" : "#91919b" }}
+                        className="w-5 h-5 rounded flex items-center justify-center hover:bg-white/60 transition-all cursor-pointer text-xs font-medium"
+                        style={{ color: isEmpty ? "#d4d4d4" : isLong ? "#6366f1" : "#d97706" }}
                       >−</button>
                       {isEditingDur ? (
                         <input
@@ -913,16 +919,16 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, onBack }: {
                           onBlur={() => setEditingPauseId(null)}
                           onKeyDown={(e) => { if (e.key === "Enter" || e.key === "Escape") setEditingPauseId(null); }}
                           onClick={(e) => e.stopPropagation()}
-                          className="w-7 text-center text-[12px] tabular-nums bg-white border border-[var(--color-dusk)] rounded-md outline-none py-0.5"
-                          style={{ fontFamily: "var(--font-body)", fontWeight: 700, color: "var(--color-dusk)" }}
+                          className="w-7 text-center text-[12px] tabular-nums bg-white rounded-md outline-none py-0.5"
+                          style={{ fontFamily: "var(--font-body)", fontWeight: 700, color: isLong ? "#4f46e5" : "#b45309", border: isLong ? "1px solid #818cf8" : "1px solid #f59e0b" }}
                         />
                       ) : (
                         <button
                           onClick={(e) => { e.stopPropagation(); setEditingPauseId(block.id); }}
                           className={`text-[12px] w-7 text-center tabular-nums rounded-md py-0.5 transition-all cursor-text ${
-                            isEmpty ? "text-[#c4c4c4] hover:bg-white hover:ring-1 hover:ring-[#d4d4d8]" : "hover:bg-white hover:ring-1 hover:ring-[var(--color-dusk)]"
+                            isEmpty ? "text-[#c4c4c4] hover:bg-white hover:ring-1 hover:ring-[#d4d4d8]" : isLong ? "hover:bg-white hover:ring-1 hover:ring-[#818cf8]" : "hover:bg-white hover:ring-1 hover:ring-[#f59e0b]"
                           }`}
-                          style={{ fontFamily: "var(--font-body)", fontWeight: 700, color: isEmpty ? undefined : isLong ? "var(--color-dusk)" : "#52525b" }}
+                          style={{ fontFamily: "var(--font-body)", fontWeight: 700, color: isEmpty ? undefined : isLong ? "#4f46e5" : "#b45309" }}
                           title="Click to edit duration"
                         >
                           {isEmpty ? "—" : `${dur}s`}
@@ -930,13 +936,13 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, onBack }: {
                       )}
                       <button
                         onClick={(e) => { e.stopPropagation(); setPauseDuration(block.id, dur + 1); }}
-                        className="w-5 h-5 rounded flex items-center justify-center hover:bg-white/80 transition-all cursor-pointer text-xs font-medium"
-                        style={{ color: isEmpty ? "#d4d4d4" : isLong ? "var(--color-dusk)" : "#91919b" }}
+                        className="w-5 h-5 rounded flex items-center justify-center hover:bg-white/60 transition-all cursor-pointer text-xs font-medium"
+                        style={{ color: isEmpty ? "#d4d4d4" : isLong ? "#6366f1" : "#d97706" }}
                       >+</button>
                     </div>
 
                     {/* Right line */}
-                    <div className="flex-1" style={{ height: isLong ? "2px" : "1px", background: hasError ? "#fca5a5" : isEmpty ? "#e8e8ec" : isLong ? "var(--color-dusk)" : "#d4d4d8", opacity: hasError ? 0.7 : isEmpty ? 0.3 : isLong ? 0.35 : 0.3 }} />
+                    <div className="flex-1" style={{ height: isLong ? "1.5px" : "1px", background: hasError ? "#fca5a5" : isEmpty ? "#e8e8ec" : isLong ? "#818cf8" : "#e5e5e5", opacity: hasError ? 0.6 : isEmpty ? 0.3 : isLong ? 0.3 : 0.4 }} />
                   </div>
                 </div>
               );
@@ -944,9 +950,10 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, onBack }: {
 
             const canMoveVoiceUp = script.slice(0, index).some(b => b.type === "voice");
             const canMoveVoiceDown = script.slice(index + 1).some(b => b.type === "voice");
+            const isVoiceSwapped = swappedIds.has(block.id);
 
             return (
-              <div key={block.id} className="group/row">
+              <div key={block.id} className="group/row" style={{ animation: isVoiceSwapped ? "swap-flash 0.5s ease" : undefined }}>
                 <div
                   onClick={() => { if (isSelected) { saveEdit(); } else { startEditing(block.id); } }}
                   className={`relative rounded-xl cursor-pointer transition-all ${
@@ -1003,14 +1010,14 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, onBack }: {
                         <>
                           <button
                             onClick={(e) => { e.stopPropagation(); saveEdit(); }}
-                            className="w-7 h-7 rounded-lg flex items-center justify-center text-[var(--color-sage)] hover:bg-[var(--color-sage-light)] transition-all cursor-pointer"
+                            className="w-7 h-7 rounded-lg flex items-center justify-center text-[#22c55e] hover:text-[#16a34a] hover:bg-green-50 transition-all cursor-pointer"
                             title="Save changes"
                           >
                             <Check className="w-4 h-4" />
                           </button>
                           <button
                             onClick={(e) => { e.stopPropagation(); discardEdit(); }}
-                            className="w-7 h-7 rounded-lg flex items-center justify-center text-[#b4b4b8] hover:text-red-500 hover:bg-red-50 transition-all cursor-pointer"
+                            className="w-7 h-7 rounded-lg flex items-center justify-center text-[#18181b] hover:text-[#18181b] hover:bg-[#f4f4f5] transition-all cursor-pointer"
                             title="Discard changes"
                           >
                             <X className="w-3.5 h-3.5" />
@@ -1020,7 +1027,7 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, onBack }: {
                         <>
                           <button
                             onClick={(e) => { e.stopPropagation(); startEditing(block.id); }}
-                            className="w-7 h-7 rounded-lg flex items-center justify-center text-[#9a9a9e] hover:text-[var(--color-sage)] hover:bg-[var(--color-sage-light)] transition-all cursor-pointer"
+                            className="w-7 h-7 rounded-lg flex items-center justify-center text-[#71717a] hover:text-[var(--color-sage)] hover:bg-[var(--color-sage-light)] transition-all cursor-pointer"
                             title="Click to edit text"
                           >
                             <PenLine className="w-3.5 h-3.5" />
@@ -1051,7 +1058,7 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, onBack }: {
                           </div>
                           <button
                             onClick={(e) => { e.stopPropagation(); deleteBlock(block.id); }}
-                            className="w-7 h-7 rounded-lg flex items-center justify-center text-[#b4b4b8] hover:text-red-500 hover:bg-red-50 transition-all cursor-pointer"
+                            className="w-7 h-7 rounded-lg flex items-center justify-center text-[#ef4444] hover:text-red-600 hover:bg-red-50 transition-all cursor-pointer"
                             title="Delete this segment and its pause"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
@@ -1063,7 +1070,7 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, onBack }: {
                 </div>
 
                 {/* Add segment — hover zone between voice blocks */}
-                <div className="flex items-center justify-center h-5 relative group/add">
+                <div className="flex items-center justify-center h-0 relative group/add overflow-visible">
                   <div className="absolute inset-x-6 top-1/2 border-t border-dashed border-transparent group-hover/add:border-[rgba(122,158,126,0.3)] transition-colors" />
                   <button
                     onClick={() => addBlockAfter(block.id, "voice")}
@@ -1584,14 +1591,14 @@ export default function StudioPage() {
             ))}
           </nav>
           <div className="mt-auto px-0 pb-0">
-            <div className="px-4 py-4" style={{ background: "#3a302a" }}>
+            <div className="px-4 py-4 border-t border-[#e4e4e7]" style={{ background: "#fdf8f7" }}>
               <div className="flex items-center gap-2.5 mb-3">
-                <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
-                  <span className="text-xs text-white" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>U</span>
+                <div className="w-8 h-8 rounded-full bg-[var(--color-sand-300)] flex items-center justify-center">
+                  <span className="text-xs text-[var(--color-sand-700)]" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>U</span>
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs text-white" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>User</p>
-                  <p className="text-[10px] text-white/60" style={{ fontFamily: "var(--font-body)" }}>Free plan</p>
+                  <p className="text-xs text-[var(--color-sand-900)]" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>User</p>
+                  <p className="text-[10px] text-[var(--color-sand-500)]" style={{ fontFamily: "var(--font-body)" }}>Free plan</p>
                 </div>
                 <a href="/upgrade" className="text-[11px] px-3.5 py-1.5 rounded-lg text-white bg-clip-padding bg-[length:300%_300%] animate-[border-glow_4s_ease_infinite] hover:opacity-90 transition-opacity cursor-pointer shadow-sm" style={{ fontFamily: "var(--font-body)", fontWeight: 600, backgroundImage: "linear-gradient(135deg, var(--color-sage), var(--color-ocean), var(--color-dusk), var(--color-ember), var(--color-sage))", backgroundSize: "300% 300%" }}>
                   Upgrade
@@ -1599,15 +1606,15 @@ export default function StudioPage() {
               </div>
               <div className="px-2 mb-2 space-y-1">
                 <div className="flex items-center justify-between">
-                  <span className="text-[11px] text-white/60" style={{ fontFamily: "var(--font-body)" }}>Total</span>
-                  <span className="text-[11px] text-white tabular-nums" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>10 credits</span>
+                  <span className="text-[11px] text-[var(--color-sand-500)]" style={{ fontFamily: "var(--font-body)" }}>Total</span>
+                  <span className="text-[11px] text-[var(--color-sand-900)] tabular-nums" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>10 credits</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-[11px] text-white/60" style={{ fontFamily: "var(--font-body)" }}>Remaining</span>
-                  <span className="text-[11px] text-white tabular-nums" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>3</span>
+                  <span className="text-[11px] text-[var(--color-sand-500)]" style={{ fontFamily: "var(--font-body)" }}>Remaining</span>
+                  <span className="text-[11px] text-[var(--color-sand-900)] tabular-nums" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>3</span>
                 </div>
               </div>
-              <a href="/" className="flex items-center gap-1.5 px-2 py-1 rounded-md text-red-400 hover:text-red-300 transition-all text-[11px]" style={{ fontFamily: "var(--font-body)" }}>
+              <a href="/" className="flex items-center gap-1.5 px-2 py-1 rounded-md text-red-400/70 hover:text-red-500 transition-all text-[11px]" style={{ fontFamily: "var(--font-body)" }}>
                 <LogOut className="w-3.5 h-3.5" /> Sign out
               </a>
             </div>
@@ -1691,14 +1698,14 @@ export default function StudioPage() {
         </nav>
 
         <div className="mt-auto px-0 pb-0">
-          <div className="px-4 py-4" style={{ background: "#3a302a" }}>
+          <div className="px-4 py-4 border-t border-[#e4e4e7]" style={{ background: "#fdf8f7" }}>
             <div className="flex items-center gap-2.5 mb-3">
-              <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
-                <span className="text-xs text-white" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>U</span>
+              <div className="w-8 h-8 rounded-full bg-[var(--color-sand-300)] flex items-center justify-center">
+                <span className="text-xs text-[var(--color-sand-700)]" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>U</span>
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-xs text-white" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>User</p>
-                <p className="text-[10px] text-white/60" style={{ fontFamily: "var(--font-body)" }}>Free plan</p>
+                <p className="text-xs text-[var(--color-sand-900)]" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>User</p>
+                <p className="text-[10px] text-[var(--color-sand-500)]" style={{ fontFamily: "var(--font-body)" }}>Free plan</p>
               </div>
               <a href="/upgrade" className="text-[11px] px-3.5 py-1.5 rounded-lg text-white bg-clip-padding bg-[length:300%_300%] animate-[border-glow_4s_ease_infinite] hover:opacity-90 transition-opacity cursor-pointer shadow-sm" style={{ fontFamily: "var(--font-body)", fontWeight: 600, backgroundImage: "linear-gradient(135deg, var(--color-sage), var(--color-ocean), var(--color-dusk), var(--color-ember), var(--color-sage))", backgroundSize: "300% 300%" }}>
                 Upgrade
@@ -1706,15 +1713,15 @@ export default function StudioPage() {
             </div>
             <div className="px-2 mb-2 space-y-1">
               <div className="flex items-center justify-between">
-                <span className="text-[11px] text-white/60" style={{ fontFamily: "var(--font-body)" }}>Total</span>
-                <span className="text-[11px] text-white tabular-nums" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>10 credits</span>
+                <span className="text-[11px] text-[var(--color-sand-500)]" style={{ fontFamily: "var(--font-body)" }}>Total</span>
+                <span className="text-[11px] text-[var(--color-sand-800)] tabular-nums" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>10 credits</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-[11px] text-white/60" style={{ fontFamily: "var(--font-body)" }}>Remaining</span>
-                <span className="text-[11px] text-white tabular-nums" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>3</span>
+                <span className="text-[11px] text-[var(--color-sand-500)]" style={{ fontFamily: "var(--font-body)" }}>Remaining</span>
+                <span className="text-[11px] text-[var(--color-sand-800)] tabular-nums" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>3</span>
               </div>
             </div>
-            <a href="/" className="flex items-center gap-1.5 px-2 py-1 rounded-md text-red-400 hover:text-red-300 transition-all text-[11px]" style={{ fontFamily: "var(--font-body)" }}>
+            <a href="/" className="flex items-center gap-1.5 px-2 py-1 rounded-md text-red-500 hover:text-red-600 transition-all text-[11px]" style={{ fontFamily: "var(--font-body)" }}>
               <LogOut className="w-3.5 h-3.5" /> Sign out
             </a>
           </div>
