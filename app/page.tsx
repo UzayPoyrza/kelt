@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { motion, AnimatePresence, useInView } from "motion/react";
 import {
   CloudRain,
@@ -23,6 +23,8 @@ import {
   Activity,
   FlaskConical,
   GraduationCap,
+  Mic,
+  Sliders,
 } from "lucide-react";
 import svgPaths from "@/lib/svg-paths";
 
@@ -133,6 +135,187 @@ function FadeIn({ children, className = "", delay = 0 }: { children: React.React
     >
       {children}
     </motion.div>
+  );
+}
+
+/* ─── Live Pause Demo ─── */
+
+const demoScript: { type: "text" | "pause" | "breath"; content: string; duration?: number }[] = [
+  { type: "text", content: "Gently close your eyes." },
+  { type: "pause", content: "settling in", duration: 3000 },
+  { type: "text", content: "Take a slow breath in\u2026" },
+  { type: "breath", content: "inhale", duration: 4000 },
+  { type: "text", content: "And release." },
+  { type: "breath", content: "exhale", duration: 6000 },
+  { type: "text", content: "Notice your shoulders." },
+  { type: "pause", content: "body awareness", duration: 3000 },
+  { type: "text", content: "Let them soften and drop." },
+  { type: "pause", content: "letting go", duration: 5000 },
+  { type: "text", content: "There\u2019s nowhere to be but here." },
+  { type: "pause", content: "presence", duration: 4000 },
+];
+
+function PauseDemo() {
+  const [isRunning, setIsRunning] = useState(false);
+  const [currentStep, setCurrentStep] = useState(-1);
+  const [visibleSteps, setVisibleSteps] = useState<number[]>([]);
+  const [pauseProgress, setPauseProgress] = useState(0);
+  const ref = useRef(null);
+  const inView = useInView(ref, { once: true, margin: "-100px" });
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const runDemo = useCallback(() => {
+    setIsRunning(true);
+    setVisibleSteps([]);
+    setCurrentStep(-1);
+    setPauseProgress(0);
+
+    let stepIndex = 0;
+
+    const advance = () => {
+      if (stepIndex >= demoScript.length) {
+        setIsRunning(false);
+        setCurrentStep(-1);
+        return;
+      }
+
+      const step = demoScript[stepIndex];
+      setCurrentStep(stepIndex);
+      setVisibleSteps((prev) => [...prev, stepIndex]);
+
+      if (step.type === "pause" || step.type === "breath") {
+        const dur = step.duration || 3000;
+        setPauseProgress(0);
+        const tick = 50;
+        let elapsed = 0;
+        intervalRef.current = setInterval(() => {
+          elapsed += tick;
+          setPauseProgress(Math.min(elapsed / dur, 1));
+          if (elapsed >= dur) {
+            if (intervalRef.current) clearInterval(intervalRef.current);
+            stepIndex++;
+            advance();
+          }
+        }, tick);
+      } else {
+        stepIndex++;
+        timerRef.current = setTimeout(advance, 800);
+      }
+    };
+
+    timerRef.current = setTimeout(advance, 500);
+  }, []);
+
+  // Auto-start when scrolled into view
+  useEffect(() => {
+    if (inView && !isRunning && visibleSteps.length === 0) {
+      runDemo();
+    }
+  }, [inView, isRunning, visibleSteps.length, runDemo]);
+
+  // Cleanup
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+  }, []);
+
+  return (
+    <div ref={ref} className="bg-white rounded-3xl border border-[var(--color-sand-200)] overflow-hidden shadow-sm">
+      {/* Terminal-style header */}
+      <div className="flex items-center justify-between px-6 py-3 border-b border-[var(--color-sand-100)] bg-[var(--color-sand-50)]">
+        <div className="flex items-center gap-2">
+          <div className="flex gap-1.5">
+            <div className="w-2.5 h-2.5 rounded-full bg-[var(--color-sand-300)]" />
+            <div className="w-2.5 h-2.5 rounded-full bg-[var(--color-sand-300)]" />
+            <div className="w-2.5 h-2.5 rounded-full bg-[var(--color-sand-300)]" />
+          </div>
+          <span className="text-xs text-[var(--color-sand-500)] ml-2" style={{ fontFamily: "var(--font-body)" }}>
+            MindFlow Session Preview — Live
+          </span>
+        </div>
+        <button
+          onClick={runDemo}
+          disabled={isRunning}
+          className="text-xs text-[var(--color-sand-500)] hover:text-[var(--color-sand-900)] transition-colors disabled:opacity-30 cursor-pointer flex items-center gap-1"
+          style={{ fontFamily: "var(--font-body)" }}
+        >
+          <RotateCcw className="w-3 h-3" />
+          Replay
+        </button>
+      </div>
+
+      {/* Content area */}
+      <div className="p-6 md:p-8 min-h-[320px]">
+        <div className="space-y-1">
+          {demoScript.map((step, i) => {
+            const isVisible = visibleSteps.includes(i);
+            const isCurrent = currentStep === i;
+
+            if (!isVisible) return null;
+
+            if (step.type === "text") {
+              return (
+                <motion.p
+                  key={i}
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3 }}
+                  className="text-lg text-[var(--color-sand-900)] py-1"
+                  style={{ fontFamily: "var(--font-display)" }}
+                >
+                  {step.content}
+                </motion.p>
+              );
+            }
+
+            // Pause or breath
+            return (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="flex items-center gap-3 py-2"
+              >
+                {/* Progress bar */}
+                <div className="flex-1 h-6 rounded-lg bg-[var(--color-sand-50)] border border-[var(--color-sand-100)] overflow-hidden relative">
+                  <motion.div
+                    className="absolute inset-y-0 left-0 rounded-lg"
+                    style={{
+                      width: `${(isCurrent ? pauseProgress : 1) * 100}%`,
+                      background: step.type === "breath"
+                        ? "linear-gradient(90deg, var(--color-sage-light), var(--color-sage))"
+                        : "linear-gradient(90deg, var(--color-sand-100), var(--color-sand-300))",
+                      opacity: 0.5,
+                    }}
+                    transition={{ duration: 0.05 }}
+                  />
+                  <div className="relative z-10 flex items-center justify-between h-full px-3">
+                    <span className="text-xs text-[var(--color-sand-600)]" style={{ fontFamily: "var(--font-body)" }}>
+                      {step.type === "breath" ? (step.content === "inhale" ? "Breathe in\u2026" : "Breathe out\u2026") : `\u23F8 ${step.content}`}
+                    </span>
+                    <span className="text-xs font-mono text-[var(--color-sand-400)]">
+                      {((step.duration || 3000) / 1000).toFixed(0)}s
+                    </span>
+                  </div>
+                </div>
+              </motion.div>
+            );
+          })}
+
+          {/* Cursor when running */}
+          {isRunning && (
+            <motion.div
+              animate={{ opacity: [1, 0.3, 1] }}
+              transition={{ duration: 1, repeat: Infinity }}
+              className="w-[2px] h-5 bg-[var(--color-sand-400)] mt-1 rounded-full"
+            />
+          )}
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -424,163 +607,232 @@ export default function HomePage() {
       </section>
 
       {/* ════════════════════════════════════════════
-          HOW IT WORKS
+          SECTION 1 — LIVE PAUSE DEMO
          ════════════════════════════════════════════ */}
-      <section ref={infoRef} className="relative py-32 px-6" style={{ background: "var(--color-sand-50)" }}>
+      <section ref={infoRef} className="relative py-32 px-6 overflow-hidden" style={{ background: "var(--color-sand-50)" }}>
         <div className="max-w-5xl mx-auto">
-          <FadeIn className="text-center mb-20">
+          <FadeIn className="text-center mb-6">
             <p className="text-xs uppercase tracking-[0.2em] text-[var(--color-sand-500)] mb-4 font-medium" style={{ fontFamily: "var(--font-body)" }}>
-              The MindFlow Difference
+              See the Difference
             </p>
             <h2 className="text-[2.5rem] md:text-[3.5rem] text-[var(--color-sand-900)] leading-tight mb-6">
-              Not another meditation app.<br />A clinical-grade session engine.
+              Most AI reads text.<br />Ours understands silence.
             </h2>
-            <p className="text-lg text-[var(--color-sand-600)] max-w-2xl mx-auto leading-relaxed" style={{ fontFamily: "var(--font-body)" }}>
-              Every session is generated with semantic understanding of therapeutic language,
-              pause-aware pacing modeled on human breath cycles, and studio-mastered audio
-              engineered in collaboration with professional sound designers.
+            <p className="text-lg text-[var(--color-sand-600)] max-w-2xl mx-auto leading-relaxed mb-4" style={{ fontFamily: "var(--font-body)" }}>
+              Watch how MindFlow generates a meditation. Notice how the pauses aren&apos;t random &mdash;
+              they&apos;re timed to your breath, calibrated to the instruction, and placed where a
+              real teacher would let silence do the work.
             </p>
           </FadeIn>
 
-          {/* Three pillars */}
-          <div className="grid md:grid-cols-3 gap-6 mb-32">
-            {[
-              {
-                icon: BrainCircuit,
-                title: "Semantic Intelligence",
-                description: "Our model understands the meaning behind therapeutic language — not just words, but intent. It knows when to guide, when to suggest, and when silence is the most powerful instruction.",
-                detail: "Trained on thousands of hours of clinical meditation transcripts with licensed therapist oversight.",
-              },
-              {
-                icon: Timer,
-                title: "Pause-Aware Pacing",
-                description: "Pauses aren't gaps — they're the meditation. MindFlow models natural breath cycles and inserts silences that feel intentional, allowing your nervous system to actually respond.",
-                detail: "Adaptive timing calibrated to session type: shorter pauses for focus, longer holds for body scans.",
-              },
-              {
-                icon: Headphones,
-                title: "Studio-Mastered Audio",
-                description: "Every session is mixed with spatial audio, binaural entrainment, and layered ambient soundscapes — engineered by professional sound designers, not generated by algorithms.",
-                detail: "48kHz / 24-bit output. Professionally EQ'd for headphones, speakers, and sleep environments.",
-              },
-            ].map((pillar, i) => (
-              <FadeIn key={pillar.title} delay={i * 0.1}>
-                <div className="bg-white rounded-2xl p-7 border border-[var(--color-sand-200)] h-full flex flex-col">
-                  <div className="w-11 h-11 rounded-xl bg-[var(--color-sand-100)] flex items-center justify-center mb-5">
-                    <pillar.icon className="w-5 h-5 text-[var(--color-sand-700)]" />
+          <FadeIn>
+            <PauseDemo />
+          </FadeIn>
+
+          {/* Comparison: us vs typical AI */}
+          <FadeIn className="mt-20">
+            <div className="grid md:grid-cols-2 gap-6">
+              <div className="bg-white rounded-2xl p-7 border border-[var(--color-sand-200)]">
+                <div className="flex items-center gap-2 mb-5">
+                  <div className="w-2 h-2 rounded-full bg-red-400" />
+                  <p className="text-xs uppercase tracking-widest text-[var(--color-sand-500)] font-medium" style={{ fontFamily: "var(--font-body)" }}>Typical AI Meditation</p>
+                </div>
+                <div className="space-y-2 font-mono text-sm text-[var(--color-sand-600)]" style={{ fontFamily: "var(--font-body)" }}>
+                  <p>Close your eyes. Take a deep breath in.</p>
+                  <p>Now breathe out. Feel your body relax.</p>
+                  <p>Notice any tension in your shoulders.</p>
+                  <p>Let it go. Breathe in again. And out.</p>
+                  <p className="text-xs text-[var(--color-sand-400)] italic mt-3">No pauses. No pacing. Just a wall of text read aloud.</p>
+                </div>
+              </div>
+              <div className="bg-[var(--color-sand-900)] rounded-2xl p-7 text-[var(--color-sand-50)]">
+                <div className="flex items-center gap-2 mb-5">
+                  <div className="w-2 h-2 rounded-full bg-green-400" />
+                  <p className="text-xs uppercase tracking-widest opacity-60 font-medium" style={{ fontFamily: "var(--font-body)" }}>MindFlow</p>
+                </div>
+                <div className="space-y-2 text-sm" style={{ fontFamily: "var(--font-body)" }}>
+                  <p>Close your eyes.</p>
+                  <div className="flex items-center gap-2 py-1">
+                    <div className="flex gap-0.5">
+                      {[1,2,3].map(n => <div key={n} className="w-1 h-1 rounded-full bg-white/30" />)}
+                    </div>
+                    <span className="text-xs opacity-40 italic">3s — let the instruction land</span>
                   </div>
-                  <h3 className="text-xl text-[var(--color-sand-900)] mb-3">{pillar.title}</h3>
-                  <p className="text-sm text-[var(--color-sand-600)] leading-relaxed mb-4 flex-1" style={{ fontFamily: "var(--font-body)" }}>
-                    {pillar.description}
-                  </p>
-                  <p className="text-xs text-[var(--color-sand-500)] leading-relaxed border-t border-[var(--color-sand-100)] pt-4" style={{ fontFamily: "var(--font-body)" }}>
-                    {pillar.detail}
+                  <p>Take a deep breath in&hellip;</p>
+                  <div className="flex items-center gap-2 py-1">
+                    <div className="h-[1px] flex-1 bg-gradient-to-r from-white/20 via-white/5 to-transparent" />
+                    <span className="text-xs opacity-40 italic">4s inhale window</span>
+                  </div>
+                  <p>And slowly release.</p>
+                  <div className="flex items-center gap-2 py-1">
+                    <div className="h-[1px] flex-1 bg-gradient-to-r from-white/20 via-white/5 to-transparent" />
+                    <span className="text-xs opacity-40 italic">6s exhale — longer to activate parasympathetic</span>
+                  </div>
+                  <p>Notice your shoulders&hellip; and let them drop.</p>
+                  <div className="flex items-center gap-2 py-1">
+                    <div className="flex gap-0.5">
+                      {[1,2,3,4,5].map(n => <div key={n} className="w-1 h-1 rounded-full bg-white/30" />)}
+                    </div>
+                    <span className="text-xs opacity-40 italic">5s — body needs time to respond</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </FadeIn>
+        </div>
+      </section>
+
+      {/* ════════════════════════════════════════════
+          SECTION 2 — STUDIO AUDIO
+         ════════════════════════════════════════════ */}
+      <section className="relative py-32 px-6" style={{ background: "var(--color-sand-900)" }}>
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute w-[600px] h-[600px] rounded-full blur-[200px] opacity-8" style={{ top: "-10%", left: "20%", background: "#4a7a5a" }} />
+          <div className="absolute w-[500px] h-[500px] rounded-full blur-[180px] opacity-6" style={{ bottom: "-10%", right: "10%", background: "#5a6a8a" }} />
+        </div>
+        <div className="max-w-5xl mx-auto relative z-10">
+          <FadeIn className="text-center mb-16">
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 text-white/70 text-xs mb-5" style={{ fontFamily: "var(--font-body)" }}>
+              <Mic className="w-3.5 h-3.5" />
+              Professional Audio Pipeline
+            </div>
+            <h2 className="text-[2.5rem] md:text-[3.5rem] text-[var(--color-sand-50)] leading-tight mb-6">
+              Your meditation sounds like<br />a studio recording. Because it is.
+            </h2>
+            <p className="text-base text-white/50 max-w-2xl mx-auto leading-relaxed" style={{ fontFamily: "var(--font-body)" }}>
+              We didn&apos;t just train an AI and ship it. We built an audio pipeline with
+              Grammy-nominated engineers and psychoacoustics researchers. Every session
+              goes through the same signal chain as a professional album.
+            </p>
+          </FadeIn>
+
+          {/* Audio pipeline visualization */}
+          <FadeIn>
+            <div className="bg-white/5 backdrop-blur-sm rounded-3xl border border-white/10 p-8 md:p-10 mb-12">
+              <p className="text-xs uppercase tracking-[0.2em] text-white/40 mb-8 font-medium" style={{ fontFamily: "var(--font-body)" }}>
+                Signal Chain — Every Session
+              </p>
+              <div className="flex flex-col md:flex-row items-stretch gap-3">
+                {[
+                  { step: "01", label: "Voice Synthesis", detail: "Neural TTS with emotion modeling and natural prosody", icon: Mic },
+                  { step: "02", label: "Pause Engine", detail: "Breath-cycle timing, semantic pause injection, silence shaping", icon: Timer },
+                  { step: "03", label: "Spatial Mix", detail: "Binaural panning, room simulation, depth positioning", icon: Headphones },
+                  { step: "04", label: "Ambient Layer", detail: "Field-recorded soundscapes, frequency-matched to session type", icon: TreePine },
+                  { step: "05", label: "Master", detail: "48kHz/24-bit, loudness-normalized, headphone EQ'd", icon: Sliders },
+                ].map((s, i) => (
+                  <FadeIn key={s.step} delay={i * 0.08} className="flex-1">
+                    <div className="bg-white/5 rounded-xl p-5 h-full border border-white/5 hover:border-white/15 transition-colors">
+                      <div className="flex items-center gap-2 mb-3">
+                        <span className="text-xs font-mono text-white/30">{s.step}</span>
+                        <s.icon className="w-3.5 h-3.5 text-white/40" />
+                      </div>
+                      <p className="text-sm font-medium text-white/90 mb-1" style={{ fontFamily: "var(--font-body)" }}>{s.label}</p>
+                      <p className="text-xs text-white/40 leading-relaxed" style={{ fontFamily: "var(--font-body)" }}>{s.detail}</p>
+                    </div>
+                  </FadeIn>
+                ))}
+              </div>
+              {/* Connecting line */}
+              <div className="hidden md:block mt-4 mx-5">
+                <div className="h-[1px] w-full bg-gradient-to-r from-white/5 via-white/15 to-white/5" />
+              </div>
+            </div>
+          </FadeIn>
+
+          {/* Audio specs grid */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {[
+              { value: "48kHz", label: "Sample rate", sub: "Studio standard" },
+              { value: "24-bit", label: "Bit depth", sub: "Full dynamic range" },
+              { value: "LUFS-14", label: "Loudness target", sub: "Optimized for quiet" },
+              { value: "Stereo+", label: "Spatial format", sub: "Binaural compatible" },
+            ].map((spec, i) => (
+              <FadeIn key={spec.label} delay={i * 0.06}>
+                <div className="text-center py-6 border border-white/5 rounded-xl">
+                  <p className="text-xl text-white/90 mb-1" style={{ fontFamily: "var(--font-display)" }}>{spec.value}</p>
+                  <p className="text-xs text-white/50 font-medium" style={{ fontFamily: "var(--font-body)" }}>{spec.label}</p>
+                  <p className="text-xs text-white/25 mt-0.5" style={{ fontFamily: "var(--font-body)" }}>{spec.sub}</p>
+                </div>
+              </FadeIn>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ════════════════════════════════════════════
+          SECTION 3 — SCIENTIFIC PROTOCOLS
+         ════════════════════════════════════════════ */}
+      <section className="relative py-32 px-6" style={{ background: "var(--color-sand-50)" }}>
+        <div className="max-w-5xl mx-auto">
+          <FadeIn className="text-center mb-6">
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[var(--color-sand-100)] text-[var(--color-sand-700)] text-xs mb-5" style={{ fontFamily: "var(--font-body)" }}>
+              <FlaskConical className="w-3.5 h-3.5" />
+              Evidence-Based Protocols
+            </div>
+            <h2 className="text-[2.5rem] md:text-[3.5rem] text-[var(--color-sand-900)] leading-tight mb-6">
+              Not vibes. Science.
+            </h2>
+            <p className="text-lg text-[var(--color-sand-600)] max-w-2xl mx-auto leading-relaxed" style={{ fontFamily: "var(--font-body)" }}>
+              Every MindFlow session is structured around peer-reviewed clinical protocols.
+              When you ask for a sleep meditation, you get a CBT-I informed session &mdash; not
+              a generic &ldquo;relax and breathe&rdquo; script. Our AI selects and adapts the right
+              protocol for your specific need.
+            </p>
+          </FadeIn>
+
+          <FadeIn className="mb-12">
+            <div className="bg-white rounded-2xl border border-[var(--color-sand-200)] p-6 md:p-8 mb-8">
+              <p className="text-xs uppercase tracking-[0.2em] text-[var(--color-sand-500)] mb-5 font-medium" style={{ fontFamily: "var(--font-body)" }}>
+                Example: You type &ldquo;I can&apos;t sleep&rdquo; &rarr; MindFlow selects:
+              </p>
+              <div className="flex flex-wrap gap-2 mb-4">
+                <span className="px-2.5 py-1 rounded-full bg-[var(--color-sage-light)] text-[var(--color-sage)] text-xs font-medium" style={{ fontFamily: "var(--font-body)" }}>CBT-I sleep restructuring</span>
+                <span className="text-[var(--color-sand-400)] text-xs self-center">+</span>
+                <span className="px-2.5 py-1 rounded-full bg-[var(--color-dusk-light)] text-[var(--color-dusk)] text-xs font-medium" style={{ fontFamily: "var(--font-body)" }}>PMR tension release</span>
+                <span className="text-[var(--color-sand-400)] text-xs self-center">+</span>
+                <span className="px-2.5 py-1 rounded-full bg-[var(--color-ocean-light)] text-[var(--color-ocean)] text-xs font-medium" style={{ fontFamily: "var(--font-body)" }}>NSDR for neural recovery</span>
+              </div>
+              <p className="text-sm text-[var(--color-sand-600)] leading-relaxed" style={{ fontFamily: "var(--font-body)" }}>
+                It doesn&apos;t just pick one &mdash; it blends protocols based on your input, time of day, and session
+                length to create a clinically-informed sequence that actually targets your problem.
+              </p>
+            </div>
+          </FadeIn>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4 mb-16">
+            {protocols.map((p, i) => (
+              <FadeIn key={p.abbr} delay={i * 0.06}>
+                <div className="group bg-white rounded-2xl p-6 border border-[var(--color-sand-200)] hover:border-[var(--color-sand-300)] hover:shadow-sm transition-all h-full">
+                  <div className="flex items-center gap-2.5 mb-3">
+                    <span className="text-xs font-mono font-semibold tracking-wider text-[var(--color-sand-900)] bg-[var(--color-sand-100)] px-2 py-1 rounded">
+                      {p.abbr}
+                    </span>
+                    <div className="h-[1px] flex-1 bg-[var(--color-sand-100)]" />
+                  </div>
+                  <h3 className="text-base text-[var(--color-sand-900)] mb-2 leading-snug" style={{ fontFamily: "var(--font-display)" }}>
+                    {p.name}
+                  </h3>
+                  <p className="text-xs text-[var(--color-sand-600)] leading-relaxed" style={{ fontFamily: "var(--font-body)" }}>
+                    {p.description}
                   </p>
                 </div>
               </FadeIn>
             ))}
           </div>
 
-          {/* Audio engineering detail */}
-          <FadeIn className="mb-32">
-            <div className="bg-[var(--color-sand-900)] rounded-3xl p-10 md:p-14 text-[var(--color-sand-50)] overflow-hidden relative">
-              <div className="absolute top-0 right-0 w-[400px] h-[400px] rounded-full blur-[120px] opacity-10" style={{ background: "#c8d5ca" }} />
-              <div className="relative z-10 grid md:grid-cols-2 gap-12 items-center">
-                <div>
-                  <p className="text-xs uppercase tracking-[0.2em] opacity-50 mb-4 font-medium" style={{ fontFamily: "var(--font-body)" }}>
-                    Audio Engineering
-                  </p>
-                  <h2 className="text-[2rem] md:text-[2.5rem] leading-tight mb-6" style={{ color: "var(--color-sand-50)" }}>
-                    Built with sound engineers, not just engineers
-                  </h2>
-                  <p className="text-sm leading-relaxed opacity-70 mb-6" style={{ fontFamily: "var(--font-body)" }}>
-                    We partnered with Grammy-nominated audio engineers and psychoacoustics researchers
-                    to build an audio pipeline that treats every session like a studio production.
-                    The result: meditations that sound as good as professional recordings, generated in seconds.
-                  </p>
-                  <div className="grid grid-cols-2 gap-4">
-                    {[
-                      { label: "Spatial Audio", sub: "3D soundfield positioning" },
-                      { label: "Binaural Beats", sub: "Frequency-tuned entrainment" },
-                      { label: "Dynamic Range", sub: "Mastered for quiet listening" },
-                      { label: "Ambient Layers", sub: "Field-recorded soundscapes" },
-                    ].map((item) => (
-                      <div key={item.label} className="border border-white/10 rounded-xl p-3">
-                        <p className="text-sm font-medium" style={{ fontFamily: "var(--font-body)" }}>{item.label}</p>
-                        <p className="text-xs opacity-50 mt-0.5" style={{ fontFamily: "var(--font-body)" }}>{item.sub}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                <div className="flex items-center justify-center">
-                  {/* Waveform visualization */}
-                  <div className="flex items-end gap-[2px] h-40 opacity-40">
-                    {Array.from({ length: 60 }).map((_, i) => {
-                      const h = 15 + Math.sin(i * 0.3) * 25 + Math.cos(i * 0.5) * 20 + Math.sin(i * 0.8) * 10;
-                      return (
-                        <div
-                          key={i}
-                          className="w-[2px] rounded-full bg-white/60"
-                          style={{ height: `${Math.max(8, h)}%` }}
-                        />
-                      );
-                    })}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </FadeIn>
-
-          {/* Scientific Protocols */}
-          <FadeIn className="mb-32">
-            <div className="text-center mb-12">
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[var(--color-sand-100)] text-[var(--color-sand-700)] text-xs mb-5" style={{ fontFamily: "var(--font-body)" }}>
-                <FlaskConical className="w-3.5 h-3.5" />
-                Evidence-Based
-              </div>
-              <h2 className="text-[2rem] md:text-[2.75rem] text-[var(--color-sand-900)] leading-tight mb-4">
-                Grounded in clinical protocols
-              </h2>
-              <p className="text-base text-[var(--color-sand-600)] max-w-2xl mx-auto leading-relaxed" style={{ fontFamily: "var(--font-body)" }}>
-                MindFlow doesn&apos;t generate generic relaxation scripts. Every session is structured
-                around peer-reviewed therapeutic protocols, adapted by our AI to your specific needs.
-              </p>
-            </div>
-
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {protocols.map((p, i) => (
-                <FadeIn key={p.abbr} delay={i * 0.06}>
-                  <div className="group bg-white rounded-2xl p-6 border border-[var(--color-sand-200)] hover:border-[var(--color-sand-300)] hover:shadow-sm transition-all h-full">
-                    <div className="flex items-start justify-between mb-3">
-                      <span className="text-xs font-mono font-semibold tracking-wider text-[var(--color-sand-900)] bg-[var(--color-sand-100)] px-2 py-1 rounded">
-                        {p.abbr}
-                      </span>
-                    </div>
-                    <h3 className="text-base text-[var(--color-sand-900)] mb-2 leading-snug" style={{ fontFamily: "var(--font-display)" }}>
-                      {p.name}
-                    </h3>
-                    <p className="text-xs text-[var(--color-sand-600)] leading-relaxed" style={{ fontFamily: "var(--font-body)" }}>
-                      {p.description}
-                    </p>
-                  </div>
-                </FadeIn>
-              ))}
-            </div>
-          </FadeIn>
-
-          {/* Trust / Numbers strip */}
-          <FadeIn className="mb-32">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+          {/* Trust strip */}
+          <FadeIn>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 border-t border-[var(--color-sand-200)] pt-12">
               {[
-                { value: "48kHz", label: "Audio sample rate", icon: AudioWaveform },
-                { value: "6", label: "Clinical protocols", icon: ShieldCheck },
+                { value: "6", label: "Clinical protocols supported", icon: ShieldCheck },
                 { value: "<2s", label: "Generation latency", icon: Activity },
-                { value: "PhD", label: "Advisor-reviewed", icon: GraduationCap },
+                { value: "PhD", label: "Advisory board reviewed", icon: GraduationCap },
+                { value: "48kHz", label: "Studio sample rate", icon: AudioWaveform },
               ].map((stat, i) => (
                 <FadeIn key={stat.label} delay={i * 0.08}>
-                  <div className="text-center py-6">
-                    <stat.icon className="w-5 h-5 text-[var(--color-sand-400)] mx-auto mb-3" />
-                    <p className="text-2xl text-[var(--color-sand-900)] mb-1" style={{ fontFamily: "var(--font-display)" }}>
+                  <div className="text-center py-4">
+                    <stat.icon className="w-4 h-4 text-[var(--color-sand-400)] mx-auto mb-2" />
+                    <p className="text-2xl text-[var(--color-sand-900)] mb-0.5" style={{ fontFamily: "var(--font-display)" }}>
                       {stat.value}
                     </p>
                     <p className="text-xs text-[var(--color-sand-500)]" style={{ fontFamily: "var(--font-body)" }}>
@@ -591,8 +843,14 @@ export default function HomePage() {
               ))}
             </div>
           </FadeIn>
+        </div>
+      </section>
 
-          {/* CTA */}
+      {/* ════════════════════════════════════════════
+          CTA
+         ════════════════════════════════════════════ */}
+      <section className="relative py-24 px-6" style={{ background: "var(--color-sand-50)" }}>
+        <div className="max-w-5xl mx-auto">
           <FadeIn className="text-center">
             <h2 className="text-[2rem] md:text-[2.75rem] text-[var(--color-sand-900)] leading-tight mb-4">
               Try it now. No signup required.
