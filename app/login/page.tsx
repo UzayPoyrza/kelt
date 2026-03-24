@@ -447,7 +447,8 @@ export default function LoginPage() {
             </p>
 
             {/* Google Button */}
-            <motion.button
+            <motion.a
+              href="/studio"
               onHoverStart={() => setIsHovered(true)}
               onHoverEnd={() => setIsHovered(false)}
               whileHover={{ y: -1 }}
@@ -462,10 +463,11 @@ export default function LoginPage() {
                 <GoogleIcon />
               </motion.div>
               <span className="text-sm font-medium">Continue with Google</span>
-            </motion.button>
+            </motion.a>
 
             {/* Apple Button */}
-            <motion.button
+            <motion.a
+              href="/studio"
               whileHover={{ y: -1 }}
               whileTap={{ scale: 0.98 }}
               className="w-full flex items-center justify-center gap-3 py-3.5 px-6 rounded-xl bg-white/60 text-[var(--color-sand-900)] border border-[var(--color-sand-200)] hover:bg-white hover:shadow-sm transition-all cursor-pointer mt-3"
@@ -473,7 +475,7 @@ export default function LoginPage() {
             >
               <AppleIcon />
               <span className="text-sm font-medium">Continue with Apple</span>
-            </motion.button>
+            </motion.a>
 
             {/* Terms */}
             <p
