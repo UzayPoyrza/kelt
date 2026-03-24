@@ -1420,7 +1420,7 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, onBack }: {
                               </button>
                               <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-0.5 rounded bg-[#18181b] text-white text-[9px] whitespace-nowrap opacity-0 group-hover/tip:opacity-100 transition-opacity pointer-events-none z-10" style={{ fontFamily: "var(--font-body)" }}>Download</span>
                             </div>
-                            <span className="text-[9px] text-[#d4d4d8] ml-auto" style={{ fontFamily: "var(--font-body)" }}>{datePart}</span>
+                            <span className="ml-auto" />
                           </div>
                         )}
                       </motion.div>
@@ -1601,7 +1601,7 @@ export default function StudioPage() {
     <div className="min-h-screen flex" style={{ background: "var(--color-sand-50)" }}>
       {/* ─── Sidebar ─── */}
       <motion.aside initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.35 }}
-        className="w-56 shrink-0 border-r border-[var(--color-sand-200)] bg-white flex flex-col" style={{ minHeight: "100vh" }}>
+        className="w-56 shrink-0 border-r border-[var(--color-sand-200)] bg-white flex flex-col fixed top-0 left-0 h-screen z-30">
         <div className="px-5 pt-6 pb-5">
           <a href="/" className="flex items-center gap-2 text-[var(--color-sand-900)]">
             <Logo />
@@ -1677,7 +1677,7 @@ export default function StudioPage() {
       </motion.aside>
 
       {/* ─── Main Content ─── */}
-      <main className="flex-1 min-h-screen">
+      <main className="flex-1 min-h-screen ml-56">
         <motion.header initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.15, duration: 0.3 }}
           className="sticky top-0 z-10 backdrop-blur-xl border-b border-[#e8e8ec] py-4" style={{ background: "rgba(250,249,247,0.85)" }}>
           <div className="px-8 flex items-center justify-between">
@@ -1703,7 +1703,7 @@ export default function StudioPage() {
           </div>
         </motion.header>
 
-        <div className="max-w-7xl mx-auto px-8 pt-6 pb-8">
+        <div className={`max-w-7xl mx-auto px-8 pt-6 ${nowPlayingSession ? "pb-28" : "pb-8"}`}>
           <AnimatePresence mode="wait">
             {/* All Sessions */}
             {activeNav === "sessions" && (
