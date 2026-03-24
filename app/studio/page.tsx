@@ -88,17 +88,17 @@ const soundCategories = {
 
 const mockSessions = [
   { id: "1", title: "Deep sleep after a long day", duration: "15 min", voice: "Aria", protocol: "CBT-I + NSDR", sound: "Deep Night", createdAt: "Mar 24, 2026 · 12:34 PM", createdAtShort: "2 hours ago", accessedAt: "Just now", category: "sleep", icon: Moon, hasGeneration: true },
-  { id: "2", title: "Morning focus before standup", duration: "10 min", voice: "James", protocol: "MBSR", sound: "Flow State", createdAt: "Mar 23, 2026 · 8:15 AM", createdAtShort: "Yesterday", accessedAt: "3 hours ago", category: "focus", icon: Sun, hasGeneration: true },
-  { id: "3", title: "Calm my nerves before the flight", duration: "8 min", voice: "Kai", protocol: "HRV-BF + ACT", sound: "Still Water", createdAt: "Mar 22, 2026 · 3:47 PM", createdAtShort: "2 days ago", accessedAt: "Yesterday", category: "anxiety", icon: Heart, hasGeneration: true },
-  { id: "4", title: "Stress relief after deadline", duration: "20 min", voice: "Luna", protocol: "PMR + ACT", sound: "Safe Harbor", createdAt: "Mar 21, 2026 · 6:22 PM", createdAtShort: "3 days ago", accessedAt: "2 days ago", category: "stress", icon: Wind, hasGeneration: true },
-  { id: "5", title: "Quick breathing reset", duration: "5 min", voice: "Aria", protocol: "HRV-BF", sound: "Sanctuary", createdAt: "Mar 17, 2026 · 10:05 AM", createdAtShort: "Last week", accessedAt: "4 days ago", category: "focus", icon: Brain, hasGeneration: true },
-  { id: "6", title: "Wind down for bed", duration: "15 min", voice: "Luna", protocol: "NSDR", sound: "Soft Drift", createdAt: "Mar 16, 2026 · 11:12 PM", createdAtShort: "Last week", accessedAt: "Last week", category: "sleep", icon: Moon, hasGeneration: true },
-  { id: "7", title: "Body scan for tension release", duration: "12 min", voice: "Aria", protocol: "PMR", sound: "Letting Go", createdAt: "Mar 14, 2026 · 7:45 PM", createdAtShort: "Last week", accessedAt: "Last week", category: "stress", icon: Heart, hasGeneration: false },
-  { id: "8", title: "Pre-presentation confidence boost", duration: "8 min", voice: "Kai", protocol: "ACT", sound: "Open Sky", createdAt: "Mar 13, 2026 · 9:00 AM", createdAtShort: "2 weeks ago", accessedAt: "Last week", category: "anxiety", icon: Heart, hasGeneration: false },
-  { id: "9", title: "Late night overthinking reset", duration: "20 min", voice: "Luna", protocol: "CBT-I", sound: "Deep Night", createdAt: "Mar 11, 2026 · 11:55 PM", createdAtShort: "2 weeks ago", accessedAt: "2 weeks ago", category: "sleep", icon: Moon, hasGeneration: true },
-  { id: "10", title: "Post-workout recovery calm", duration: "10 min", voice: "James", protocol: "NSDR", sound: "Still Water", createdAt: "Mar 10, 2026 · 6:30 PM", createdAtShort: "2 weeks ago", accessedAt: "2 weeks ago", category: "focus", icon: Sun, hasGeneration: false },
-  { id: "11", title: "Midday energy recharge", duration: "5 min", voice: "Kai", protocol: "HRV-BF", sound: "Flow State", createdAt: "Mar 8, 2026 · 1:15 PM", createdAtShort: "2 weeks ago", accessedAt: "2 weeks ago", category: "focus", icon: Brain, hasGeneration: false },
-  { id: "12", title: "Sunday evening wind down", duration: "15 min", voice: "Aria", protocol: "PMR + NSDR", sound: "Safe Harbor", createdAt: "Mar 7, 2026 · 9:20 PM", createdAtShort: "2 weeks ago", accessedAt: "2 weeks ago", category: "sleep", icon: Moon, hasGeneration: true },
+  { id: "2", title: "Morning focus before standup", duration: "10 min", voice: "James", protocol: "MBSR", sound: "Flow State", createdAt: "Mar 23, 2026 · 8:15 AM", createdAtShort: "Yesterday", accessedAt: "3:14 PM", category: "focus", icon: Sun, hasGeneration: true },
+  { id: "3", title: "Calm my nerves before the flight", duration: "8 min", voice: "Kai", protocol: "HRV-BF + ACT", sound: "Still Water", createdAt: "Mar 22, 2026 · 3:47 PM", createdAtShort: "2 days ago", accessedAt: "Mar 22, 2026", category: "anxiety", icon: Heart, hasGeneration: true },
+  { id: "4", title: "Stress relief after deadline", duration: "20 min", voice: "Luna", protocol: "PMR + ACT", sound: "Safe Harbor", createdAt: "Mar 21, 2026 · 6:22 PM", createdAtShort: "3 days ago", accessedAt: "Mar 21, 2026", category: "stress", icon: Wind, hasGeneration: true },
+  { id: "5", title: "Quick breathing reset", duration: "5 min", voice: "Aria", protocol: "HRV-BF", sound: "Sanctuary", createdAt: "Mar 17, 2026 · 10:05 AM", createdAtShort: "Last week", accessedAt: "Mar 20, 2026", category: "focus", icon: Brain, hasGeneration: true },
+  { id: "6", title: "Wind down for bed", duration: "15 min", voice: "Luna", protocol: "NSDR", sound: "Soft Drift", createdAt: "Mar 16, 2026 · 11:12 PM", createdAtShort: "Last week", accessedAt: "Mar 17, 2026", category: "sleep", icon: Moon, hasGeneration: true },
+  { id: "7", title: "Body scan for tension release", duration: "12 min", voice: "Aria", protocol: "PMR", sound: "Letting Go", createdAt: "Mar 14, 2026 · 7:45 PM", createdAtShort: "Last week", accessedAt: "Mar 16, 2026", category: "stress", icon: Heart, hasGeneration: false },
+  { id: "8", title: "Pre-presentation confidence boost", duration: "8 min", voice: "Kai", protocol: "ACT", sound: "Open Sky", createdAt: "Mar 13, 2026 · 9:00 AM", createdAtShort: "2 weeks ago", accessedAt: "Mar 15, 2026", category: "anxiety", icon: Heart, hasGeneration: false },
+  { id: "9", title: "Late night overthinking reset", duration: "20 min", voice: "Luna", protocol: "CBT-I", sound: "Deep Night", createdAt: "Mar 11, 2026 · 11:55 PM", createdAtShort: "2 weeks ago", accessedAt: "Mar 11, 2026", category: "sleep", icon: Moon, hasGeneration: true },
+  { id: "10", title: "Post-workout recovery calm", duration: "10 min", voice: "James", protocol: "NSDR", sound: "Still Water", createdAt: "Mar 10, 2026 · 6:30 PM", createdAtShort: "2 weeks ago", accessedAt: "Mar 10, 2026", category: "focus", icon: Sun, hasGeneration: false },
+  { id: "11", title: "Midday energy recharge", duration: "5 min", voice: "Kai", protocol: "HRV-BF", sound: "Flow State", createdAt: "Mar 8, 2026 · 1:15 PM", createdAtShort: "2 weeks ago", accessedAt: "Mar 8, 2026", category: "focus", icon: Brain, hasGeneration: false },
+  { id: "12", title: "Sunday evening wind down", duration: "15 min", voice: "Aria", protocol: "PMR + NSDR", sound: "Safe Harbor", createdAt: "Mar 7, 2026 · 9:20 PM", createdAtShort: "2 weeks ago", accessedAt: "Mar 7, 2026", category: "sleep", icon: Moon, hasGeneration: true },
 ];
 
 const mockGenerations = [
@@ -203,12 +203,30 @@ const categoryColors: Record<string, { accent: string; bg: string }> = {
 };
 
 /* ─── Google Docs-style Session Card ─── */
-function SessionCard({ session, delay, isNowPlaying, onPlay, onOpenStudio }: {
+function SessionCard({ session, delay, isNowPlaying, onPlay, onOpenStudio, onDelete, onRegen, onGenerate }: {
   session: (typeof mockSessions)[number]; delay: number;
   isNowPlaying: boolean; onPlay: () => void; onOpenStudio: () => void;
+  onDelete?: () => void; onRegen?: () => void; onGenerate?: () => void;
 }) {
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [isRenaming, setIsRenaming] = useState(false);
+  const [renameValue, setRenameValue] = useState(session.title);
+  const renameInputRef = useRef<HTMLInputElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
   const Icon = session.icon;
   const colors = categoryColors[session.category] || categoryColors.focus;
+  const voiceData = voices.find(v => v.name === session.voice);
+  const voiceColor = voiceData?.color || "#a1a1aa";
+
+  // Close menu on outside click
+  useEffect(() => {
+    if (!menuOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenuOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [menuOpen]);
 
   // Build fake "script preview" lines based on the session
   const previewLines = [
@@ -232,11 +250,11 @@ function SessionCard({ session, delay, isNowPlaying, onPlay, onOpenStudio }: {
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay, duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-      className="group rounded-xl border border-[#e0e0e4] hover:border-[#c0c0c8] bg-white hover:shadow-[0_2px_12px_rgba(0,0,0,0.08)] transition-all duration-200 cursor-pointer overflow-hidden flex flex-col"
+      className="group rounded-xl border border-[#e0e0e4] hover:border-[#c0c0c8] bg-white hover:shadow-[0_2px_12px_rgba(0,0,0,0.08)] transition-all duration-200 cursor-pointer flex flex-col"
       onClick={onOpenStudio}
     >
       {/* Preview area — like a document thumbnail */}
-      <div className="relative h-[160px] bg-[#f8f8fa] border-b border-[#ececf0] overflow-hidden px-5 pt-4">
+      <div className="relative h-[160px] bg-[#f8f8fa] border-b border-[#ececf0] overflow-hidden rounded-t-xl px-5 pt-4">
         {/* Category accent stripe at top */}
         <div className="absolute top-0 left-0 w-full h-[2px]" style={{ background: colors.accent }} />
 
@@ -283,27 +301,131 @@ function SessionCard({ session, delay, isNowPlaying, onPlay, onOpenStudio }: {
             </div>
           </div>
         )}
-      </div>
 
-      {/* Footer — title + opened time + actions */}
-      <div className="px-3.5 py-3 flex items-center gap-2">
-        <div className="flex-1 min-w-0">
-          <h3 className="text-[13px] text-[#18181b] truncate leading-tight" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>{session.title}</h3>
-          <div className="flex items-center gap-1.5 mt-1">
-            <div className="w-4 h-4 rounded flex items-center justify-center shrink-0" style={{ background: colors.accent + "18" }}>
-              <Icon className="w-2.5 h-2.5" style={{ color: colors.accent }} />
-            </div>
-            <span className="text-[11px] text-[#71717a] truncate" style={{ fontFamily: "var(--font-body)" }}>
-              Opened {session.accessedAt.toLowerCase()}
+        {/* Hover: Open in Studio overlay */}
+        {!isNowPlaying && (
+          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200">
+            <span className="px-4 py-2 rounded-lg bg-[#18181b] text-white text-[12px] shadow-lg" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>
+              Open in Studio
             </span>
           </div>
+        )}
+      </div>
+
+      {/* Footer — title + voice + opened time + 3-dot menu */}
+      <div className="px-3.5 py-3">
+        {isRenaming ? (
+          <input
+            ref={renameInputRef}
+            value={renameValue}
+            onChange={(e) => setRenameValue(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") setIsRenaming(false);
+              if (e.key === "Escape") { setRenameValue(session.title); setIsRenaming(false); }
+            }}
+            onBlur={() => setIsRenaming(false)}
+            onClick={(e) => e.stopPropagation()}
+            className="text-[13px] text-[#18181b] leading-tight mb-1.5 w-full bg-transparent border-b border-[#a1a1aa] outline-none px-0 py-0"
+            style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}
+            autoFocus
+          />
+        ) : (
+          <h3 className="text-[13px] text-[#18181b] truncate leading-tight mb-1.5" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>{renameValue}</h3>
+        )}
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 flex-1 min-w-0">
+            <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: voiceColor }} />
+            <span className="text-[11px] text-[#71717a] truncate" style={{ fontFamily: "var(--font-body)" }}>
+              {session.voice} · Opened {session.accessedAt}
+            </span>
+          </div>
+          {/* 3-dot menu */}
+          <div className="relative shrink-0 group/menu" ref={menuRef}>
+            <button
+              onClick={(e) => { e.stopPropagation(); setMenuOpen(!menuOpen); }}
+              className={`w-7 h-7 rounded-full flex items-center justify-center text-[#a1a1aa] hover:bg-[#f4f4f5] hover:text-[#52525b] transition-all cursor-pointer ${menuOpen ? "bg-[#f4f4f5] text-[#52525b]" : ""}`}
+            >
+              <MoreVertical className="w-4 h-4" />
+            </button>
+            {/* Hover tooltip */}
+            {!menuOpen && (
+              <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-0.5 rounded bg-[#18181b] text-white text-[9px] whitespace-nowrap opacity-0 group-hover/menu:opacity-100 transition-opacity pointer-events-none z-10" style={{ fontFamily: "var(--font-body)" }}>More actions</span>
+            )}
+            {/* Dropdown menu */}
+            <AnimatePresence>
+              {menuOpen && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95, y: 4 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.95, y: 4 }}
+                  transition={{ duration: 0.15 }}
+                  className="absolute top-full right-0 mt-1 w-44 bg-white rounded-lg border border-[#e4e4e7] shadow-lg overflow-hidden z-50"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <button
+                    onClick={() => { setMenuOpen(false); onOpenStudio(); }}
+                    className="w-full flex items-center gap-2.5 px-3 py-2.5 text-[12px] text-[#18181b] hover:bg-[#f4f4f5] transition-colors cursor-pointer"
+                    style={{ fontFamily: "var(--font-body)", fontWeight: 450 }}
+                  >
+                    <PenLine className="w-3.5 h-3.5 text-[#71717a]" /> Open in Studio
+                  </button>
+                  <button
+                    onClick={() => { setMenuOpen(false); setIsRenaming(true); }}
+                    className="w-full flex items-center gap-2.5 px-3 py-2.5 text-[12px] text-[#18181b] hover:bg-[#f4f4f5] transition-colors cursor-pointer"
+                    style={{ fontFamily: "var(--font-body)", fontWeight: 450 }}
+                  >
+                    <Type className="w-3.5 h-3.5 text-[#71717a]" /> Rename
+                  </button>
+                  {session.hasGeneration ? (
+                    <>
+                      <button
+                        onClick={() => { setMenuOpen(false); onPlay(); }}
+                        className="w-full flex items-center gap-2.5 px-3 py-2.5 text-[12px] text-[#18181b] hover:bg-[#f4f4f5] transition-colors cursor-pointer"
+                        style={{ fontFamily: "var(--font-body)", fontWeight: 450 }}
+                      >
+                        <Play className="w-3.5 h-3.5 text-[#71717a]" /> Play
+                      </button>
+                      <button
+                        onClick={() => { setMenuOpen(false); }}
+                        className="w-full flex items-center gap-2.5 px-3 py-2.5 text-[12px] text-[#18181b] hover:bg-[#f4f4f5] transition-colors cursor-pointer"
+                        style={{ fontFamily: "var(--font-body)", fontWeight: 450 }}
+                      >
+                        <Download className="w-3.5 h-3.5 text-[#71717a]" /> Download
+                      </button>
+                      {onRegen && (
+                        <button
+                          onClick={() => { setMenuOpen(false); onRegen(); }}
+                          className="w-full flex items-center gap-2.5 px-3 py-2.5 text-[12px] text-[#18181b] hover:bg-[#f4f4f5] transition-colors cursor-pointer"
+                          style={{ fontFamily: "var(--font-body)", fontWeight: 450 }}
+                        >
+                          <RotateCcw className="w-3.5 h-3.5 text-[#71717a]" /> Regenerate
+                        </button>
+                      )}
+                    </>
+                  ) : (
+                    <button
+                      onClick={() => { setMenuOpen(false); onGenerate?.(); }}
+                      className="w-full flex items-center gap-2.5 px-3 py-2.5 text-[12px] text-[#18181b] hover:bg-[#f4f4f5] transition-colors cursor-pointer"
+                      style={{ fontFamily: "var(--font-body)", fontWeight: 450 }}
+                    >
+                      <Sparkles className="w-3.5 h-3.5 text-[#71717a]" /> Generate
+                    </button>
+                  )}
+                  <div className="border-t border-[#f0f0f3]" />
+                  {onDelete && (
+                    <button
+                      onClick={() => { setMenuOpen(false); onDelete(); }}
+                      className="w-full flex items-center gap-2.5 px-3 py-2.5 text-[12px] text-[#ef4444] hover:bg-[#fef2f2] transition-colors cursor-pointer"
+                      style={{ fontFamily: "var(--font-body)", fontWeight: 450 }}
+                    >
+                      <Trash2 className="w-3.5 h-3.5" /> Delete
+                    </button>
+                  )}
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
         </div>
-        <button
-          onClick={(e) => { e.stopPropagation(); }}
-          className="w-8 h-8 rounded-full flex items-center justify-center text-[#a1a1aa] hover:bg-[#f4f4f5] hover:text-[#52525b] transition-all cursor-pointer shrink-0 opacity-0 group-hover:opacity-100"
-        >
-          <MoreVertical className="w-4 h-4" />
-        </button>
       </div>
     </motion.div>
   );
@@ -1215,7 +1337,7 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, onBack }: {
             {(() => {
               // Filter generations to only this session
               const sessionGens = sessionId
-                ? mockGenerations.filter(g => g.sessionId === sessionId)
+                ? mockGenerations.filter(g => g.sessionId === sessionId).slice().reverse()
                 : [];
 
               if (sessionGens.length === 0) {
@@ -1263,9 +1385,9 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, onBack }: {
                         {/* Header: version number + time */}
                         <div className="flex items-center justify-between mb-2">
                           <span className="text-[10px] uppercase tracking-wider" style={{ fontFamily: "var(--font-body)", fontWeight: 600, color: isFailed ? "#ef4444" : "#a1a1aa" }}>
-                            v{i + 1}{isFailed ? " · Failed" : ""}
+                            v{sessionGens.length - i}{isFailed ? " · Failed" : ""}
                           </span>
-                          <span className="text-[10px] text-[#c4c4c8]" style={{ fontFamily: "var(--font-body)" }}>{timePart}</span>
+                          <span className="text-[11px] text-[#71717a]" style={{ fontFamily: "var(--font-body)", fontWeight: 450 }}>{datePart} · {timePart}</span>
                         </div>
 
                         {/* Prompt */}
@@ -1327,7 +1449,8 @@ export default function StudioPage() {
   // Bottom player state
   const [nowPlayingId, setNowPlayingId] = useState<string | null>(null);
   const [playerPlaying, setPlayerPlaying] = useState(false);
-  const nowPlayingSession = mockSessions.find(s => s.id === nowPlayingId) || null;
+  const nowPlayingGeneration = mockGenerations.find(g => g.id === nowPlayingId);
+  const nowPlayingSession = mockSessions.find(s => s.id === nowPlayingId || (nowPlayingGeneration && s.id === nowPlayingGeneration.sessionId)) || null;
 
   const handlePlaySession = useCallback((sessionId: string) => {
     if (nowPlayingId === sessionId) {
@@ -1379,7 +1502,7 @@ export default function StudioPage() {
   const [historyFilter, setHistoryFilter] = useState<HistoryFilter>("all");
   const [sessionsPage, setSessionsPage] = useState(1);
   const [generationsPage, setGenerationsPage] = useState(1);
-  const [confirmDialog, setConfirmDialog] = useState<{ type: "regenerate" | "delete"; sessionId: string; sessionTitle: string } | null>(null);
+  const [confirmDialog, setConfirmDialog] = useState<{ type: "regenerate" | "delete" | "generate"; sessionId: string; sessionTitle: string } | null>(null);
 
   const handleQuickGenerate = useCallback(() => {
     const intent = detectIntent(genConfig.prompt);
@@ -1599,6 +1722,9 @@ export default function StudioPage() {
                           setActiveNav("generate" as NavId);
                           setGenStep("studio");
                         }}
+                        onRegen={() => setConfirmDialog({ type: "regenerate", sessionId: session.id, sessionTitle: session.title })}
+                        onGenerate={() => setConfirmDialog({ type: "generate", sessionId: session.id, sessionTitle: session.title })}
+                        onDelete={() => setConfirmDialog({ type: "delete", sessionId: session.id, sessionTitle: session.title })}
                       />
                     ))}
                   </div>
@@ -1646,7 +1772,7 @@ export default function StudioPage() {
                         ))}
                       </div>
                       {paged.map((gen, i) => {
-                        const isGenPlaying = gen.sessionId ? nowPlayingId === gen.sessionId && playerPlaying : false;
+                        const isGenPlaying = gen.sessionId ? nowPlayingId === gen.id && playerPlaying : false;
                         const genSession = gen.sessionId ? mockSessions.find(s => s.id === gen.sessionId) : null;
                         const genAccent = genSession ? (categoryColors[genSession.category] || categoryColors.focus).accent : "#18181b";
                         return (
@@ -1665,10 +1791,13 @@ export default function StudioPage() {
                             )}
                             <div className="min-w-0">
                               <span className={`text-[13px] truncate block ${gen.status === "failed" ? "text-[#ef4444]" : "text-[#18181b]"}`} style={{ fontFamily: "var(--font-body)", fontWeight: 450 }}>{gen.prompt}</span>
-                              <span className="text-[10px] text-[#a1a1aa] block" style={{ fontFamily: "var(--font-body)" }}>{gen.timestamp}</span>
+                              <span className="text-[11px] text-[#52525b] block mt-0.5" style={{ fontFamily: "var(--font-body)", fontWeight: 450 }}>{gen.timestamp}</span>
                             </div>
                           </div>
-                          <span className="text-[11px] text-[#71717a]" style={{ fontFamily: "var(--font-body)" }}>{gen.voice}</span>
+                          <span className="text-[11px] text-[#71717a] flex items-center gap-1.5" style={{ fontFamily: "var(--font-body)" }}>
+                            <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: voices.find(v => v.name === gen.voice)?.color || "#a1a1aa" }} />
+                            {gen.voice}
+                          </span>
                           <span className="text-[11px] text-[#71717a] tabular-nums" style={{ fontFamily: "var(--font-body)" }}>{gen.duration}</span>
                           <div>
                             <span className="text-[11px] text-[#71717a] truncate block" style={{ fontFamily: "var(--font-body)" }}>{gen.protocol}</span>
@@ -1680,7 +1809,7 @@ export default function StudioPage() {
                           <div className="flex items-center justify-end gap-1">
                             <div className="relative group/tip">
                               <button
-                                onClick={(e) => { e.stopPropagation(); handlePlaySession(gen.sessionId || ""); }}
+                                onClick={(e) => { e.stopPropagation(); handlePlaySession(gen.id); }}
                                 disabled={!gen.sessionId || (gen.status as string) === "failed"}
                                 className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-[#27272a] transition-colors shadow-sm disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
                                 style={{ background: isGenPlaying ? genAccent : "#18181b", color: "#fff" }}
@@ -1768,8 +1897,11 @@ export default function StudioPage() {
                             </div>
                             <span className="text-[11px] text-[#71717a] truncate" style={{ fontFamily: "var(--font-body)" }}>{session.protocol}</span>
                             <span className="text-[11px] text-[#71717a] tabular-nums" style={{ fontFamily: "var(--font-body)" }}>{session.duration}</span>
-                            <span className="text-[11px] text-[#71717a]" style={{ fontFamily: "var(--font-body)" }}>{session.voice}</span>
-                            <span className="text-[11px] text-[#a1a1aa]" style={{ fontFamily: "var(--font-body)" }}>{session.createdAt}</span>
+                            <span className="text-[11px] text-[#71717a] flex items-center gap-1.5" style={{ fontFamily: "var(--font-body)" }}>
+                              <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: voices.find(v => v.name === session.voice)?.color || "#a1a1aa" }} />
+                              {session.voice}
+                            </span>
+                            <span className="text-[11px] text-[#52525b]" style={{ fontFamily: "var(--font-body)", fontWeight: 450 }}>{session.createdAt}</span>
                             <div className="flex items-center justify-end gap-1">
                               <div className="relative group/tip">
                                 <button
@@ -1900,13 +2032,13 @@ export default function StudioPage() {
 
             {/* Generate — Step 2: Configure (copied from /create page) */}
             {activeNav === ("generate" as NavId) && genStep === "choose" && (
-              <motion.div key="gen-choose" initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.4 }} className="w-full max-w-xl mx-auto pt-[10vh]">
+              <motion.div key="gen-choose" initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.4 }} className="w-full max-w-xl mx-auto min-h-[calc(100vh-120px)] flex flex-col justify-center py-8">
                 {/* Back button */}
                 <motion.button
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   onClick={() => setGenStep("input")}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm text-[var(--color-sand-600)] hover:text-[var(--color-sand-900)] hover:bg-white/60 border border-[var(--color-sand-200)] hover:border-[var(--color-sand-300)] transition-all cursor-pointer mb-8"
+                  className="self-start flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm text-[var(--color-sand-600)] hover:text-[var(--color-sand-900)] hover:bg-white/60 border border-[var(--color-sand-200)] hover:border-[var(--color-sand-300)] transition-all cursor-pointer mb-8"
                   style={{ fontFamily: "var(--font-body)" }}
                 >
                   <ChevronLeft className="w-4 h-4" />Back
@@ -2219,16 +2351,20 @@ export default function StudioPage() {
                 }`}>
                   {confirmDialog.type === "delete" ? (
                     <Trash2 className="w-5 h-5 text-[#ef4444]" />
+                  ) : confirmDialog.type === "generate" ? (
+                    <Sparkles className="w-5 h-5 text-[#5a9a62]" />
                   ) : (
                     <RotateCcw className="w-5 h-5 text-[#5a9a62]" />
                   )}
                 </div>
                 <h3 className="text-[15px] text-[#18181b] mb-1.5" style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}>
-                  {confirmDialog.type === "delete" ? "Delete Session" : "Regenerate Session"}
+                  {confirmDialog.type === "delete" ? "Delete Session" : confirmDialog.type === "generate" ? "Generate Audio" : "Regenerate Session"}
                 </h3>
                 <p className="text-[13px] text-[#52525b] leading-relaxed" style={{ fontFamily: "var(--font-body)" }}>
                   {confirmDialog.type === "delete" ? (
                     <>Are you sure you want to delete <strong>&ldquo;{confirmDialog.sessionTitle}&rdquo;</strong>? This action is permanent and cannot be undone.</>
+                  ) : confirmDialog.type === "generate" ? (
+                    <>Generating audio for <strong>&ldquo;{confirmDialog.sessionTitle}&rdquo;</strong> will use <strong>1 credit</strong> from your balance.</>
                   ) : (
                     <>Regenerating <strong>&ldquo;{confirmDialog.sessionTitle}&rdquo;</strong> will create a new version of this session. This will use <strong>1 credit</strong> from your balance.</>
                   )}
@@ -2254,7 +2390,7 @@ export default function StudioPage() {
                   }`}
                   style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}
                 >
-                  {confirmDialog.type === "delete" ? "Delete Permanently" : "Regenerate · 1 Credit"}
+                  {confirmDialog.type === "delete" ? "Delete Permanently" : confirmDialog.type === "generate" ? "Generate · 1 Credit" : "Regenerate · 1 Credit"}
                 </button>
               </div>
             </motion.div>
