@@ -607,7 +607,8 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, onBack }: {
   const [editingPauseId, setEditingPauseId] = useState<string | null>(null);
   const [generateWarning, setGenerateWarning] = useState<string | null>(null);
   const [errorPauseIds, setErrorPauseIds] = useState<Set<string>>(new Set());
-  const [swappedIds, setSwappedIds] = useState<Set<string>>(new Set());
+  const [swappedUp, setSwappedUp] = useState<string | null>(null);
+  const [swappedDown, setSwappedDown] = useState<string | null>(null);
   const [rightTab, setRightTab] = useState<"settings" | "history">("settings");
   const [isGenerating, setIsGenerating] = useState(false);
   const [studioPlaying, setStudioPlaying] = useState(false);
@@ -753,7 +754,8 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, onBack }: {
 
   // Swap with the nearest same-type block in the given direction
   const moveBlock = useCallback((id: string, direction: "up" | "down") => {
-    let swappedPair: [string, string] | null = null;
+    let movedUpId: string | null = null;
+    let movedDownId: string | null = null;
     setScript(prev => {
       const idx = prev.findIndex(b => b.id === id);
       if (idx === -1) return prev;
@@ -773,13 +775,20 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, onBack }: {
       const temp = { text: next[idx].text, pauseDuration: next[idx].pauseDuration };
       next[idx] = { ...next[idx], text: next[swapIdx].text, pauseDuration: next[swapIdx].pauseDuration };
       next[swapIdx] = { ...next[swapIdx], text: temp.text, pauseDuration: temp.pauseDuration };
-      swappedPair = [next[idx].id, next[swapIdx].id];
+      // The block that requested "up" now has its content at swapIdx (above), so swapIdx got the content that moved up
+      // idx got content from swapIdx which moved down
+      if (direction === "up") {
+        movedUpId = next[swapIdx].id; // content moved up into this position
+        movedDownId = next[idx].id;   // content moved down into this position
+      } else {
+        movedDownId = next[swapIdx].id;
+        movedUpId = next[idx].id;
+      }
       return next;
     });
-    if (swappedPair) {
-      setSwappedIds(new Set(swappedPair));
-      setTimeout(() => setSwappedIds(new Set()), 500);
-    }
+    setSwappedUp(movedUpId);
+    setSwappedDown(movedDownId);
+    setTimeout(() => { setSwappedUp(null); setSwappedDown(null); }, 400);
     markEdited();
   }, [markEdited]);
 
@@ -833,12 +842,12 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, onBack }: {
               const hasError = errorPauseIds.has(block.id);
               const isLong = dur >= 3;
               const isEditingDur = editingPauseId === block.id;
-              const isSwapped = swappedIds.has(block.id);
+              const swapAnim = swappedUp === block.id ? "swap-up" : swappedDown === block.id ? "swap-down" : undefined;
               // Check if reorder is possible
               const canMoveUp = script.slice(0, index).some(b => b.type === "pause");
               const canMoveDown = script.slice(index + 1).some(b => b.type === "pause");
               return (
-                <div key={block.id} className="group/pause" style={{ margin: isLong ? "10px 0" : "6px 0", animation: isSwapped ? "swap-flash 0.5s ease" : undefined }}>
+                <div key={block.id} className="group/pause" style={{ margin: isLong ? "10px 0" : "6px 0", animation: swapAnim ? `${swapAnim} 0.35s ease` : undefined }}>
                   <div
                     onClick={() => setSelectedBlock(isSelected ? null : block.id)}
                     className="relative flex items-center justify-center cursor-pointer group/row"
@@ -926,7 +935,7 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, onBack }: {
                         <button
                           onClick={(e) => { e.stopPropagation(); setEditingPauseId(block.id); }}
                           className={`text-[12px] w-7 text-center tabular-nums rounded-md py-0.5 transition-all cursor-text ${
-                            isEmpty ? "text-[#c4c4c4] hover:bg-white hover:ring-1 hover:ring-[#d4d4d8]" : isLong ? "hover:bg-white hover:ring-1 hover:ring-[#818cf8]" : "hover:bg-white hover:ring-1 hover:ring-[#f59e0b]"
+                            isEmpty ? "text-[#c4c4c4] bg-white ring-1 ring-[#d4d4d8]" : isLong ? "bg-white ring-1 ring-[#c7d2fe] hover:ring-[#818cf8]" : "bg-white ring-1 ring-[#fde68a] hover:ring-[#f59e0b]"
                           }`}
                           style={{ fontFamily: "var(--font-body)", fontWeight: 700, color: isEmpty ? undefined : isLong ? "#4f46e5" : "#b45309" }}
                           title="Click to edit duration"
@@ -950,10 +959,10 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, onBack }: {
 
             const canMoveVoiceUp = script.slice(0, index).some(b => b.type === "voice");
             const canMoveVoiceDown = script.slice(index + 1).some(b => b.type === "voice");
-            const isVoiceSwapped = swappedIds.has(block.id);
+            const voiceSwapAnim = swappedUp === block.id ? "swap-up" : swappedDown === block.id ? "swap-down" : undefined;
 
             return (
-              <div key={block.id} className="group/row" style={{ animation: isVoiceSwapped ? "swap-flash 0.5s ease" : undefined }}>
+              <div key={block.id} className="group/row" style={{ animation: voiceSwapAnim ? `${voiceSwapAnim} 0.35s ease` : undefined }}>
                 <div
                   onClick={() => { if (isSelected) { saveEdit(); } else { startEditing(block.id); } }}
                   className={`relative rounded-xl cursor-pointer transition-all ${
@@ -1820,7 +1829,7 @@ export default function StudioPage() {
                         Generations
                       </h3>
                     )}
-                    <div className="bg-[#fdfcfb] rounded-xl border border-[#e7e5e4] overflow-hidden shadow-sm">
+                    <div className="bg-white rounded-xl border border-[#e7e5e4] overflow-hidden shadow-sm">
                       <div className="grid grid-cols-[1fr_80px_70px_90px_70px_130px] gap-4 px-5 py-3 border-b border-[#e7e5e4] bg-[#f5f3f0]">
                         {["Prompt", "Voice", "Duration", "Protocol", "Credit", ""].map((h) => (
                           <span key={h} className="text-[11px] uppercase tracking-wide text-[var(--color-sand-900)]" style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}>{h}</span>
@@ -1927,8 +1936,8 @@ export default function StudioPage() {
                         Sessions Created
                       </h3>
                     )}
-                    <div className="bg-[#fcfcfd] rounded-xl border border-[#ddd6fe]/40 overflow-hidden shadow-sm" style={{ borderColor: "#e0dff0" }}>
-                      <div className="grid grid-cols-[1fr_100px_80px_80px_140px_130px] gap-4 px-5 py-3 border-b bg-[#f4f3fb]" style={{ borderColor: "#e0dff0" }}>
+                    <div className="bg-white rounded-xl border border-[#e7e5e4] overflow-hidden shadow-sm">
+                      <div className="grid grid-cols-[1fr_100px_80px_80px_140px_130px] gap-4 px-5 py-3 border-b border-[#e7e5e4] bg-[#f5f3f0]">
                         {["Session", "Protocol", "Duration", "Voice", "Created", ""].map((h) => (
                           <span key={h} className="text-[11px] uppercase tracking-wide text-[var(--color-sand-900)]" style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}>{h}</span>
                         ))}
@@ -2272,7 +2281,7 @@ export default function StudioPage() {
               <motion.div key="settings" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }} className="max-w-xl mx-auto" onClick={() => settingsOpenDropdown && setSettingsOpenDropdown(null)}>
                 <div className="space-y-6">
                   {/* Account */}
-                  <div className="bg-[#fdfcfb] rounded-2xl border border-[#e7e5e4] shadow-sm">
+                  <div className="bg-white rounded-2xl border border-[#e7e5e4] shadow-sm">
                     <div className="px-6 py-4 border-b border-[#e7e5e4] bg-[#f5f3f0]">
                       <h3 className="text-[11px] uppercase tracking-wide text-[var(--color-sand-900)]" style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}>Account</h3>
                     </div>
@@ -2315,7 +2324,7 @@ export default function StudioPage() {
                   </div>
 
                   {/* Defaults */}
-                  <div className="bg-[#fdfcfb] rounded-2xl border border-[#e7e5e4] shadow-sm relative">
+                  <div className="bg-white rounded-2xl border border-[#e7e5e4] shadow-sm relative">
                     <div className="px-6 py-4 border-b border-[#e7e5e4] bg-[#f5f3f0]">
                       <h3 className="text-[11px] uppercase tracking-wide text-[var(--color-sand-900)]" style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}>Defaults</h3>
                       <p className="text-[11px] text-[var(--color-sand-400)] mt-0.5" style={{ fontFamily: "var(--font-body)" }}>Set your preferred starting point for new sessions</p>
@@ -2382,7 +2391,7 @@ export default function StudioPage() {
                   </div>
 
                   {/* Behavior */}
-                  <div className="bg-[#fdfcfb] rounded-2xl border border-[#e7e5e4] shadow-sm">
+                  <div className="bg-white rounded-2xl border border-[#e7e5e4] shadow-sm">
                     <div className="px-6 py-4 border-b border-[#e7e5e4] bg-[#f5f3f0]">
                       <h3 className="text-[11px] uppercase tracking-wide text-[var(--color-sand-900)]" style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}>Behavior</h3>
                       <p className="text-[11px] text-[var(--color-sand-400)] mt-0.5" style={{ fontFamily: "var(--font-body)" }}>Automate common actions</p>
