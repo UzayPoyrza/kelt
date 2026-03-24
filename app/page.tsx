@@ -36,19 +36,26 @@ import {
 
 /* ─── Transition Interstitial ─── */
 
+const testimonials = [
+  { name: "Mia Torres", location: "Meditation Instructor, Austin", text: "...honestly it replaced like 4 hours of recording and editing per week. I just type what the client needs and it's done." },
+  { name: "James Chen", location: "San Francisco", text: "I've tried every meditation app out there. This is the first one where I actually fall asleep before it ends." },
+  { name: "Dr. Anita Kapoor", location: "Psychiatrist, Chicago", text: "The PMR timing is clinically accurate. I've started recommending it to patients between sessions." },
+];
+
 function CinematicTransition() {
   const ref = useRef<HTMLDivElement>(null);
-  const inView = useInView(ref, { once: true, margin: "-40%" });
+  const inView = useInView(ref, { once: true, margin: "-30%" });
 
   return (
     <div
       ref={ref}
-      className="relative min-h-screen flex flex-col items-center justify-center px-6 overflow-hidden"
+      className="relative py-32 px-6 overflow-hidden"
       style={{ background: "var(--color-sand-800)" }}
     >
       {/* Giant ghost text — slow drift */}
       <div
         className="absolute inset-0 flex items-center justify-center pointer-events-none select-none overflow-hidden"
+        style={{ top: "-10%" }}
         aria-hidden="true"
       >
         <motion.span
@@ -66,8 +73,8 @@ function CinematicTransition() {
         </motion.span>
       </div>
 
-      {/* Readable text on top */}
-      <div className="relative z-10 max-w-3xl mx-auto text-center">
+      {/* Heading */}
+      <div className="relative z-10 max-w-3xl mx-auto text-center mb-20">
         <motion.p
           className="text-xs uppercase tracking-[0.3em] text-white/30 mb-4"
           style={{ fontFamily: "var(--font-body)" }}
@@ -78,7 +85,6 @@ function CinematicTransition() {
           Now you&apos;ve heard it
         </motion.p>
 
-        {/* Clip-reveal each line from below */}
         {["Why our AI sessions", "sound different"].map((line, lineIdx) => (
           <div key={lineIdx} className="overflow-hidden">
             <motion.p
@@ -106,23 +112,43 @@ function CinematicTransition() {
         />
       </div>
 
-      {/* Animated down indicator */}
-      <motion.div
-        className="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-3"
-        initial={{ opacity: 0 }}
-        animate={inView ? { opacity: 1 } : {}}
-        transition={{ duration: 0.6, delay: 1.2 }}
-      >
-        <span className="text-xs uppercase tracking-[0.2em] text-white/30" style={{ fontFamily: "var(--font-body)" }}>
-          Keep scrolling
-        </span>
-        <motion.div
-          animate={{ y: [0, 8, 0] }}
-          transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
-        >
-          <ChevronDown className="w-6 h-6 text-white/40" />
-        </motion.div>
-      </motion.div>
+      {/* Testimonials — integrated, minimal */}
+      <div className="relative z-10 max-w-4xl mx-auto grid md:grid-cols-3 gap-x-12 gap-y-10">
+        {testimonials.map((t, i) => (
+          <motion.div
+            key={t.name}
+            initial={{ opacity: 0, y: 20 }}
+            animate={inView ? { opacity: 1, y: 0 } : {}}
+            transition={{ duration: 0.6, delay: 0.9 + i * 0.15, ease: "easeOut" }}
+            className="text-center"
+          >
+            {/* Stars */}
+            <div className="flex justify-center gap-0.5 mb-4">
+              {Array.from({ length: 5 }).map((_, si) => (
+                <svg key={si} className="w-3 h-3 text-[var(--color-sage)]" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                </svg>
+              ))}
+            </div>
+
+            <p
+              className="text-[13px] text-white/50 leading-relaxed mb-4 italic"
+              style={{ fontFamily: "var(--font-display)" }}
+            >
+              &ldquo;{t.text}&rdquo;
+            </p>
+
+            <div className="w-6 h-[1px] mx-auto mb-3 bg-white/10" />
+
+            <p className="text-[11px] text-white/35 uppercase tracking-[0.15em]" style={{ fontFamily: "var(--font-body)" }}>
+              {t.name}
+            </p>
+            <p className="text-[10px] text-white/20 mt-0.5" style={{ fontFamily: "var(--font-body)" }}>
+              {t.location}
+            </p>
+          </motion.div>
+        ))}
+      </div>
     </div>
   );
 }

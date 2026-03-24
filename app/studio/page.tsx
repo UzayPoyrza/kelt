@@ -15,6 +15,7 @@ import {
   LogOut,
   ArrowLeft,
   ArrowRight,
+  MessageCircle,
   Moon,
   Sun,
   Brain,
@@ -24,10 +25,13 @@ import {
   Timer,
   Music,
   Check,
-  Type,
-  Volume2,
+  Zap,
+  PenLine,
+  Headphones,
+  ChevronLeft,
 } from "lucide-react";
 import svgPaths from "@/lib/svg-paths";
+import { suggestions, voices as sharedVoices, durations as sharedDurations, detectIntent } from "@/lib/shared";
 
 /* ─── Logo ─── */
 
@@ -428,20 +432,17 @@ export default function StudioPage() {
   const [activeNav, setActiveNav] = useState<NavId>("sessions");
   const [searchQuery, setSearchQuery] = useState("");
   const [generatePrompt, setGeneratePrompt] = useState("");
+  const [voicePlaying, setVoicePlaying] = useState<string | null>(null);
 
-  // Generate flow: "input" → "configure" → "studio"
-  const [genStep, setGenStep] = useState<"input" | "configure" | "studio">("input");
+  // Generate flow: "input" → "choose" → "studio"
+  const [genStep, setGenStep] = useState<"input" | "choose" | "studio">("input");
   const [genConfig, setGenConfig] = useState({ prompt: "", voice: "aria", duration: 10, sound: "Sanctuary" });
 
   const handlePromptSubmit = (text: string) => {
     if (!text.trim()) return;
     setGenConfig(prev => ({ ...prev, prompt: text.trim() }));
     setGeneratePrompt("");
-    setGenStep("configure");
-  };
-
-  const handleConfigConfirm = () => {
-    setGenStep("studio");
+    setGenStep("choose");
   };
 
   const navigateTo = (id: NavId) => {
@@ -594,7 +595,7 @@ export default function StudioPage() {
             <h1 className="text-xl text-[var(--color-sand-900)]" style={{ fontFamily: "var(--font-display)" }}>
               {activeNav === "sessions" && "All Sessions"}
               {activeNav === "history" && "History"}
-              {activeNav === ("generate" as NavId) && (genStep === "configure" ? "Configure Session" : "Generate")}
+              {activeNav === ("generate" as NavId) && "Generate"}
               {activeNav === "settings" && "Settings"}
             </h1>
             <div className={`relative transition-opacity ${activeNav === "sessions" ? "opacity-100" : "opacity-0 pointer-events-none"}`}>
@@ -649,14 +650,14 @@ export default function StudioPage() {
               </motion.div>
             )}
 
-            {/* Generate — Step 1: Prompt Input */}
+            {/* Generate — Step 1: Prompt Input (identical to homepage) */}
             {activeNav === ("generate" as NavId) && genStep === "input" && (
               <motion.div key="gen-input" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }} className="max-w-xl mx-auto py-16">
                 <div className="text-center mb-10">
                   <h2 className="text-3xl text-[var(--color-sand-900)] mb-3" style={{ fontFamily: "var(--font-display)" }}>What do you need right now?</h2>
                   <p className="text-sm text-[var(--color-sand-500)]" style={{ fontFamily: "var(--font-body)" }}>Describe how you&apos;re feeling and we&apos;ll create your session.</p>
                 </div>
-                <div className="w-full mb-6 relative rounded-xl group">
+                <div className="w-full mb-8 relative rounded-xl group">
                   <div className="absolute -inset-[2px] rounded-xl bg-[length:300%_300%] animate-[border-glow_4s_ease_infinite] opacity-80 group-focus-within:opacity-100 transition-opacity duration-300 blur-[0.5px]"
                     style={{ background: "linear-gradient(135deg, var(--color-sage), var(--color-ocean), var(--color-dusk), var(--color-ember), var(--color-sage))", backgroundSize: "300% 300%" }} />
                   <div className="relative bg-white rounded-xl p-3 flex items-center gap-3">
@@ -667,96 +668,123 @@ export default function StudioPage() {
                     <button onClick={() => handlePromptSubmit(generatePrompt)} disabled={!generatePrompt.trim()}
                       className="shrink-0 w-9 h-9 flex items-center justify-center rounded-full transition-all cursor-pointer disabled:opacity-30"
                       style={{ background: generatePrompt.trim() ? "var(--color-sand-900)" : "transparent", color: generatePrompt.trim() ? "var(--color-sand-50)" : "var(--color-sand-400)" }}>
-                      <ArrowRight className="w-4 h-4" />
+                      {generatePrompt.trim() ? <ArrowRight className="w-4 h-4" /> : <MessageCircle className="w-5 h-5" />}
                     </button>
                   </div>
                 </div>
-                <div className="flex flex-col items-center gap-3">
+                <div className="w-full flex flex-col items-center gap-3">
                   <span className="text-xs text-[var(--color-sand-400)]" style={{ fontFamily: "var(--font-body)" }}>or try one of these</span>
                   <div className="flex flex-wrap gap-2 justify-center">
-                    {["I can\u2019t fall asleep", "Anxious before a meeting", "Help me focus deeply", "Stress relief after work"].map((s, i) => (
-                      <button key={i} onClick={() => handlePromptSubmit(s)}
+                    {suggestions.map((s, i) => (
+                      <motion.button key={i} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 + i * 0.08 }}
+                        onClick={() => handlePromptSubmit(s)}
                         className="text-[var(--color-sand-600)] bg-white/70 hover:bg-white border border-[var(--color-sand-200)] text-xs px-3.5 py-2 rounded-full transition-all cursor-pointer"
-                        style={{ fontFamily: "var(--font-body)" }}>{s}</button>
+                        style={{ fontFamily: "var(--font-body)" }}>{s}</motion.button>
                     ))}
                   </div>
                 </div>
               </motion.div>
             )}
 
-            {/* Generate — Step 2: Configure Voice & Duration */}
-            {activeNav === ("generate" as NavId) && genStep === "configure" && (
-              <motion.div key="gen-configure" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }} className="max-w-lg mx-auto py-12">
-                <button onClick={() => setGenStep("input")} className="flex items-center gap-1.5 text-xs text-[var(--color-sand-500)] hover:text-[var(--color-sand-900)] transition-colors cursor-pointer mb-8" style={{ fontFamily: "var(--font-body)" }}>
-                  <ArrowLeft className="w-3.5 h-3.5" /> Change prompt
-                </button>
+            {/* Generate — Step 2: Configure (copied from /create page) */}
+            {activeNav === ("generate" as NavId) && genStep === "choose" && (
+              <motion.div key="gen-choose" initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.4 }} className="w-full max-w-xl mx-auto">
+                {/* Back button */}
+                <motion.button
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  onClick={() => setGenStep("input")}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm text-[var(--color-sand-600)] hover:text-[var(--color-sand-900)] hover:bg-white/60 border border-[var(--color-sand-200)] hover:border-[var(--color-sand-300)] transition-all cursor-pointer mb-8"
+                  style={{ fontFamily: "var(--font-body)" }}
+                >
+                  <ChevronLeft className="w-4 h-4" />Back
+                </motion.button>
 
-                <div className="text-center mb-8">
-                  <p className="text-xs text-[var(--color-sand-400)] mb-1" style={{ fontFamily: "var(--font-body)" }}>Your prompt</p>
-                  <h2 className="text-xl text-[var(--color-sand-900)]" style={{ fontFamily: "var(--font-display)" }}>&ldquo;{genConfig.prompt}&rdquo;</h2>
-                </div>
+                {/* Prompt display */}
+                <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="mb-10 text-center">
+                  <p className="text-2xl text-[var(--color-sand-900)] max-w-md mx-auto leading-snug" style={{ fontFamily: "var(--font-display)" }}>&ldquo;{genConfig.prompt}&rdquo;</p>
+                </motion.div>
 
-                {/* Voice selection */}
-                <div className="mb-8">
-                  <label className="text-[10px] uppercase tracking-wider text-[var(--color-sand-400)] mb-3 block" style={{ fontFamily: "var(--font-body)" }}>Choose a voice</label>
-                  <div className="grid grid-cols-2 gap-3">
-                    {voices.map(v => (
-                      <button key={v.id} onClick={() => setGenConfig(prev => ({ ...prev, voice: v.id }))}
-                        className={`flex items-center gap-3 p-4 rounded-xl border-2 transition-all cursor-pointer text-left ${
-                          genConfig.voice === v.id ? "border-[var(--color-sand-900)] bg-white shadow-sm" : "border-[var(--color-sand-200)] bg-white/50 hover:bg-white hover:border-[var(--color-sand-300)]"
-                        }`}>
-                        <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ background: v.color + "20" }}>
-                          <div className="w-3 h-3 rounded-full" style={{ background: v.color }} />
-                        </div>
-                        <div>
-                          <p className="text-sm text-[var(--color-sand-900)]" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>{v.name}</p>
-                          <p className="text-[10px] text-[var(--color-sand-400)]" style={{ fontFamily: "var(--font-body)" }}>{v.desc}</p>
-                        </div>
-                        {genConfig.voice === v.id && (
-                          <Check className="w-4 h-4 ml-auto text-[var(--color-sand-900)]" />
-                        )}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Duration selection */}
-                <div className="mb-10">
-                  <label className="text-[10px] uppercase tracking-wider text-[var(--color-sand-400)] mb-3 block" style={{ fontFamily: "var(--font-body)" }}>Session length</label>
+                {/* Duration */}
+                <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="mb-8">
+                  <p className="text-xs uppercase tracking-widest text-[var(--color-sand-400)] mb-3" style={{ fontFamily: "var(--font-body)" }}>Duration</p>
                   <div className="flex gap-2">
-                    {durations.map(d => (
-                      <button key={d.value} onClick={() => setGenConfig(prev => ({ ...prev, duration: d.value }))}
-                        className={`flex-1 py-3 rounded-xl border-2 transition-all cursor-pointer text-center ${
-                          genConfig.duration === d.value ? "border-[var(--color-sand-900)] bg-white shadow-sm" : "border-[var(--color-sand-200)] bg-white/50 hover:bg-white hover:border-[var(--color-sand-300)]"
-                        }`}>
-                        <p className="text-sm text-[var(--color-sand-900)]" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>{d.label}</p>
-                        <p className="text-[10px] text-[var(--color-sand-400)]" style={{ fontFamily: "var(--font-body)" }}>{d.desc}</p>
-                      </button>
+                    {sharedDurations.map((d) => (
+                      <button key={d} onClick={() => setGenConfig(prev => ({ ...prev, duration: d }))}
+                        className={`flex-1 py-2.5 rounded-full text-sm transition-all cursor-pointer ${genConfig.duration === d ? "bg-[var(--color-sand-900)] text-[var(--color-sand-50)] shadow-sm" : "bg-white/60 text-[var(--color-sand-600)] hover:bg-white border border-[var(--color-sand-200)]"}`}
+                        style={{ fontFamily: "var(--font-body)" }}>{d}m</button>
                     ))}
                   </div>
-                </div>
+                </motion.div>
 
-                {/* Sound selection */}
-                <div className="mb-10">
-                  <label className="text-[10px] uppercase tracking-wider text-[var(--color-sand-400)] mb-3 block" style={{ fontFamily: "var(--font-body)" }}>Ambient sound</label>
-                  <div className="flex flex-wrap gap-2">
-                    {soundPresets.map(s => (
-                      <button key={s} onClick={() => setGenConfig(prev => ({ ...prev, sound: s }))}
-                        className={`px-4 py-2 rounded-full border transition-all cursor-pointer text-sm ${
-                          genConfig.sound === s ? "border-[var(--color-sand-900)] bg-[var(--color-sand-900)] text-[var(--color-sand-50)]" : "border-[var(--color-sand-200)] text-[var(--color-sand-600)] hover:border-[var(--color-sand-400)]"
-                        }`}
-                        style={{ fontFamily: "var(--font-body)" }}>{s}</button>
-                    ))}
+                {/* Voice */}
+                <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }} className="mb-8">
+                  <p className="text-xs uppercase tracking-widest text-[var(--color-sand-400)] mb-3" style={{ fontFamily: "var(--font-body)" }}>Voice</p>
+                  <div className="grid grid-cols-2 gap-2.5">
+                    {sharedVoices.map((v) => {
+                      const isActive = genConfig.voice === v.id;
+                      const isVoicePlaying = voicePlaying === v.id;
+                      return (
+                        <button key={v.id} onClick={(e) => { e.stopPropagation(); setGenConfig(prev => ({ ...prev, voice: v.id })); setVoicePlaying(v.id); setTimeout(() => setVoicePlaying((cur) => cur === v.id ? null : cur), 3000); }}
+                          className={`relative flex items-center gap-3 p-4 rounded-xl transition-all cursor-pointer text-left overflow-hidden ${isActive ? "bg-[var(--color-sand-900)] text-[var(--color-sand-50)] shadow-md" : "bg-white text-[var(--color-sand-900)] hover:shadow-sm border border-[var(--color-sand-200)] hover:border-[var(--color-sand-300)]"}`}>
+                          <div className="flex-1 min-w-0">
+                            <span className="text-sm font-medium block" style={{ fontFamily: "var(--font-body)" }}>{v.label}</span>
+                            <span className={`text-xs mt-0.5 block ${isActive ? "opacity-50" : "text-[var(--color-sand-500)]"}`} style={{ fontFamily: "var(--font-body)" }}>{v.description}</span>
+                            <div className="flex items-end gap-[2px] h-3 mt-2">
+                              {isVoicePlaying && Array.from({ length: 12 }).map((_, i) => (
+                                <motion.div
+                                  key={i}
+                                  className={`w-[2px] rounded-full ${isActive ? "bg-white/50" : "bg-[var(--color-sand-400)]"}`}
+                                  animate={{ height: [`${20 + Math.random() * 40}%`, `${40 + Math.random() * 60}%`, `${20 + Math.random() * 40}%`] }}
+                                  transition={{ duration: 0.4 + Math.random() * 0.3, repeat: Infinity, ease: "easeInOut" }}
+                                  style={{ height: "30%" }}
+                                />
+                              ))}
+                            </div>
+                          </div>
+                          <div
+                            onClick={(e) => { e.stopPropagation(); setVoicePlaying(voicePlaying === v.id ? null : v.id); }}
+                            className={`shrink-0 w-9 h-9 rounded-full flex items-center justify-center transition-all ${isActive ? "bg-white/20 text-white hover:bg-white/30" : "bg-[var(--color-sand-100)] text-[var(--color-sand-500)] hover:bg-[var(--color-sand-200)]"}`}
+                          >
+                            {isVoicePlaying ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5 ml-0.5" />}
+                          </div>
+                        </button>
+                      );
+                    })}
                   </div>
-                </div>
+                </motion.div>
 
-                {/* Continue button */}
-                <button onClick={handleConfigConfirm}
-                  className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl bg-[var(--color-sand-900)] text-[var(--color-sand-50)] hover:bg-[var(--color-sand-800)] transition-colors text-sm cursor-pointer shadow-sm"
-                  style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>
-                  <Sparkles className="w-4 h-4" />
-                  Generate Session
-                </button>
+                {/* Soundscape note */}
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }} className="mb-10 text-center">
+                  <p className="text-xs text-[var(--color-sand-400)] flex items-center justify-center gap-1.5" style={{ fontFamily: "var(--font-body)" }}>
+                    <Headphones className="w-3 h-3" />
+                    Soundscape &amp; ambient layers will be matched after generation
+                  </p>
+                </motion.div>
+
+                {/* Action zone — visually separated */}
+                <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }} className="mt-4 pt-8 border-t border-[var(--color-sand-200)]">
+                  <p className="text-[10px] uppercase tracking-widest text-[var(--color-sand-400)] mb-4 text-center" style={{ fontFamily: "var(--font-body)" }}>How do you want to create?</p>
+                  <div className="flex gap-3">
+                    {/* Open in Studio — primary */}
+                    <button onClick={() => setGenStep("studio")}
+                      className="flex-1 flex flex-col items-center py-6 px-4 rounded-2xl bg-[var(--color-sand-900)] text-[var(--color-sand-50)] hover:bg-[var(--color-sand-800)] transition-all shadow-lg cursor-pointer"
+                      style={{ fontFamily: "var(--font-body)" }}>
+                      <PenLine className="w-5 h-5 mb-2.5" />
+                      <span className="text-sm font-medium">Open in Studio</span>
+                      <span className="text-[10px] opacity-40 mt-1">Edit script &amp; pauses</span>
+                    </button>
+
+                    {/* Quick Generate — secondary */}
+                    <button onClick={() => { /* TODO: quick generate */ }}
+                      className="flex-1 flex flex-col items-center py-6 px-4 rounded-2xl bg-white border-2 border-[var(--color-sand-200)] text-[var(--color-sand-900)] hover:border-[var(--color-sand-900)] hover:shadow-lg transition-all cursor-pointer"
+                      style={{ fontFamily: "var(--font-body)" }}>
+                      <Zap className="w-5 h-5 mb-2.5" />
+                      <span className="text-sm font-medium">Quick Generate</span>
+                      <span className="text-[10px] text-[var(--color-sand-400)] mt-1">Create instantly</span>
+                    </button>
+                  </div>
+                </motion.div>
               </motion.div>
             )}
 
