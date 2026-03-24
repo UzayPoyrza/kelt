@@ -830,26 +830,31 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, onBack }: {
               const canMoveUp = script.slice(0, index).some(b => b.type === "pause");
               const canMoveDown = script.slice(index + 1).some(b => b.type === "pause");
               return (
-                <div key={block.id} className="group/pause py-0.5">
-                  {/* Pause as a timeline divider */}
+                <div key={block.id} className="group/pause" style={{ padding: isLong ? "4px 0" : "1px 0" }}>
+                  {/* Pause divider — short vs long are visually very different */}
                   <div
                     onClick={() => setSelectedBlock(isSelected ? null : block.id)}
-                    className="relative flex items-center gap-0 cursor-pointer group/row py-1"
+                    className="relative flex items-center gap-0 cursor-pointer group/row"
+                    style={{ padding: isLong ? "6px 0" : "2px 0" }}
                   >
-                    <div className="flex-1 h-px" style={{ background: hasError ? "#fca5a5" : isEmpty ? "#e8e8ec" : isLong ? "var(--color-dusk)" : "#d4d4d8", opacity: hasError ? 0.7 : isEmpty ? 0.3 : isLong ? 0.5 : 0.4 }} />
+                    {/* Left line */}
+                    <div className="flex-1" style={{ height: isLong ? "2px" : "1px", background: hasError ? "#fca5a5" : isEmpty ? "#e8e8ec" : isLong ? "var(--color-dusk)" : "#d4d4d8", opacity: hasError ? 0.7 : isEmpty ? 0.3 : isLong ? 0.35 : 0.3, borderRadius: "1px" }} />
 
-                    <div className={`flex items-center gap-2 px-3.5 py-1.5 rounded-full mx-2 transition-all border ${
+                    {/* Pause pill */}
+                    <div className={`flex items-center gap-1.5 mx-2 transition-all border ${
                       hasError
-                        ? "border-red-400 bg-red-50 ring-1 ring-red-300/50"
+                        ? "border-red-400 bg-red-50 ring-1 ring-red-300/50 rounded-full px-3 py-1.5"
                         : isEmpty
-                          ? "border-dashed border-[#d4d4d8] bg-[#fafafa]"
-                          : isSelected
-                            ? "border-[var(--color-dusk)] bg-[var(--color-dusk-light)]"
-                            : isLong
-                              ? "border-[rgba(139,126,166,0.25)] bg-[rgba(139,126,166,0.08)] hover:bg-[var(--color-dusk-light)]"
-                              : "border-[#e4e4e7] bg-white hover:bg-[#f9f9fb]"
-                    }`}>
-                      {/* Reorder arrows — always visible, dim when disabled */}
+                          ? "border-dashed border-[#d4d4d8] bg-[#fafafa] rounded-full px-3 py-1.5"
+                          : isSelected && isLong
+                            ? "border-[var(--color-dusk)] bg-[var(--color-dusk-light)] rounded-xl px-4 py-2.5"
+                            : isSelected && !isLong
+                              ? "border-[var(--color-dusk)] bg-[var(--color-dusk-light)] rounded-full px-3 py-1.5"
+                              : isLong
+                                ? "border-[rgba(139,126,166,0.3)] bg-[rgba(139,126,166,0.06)] hover:bg-[rgba(139,126,166,0.1)] rounded-xl px-4 py-2.5"
+                                : "border-[#e4e4e7] bg-white hover:bg-[#f9f9fb] rounded-full px-3 py-1"
+                    }`} style={isLong ? { boxShadow: "0 1px 4px rgba(139,126,166,0.1)" } : undefined}>
+                      {/* Reorder arrows */}
                       <div className="flex flex-col gap-px">
                         <button
                           onClick={(e) => { e.stopPropagation(); if (canMoveUp) moveBlock(block.id, "up"); }}
@@ -873,19 +878,27 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, onBack }: {
                         </button>
                       </div>
 
-                      <span className="text-[11px]" style={{
+                      {/* Pause icon — always shown */}
+                      <svg width={isLong ? "14" : "10"} height={isLong ? "14" : "10"} viewBox="0 0 14 14" fill="none" style={{ opacity: hasError ? 0.5 : isEmpty ? 0.3 : isLong ? 0.7 : 0.35, flexShrink: 0 }}>
+                        <rect x="2" y="1" width="3.5" height="12" rx="1" fill={hasError ? "#dc2626" : isEmpty ? "#c4c4c4" : isLong ? "var(--color-dusk)" : "#a1a1aa"} />
+                        <rect x="8.5" y="1" width="3.5" height="12" rx="1" fill={hasError ? "#dc2626" : isEmpty ? "#c4c4c4" : isLong ? "var(--color-dusk)" : "#a1a1aa"} />
+                      </svg>
+
+                      <span style={{
                         fontFamily: "var(--font-body)", fontWeight: 600,
+                        fontSize: isLong ? "12px" : "11px",
                         color: hasError ? "#dc2626" : isEmpty ? "#c4c4c4" : isLong ? "var(--color-dusk)" : "#91919b",
+                        letterSpacing: isLong ? "0.03em" : undefined,
                       }}>
-                        {hasError ? "Empty" : isEmpty ? "Empty" : isLong ? "Long" : "Short"}
+                        {hasError ? "Empty" : isEmpty ? "Empty" : isLong ? "Long Pause" : "Short"}
                       </span>
 
-                      <div className="w-px h-3.5" style={{ background: isEmpty ? "#e4e4e7" : isLong ? "rgba(139,126,166,0.25)" : "#e4e4e7" }} />
+                      <div className="w-px" style={{ height: isLong ? "18px" : "14px", background: isEmpty ? "#e4e4e7" : isLong ? "rgba(139,126,166,0.25)" : "#e4e4e7" }} />
 
                       <button
                         onClick={(e) => { e.stopPropagation(); setPauseDuration(block.id, dur - 1); }}
-                        className="w-6 h-6 rounded-md flex items-center justify-center hover:bg-white/80 transition-all cursor-pointer text-sm font-medium"
-                        style={{ color: isEmpty ? "#d4d4d4" : isLong ? "var(--color-dusk)" : "#91919b" }}
+                        className="rounded-md flex items-center justify-center hover:bg-white/80 transition-all cursor-pointer font-medium"
+                        style={{ color: isEmpty ? "#d4d4d4" : isLong ? "var(--color-dusk)" : "#91919b", width: isLong ? "28px" : "24px", height: isLong ? "28px" : "24px", fontSize: isLong ? "15px" : "13px" }}
                       >−</button>
                       {isEditingDur ? (
                         <input
@@ -900,16 +913,16 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, onBack }: {
                           onBlur={() => setEditingPauseId(null)}
                           onKeyDown={(e) => { if (e.key === "Enter" || e.key === "Escape") setEditingPauseId(null); }}
                           onClick={(e) => e.stopPropagation()}
-                          className="w-7 text-center text-[12px] tabular-nums bg-white border border-[var(--color-dusk)] rounded-md outline-none py-0.5"
-                          style={{ fontFamily: "var(--font-body)", fontWeight: 700, color: "var(--color-dusk)" }}
+                          className="text-center tabular-nums bg-white border border-[var(--color-dusk)] rounded-md outline-none"
+                          style={{ fontFamily: "var(--font-body)", fontWeight: 700, color: "var(--color-dusk)", width: isLong ? "36px" : "28px", fontSize: isLong ? "14px" : "12px", padding: isLong ? "3px 0" : "2px 0" }}
                         />
                       ) : (
                         <button
                           onClick={(e) => { e.stopPropagation(); setEditingPauseId(block.id); }}
-                          className={`text-[12px] w-7 text-center tabular-nums rounded-md py-0.5 transition-all cursor-text ${
+                          className={`text-center tabular-nums rounded-md transition-all cursor-text ${
                             isEmpty ? "text-[#c4c4c4] hover:bg-white hover:ring-1 hover:ring-[#d4d4d8]" : "hover:bg-white hover:ring-1 hover:ring-[var(--color-dusk)]"
                           }`}
-                          style={{ fontFamily: "var(--font-body)", fontWeight: 700, color: isEmpty ? undefined : isLong ? "var(--color-dusk)" : "#52525b" }}
+                          style={{ fontFamily: "var(--font-body)", fontWeight: 700, color: isEmpty ? undefined : isLong ? "var(--color-dusk)" : "#52525b", width: isLong ? "36px" : "28px", fontSize: isLong ? "14px" : "12px", padding: isLong ? "3px 0" : "2px 0" }}
                           title="Click to edit duration"
                         >
                           {isEmpty ? "—" : `${dur}s`}
@@ -917,12 +930,32 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, onBack }: {
                       )}
                       <button
                         onClick={(e) => { e.stopPropagation(); setPauseDuration(block.id, dur + 1); }}
-                        className="w-6 h-6 rounded-md flex items-center justify-center hover:bg-white/80 transition-all cursor-pointer text-sm font-medium"
-                        style={{ color: isEmpty ? "#d4d4d4" : isLong ? "var(--color-dusk)" : "#91919b" }}
+                        className="rounded-md flex items-center justify-center hover:bg-white/80 transition-all cursor-pointer font-medium"
+                        style={{ color: isEmpty ? "#d4d4d4" : isLong ? "var(--color-dusk)" : "#91919b", width: isLong ? "28px" : "24px", height: isLong ? "28px" : "24px", fontSize: isLong ? "15px" : "13px" }}
                       >+</button>
+
+                      {/* Breathing dots for long pauses — visual density indicates duration */}
+                      {isLong && !isEmpty && (
+                        <div className="flex items-center gap-1 ml-1">
+                          {Array.from({ length: Math.min(dur, 8) }).map((_, i) => (
+                            <div
+                              key={i}
+                              className="rounded-full"
+                              style={{
+                                width: "4px",
+                                height: "4px",
+                                background: "var(--color-dusk)",
+                                opacity: 0.2 + (i / Math.min(dur, 8)) * 0.35,
+                                animation: `breathe 6s ease-in-out ${i * 0.4}s infinite`,
+                              }}
+                            />
+                          ))}
+                        </div>
+                      )}
                     </div>
 
-                    <div className="flex-1 h-px" style={{ background: hasError ? "#fca5a5" : isEmpty ? "#e8e8ec" : isLong ? "var(--color-dusk)" : "#d4d4d8", opacity: hasError ? 0.7 : isEmpty ? 0.3 : isLong ? 0.5 : 0.4 }} />
+                    {/* Right line */}
+                    <div className="flex-1" style={{ height: isLong ? "2px" : "1px", background: hasError ? "#fca5a5" : isEmpty ? "#e8e8ec" : isLong ? "var(--color-dusk)" : "#d4d4d8", opacity: hasError ? 0.7 : isEmpty ? 0.3 : isLong ? 0.35 : 0.3, borderRadius: "1px" }} />
                   </div>
                 </div>
               );
@@ -1569,18 +1602,32 @@ export default function StudioPage() {
               </button>
             ))}
           </nav>
-          <div className="px-3 pb-5 space-y-2">
-            <div className="border-t border-[var(--color-sand-100)] pt-4 px-2">
+          <div className="mt-auto px-0 pb-0">
+            <div className="px-4 py-4" style={{ background: "#2d2926" }}>
               <div className="flex items-center gap-2.5 mb-3">
-                <div className="w-8 h-8 rounded-full bg-[var(--color-sand-200)] flex items-center justify-center">
-                  <span className="text-xs text-[var(--color-sand-600)]" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>U</span>
+                <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
+                  <span className="text-xs text-white" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>U</span>
                 </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs text-white" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>User</p>
+                  <p className="text-[10px] text-white/60" style={{ fontFamily: "var(--font-body)" }}>Free plan</p>
+                </div>
+                <a href="/upgrade" className="text-[11px] px-3.5 py-1.5 rounded-lg text-white bg-clip-padding bg-[length:300%_300%] animate-[border-glow_4s_ease_infinite] hover:opacity-90 transition-opacity cursor-pointer shadow-sm" style={{ fontFamily: "var(--font-body)", fontWeight: 600, backgroundImage: "linear-gradient(135deg, var(--color-sage), var(--color-ocean), var(--color-dusk), var(--color-ember), var(--color-sage))", backgroundSize: "300% 300%" }}>
+                  Upgrade
+                </a>
+              </div>
+              <div className="flex items-center justify-between px-2 py-2 mb-2 rounded-lg bg-white/8">
                 <div>
-                  <p className="text-xs text-[var(--color-sand-900)]" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>User</p>
-                  <p className="text-[10px] text-[var(--color-sand-400)]" style={{ fontFamily: "var(--font-body)" }}>Free plan</p>
+                  <p className="text-[9px] uppercase tracking-wider text-white/40 mb-0.5" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>Total</p>
+                  <p className="text-[13px] text-white tabular-nums" style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}>10</p>
+                </div>
+                <div className="w-px h-6 bg-white/10" />
+                <div>
+                  <p className="text-[9px] uppercase tracking-wider text-white/40 mb-0.5" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>Remaining</p>
+                  <p className="text-[13px] text-[var(--color-sage)] tabular-nums" style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}>3</p>
                 </div>
               </div>
-              <a href="/" className="flex items-center gap-2 px-2 py-1.5 rounded-lg text-[var(--color-sand-500)] hover:text-[var(--color-sand-900)] hover:bg-[var(--color-sand-100)] transition-all text-xs" style={{ fontFamily: "var(--font-body)" }}>
+              <a href="/" className="flex items-center gap-1.5 px-2 py-1 rounded-md text-red-400 hover:text-red-300 transition-all text-[11px]" style={{ fontFamily: "var(--font-body)" }}>
                 <LogOut className="w-3.5 h-3.5" /> Sign out
               </a>
             </div>
@@ -1663,18 +1710,31 @@ export default function StudioPage() {
           })}
         </nav>
 
-        <div className="px-3 pb-5 space-y-2">
-          <div className="border-t border-[var(--color-sand-100)] pt-4 px-2">
+        <div className="mt-auto px-0 pb-0">
+          <div className="px-4 py-4" style={{ background: "#2d2926" }}>
             <div className="flex items-center gap-2.5 mb-3">
-              <div className="w-8 h-8 rounded-full bg-[var(--color-sand-200)] flex items-center justify-center">
-                <span className="text-xs text-[var(--color-sand-600)]" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>U</span>
+              <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
+                <span className="text-xs text-white" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>U</span>
               </div>
-              <div>
-                <p className="text-xs text-[var(--color-sand-900)]" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>User</p>
-                <p className="text-[10px] text-[var(--color-sand-400)]" style={{ fontFamily: "var(--font-body)" }}>Free plan</p>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs text-white" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>User</p>
+                <p className="text-[10px] text-white/60" style={{ fontFamily: "var(--font-body)" }}>Free plan</p>
+              </div>
+              <a href="/upgrade" className="text-[11px] px-3.5 py-1.5 rounded-lg text-white bg-clip-padding bg-[length:300%_300%] animate-[border-glow_4s_ease_infinite] hover:opacity-90 transition-opacity cursor-pointer shadow-sm" style={{ fontFamily: "var(--font-body)", fontWeight: 600, backgroundImage: "linear-gradient(135deg, var(--color-sage), var(--color-ocean), var(--color-dusk), var(--color-ember), var(--color-sage))", backgroundSize: "300% 300%" }}>
+                Upgrade
+              </a>
+            </div>
+            <div className="px-2 mb-2 space-y-1">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] text-white/60" style={{ fontFamily: "var(--font-body)" }}>Total</span>
+                <span className="text-[11px] text-white tabular-nums" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>10 credits</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] text-white/60" style={{ fontFamily: "var(--font-body)" }}>Remaining</span>
+                <span className="text-[11px] text-white tabular-nums" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>3</span>
               </div>
             </div>
-            <a href="/" className="flex items-center gap-2 px-2 py-1.5 rounded-lg text-[var(--color-sand-500)] hover:text-[var(--color-sand-900)] hover:bg-[var(--color-sand-100)] transition-all text-xs" style={{ fontFamily: "var(--font-body)" }}>
+            <a href="/" className="flex items-center gap-1.5 px-2 py-1 rounded-md text-red-400 hover:text-red-300 transition-all text-[11px]" style={{ fontFamily: "var(--font-body)" }}>
               <LogOut className="w-3.5 h-3.5" /> Sign out
             </a>
           </div>
@@ -2225,7 +2285,7 @@ export default function StudioPage() {
               <motion.div key="settings" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }} className="max-w-xl mx-auto" onClick={() => settingsOpenDropdown && setSettingsOpenDropdown(null)}>
                 <div className="space-y-6">
                   {/* Account */}
-                  <div className="bg-[#fdfcfb] rounded-2xl border border-[#e7e5e4] overflow-hidden shadow-sm">
+                  <div className="bg-[#fdfcfb] rounded-2xl border border-[#e7e5e4] shadow-sm">
                     <div className="px-6 py-4 border-b border-[#e7e5e4] bg-[#f5f3f0]">
                       <h3 className="text-[11px] uppercase tracking-wide text-[var(--color-sand-900)]" style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}>Account</h3>
                     </div>
@@ -2268,7 +2328,7 @@ export default function StudioPage() {
                   </div>
 
                   {/* Defaults */}
-                  <div className="bg-[#fdfcfb] rounded-2xl border border-[#e7e5e4] overflow-hidden shadow-sm">
+                  <div className="bg-[#fdfcfb] rounded-2xl border border-[#e7e5e4] shadow-sm relative">
                     <div className="px-6 py-4 border-b border-[#e7e5e4] bg-[#f5f3f0]">
                       <h3 className="text-[11px] uppercase tracking-wide text-[var(--color-sand-900)]" style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}>Defaults</h3>
                       <p className="text-[11px] text-[var(--color-sand-400)] mt-0.5" style={{ fontFamily: "var(--font-body)" }}>Set your preferred starting point for new sessions</p>
@@ -2292,19 +2352,24 @@ export default function StudioPage() {
                             <ChevronDown className={`w-3.5 h-3.5 text-[var(--color-sand-400)] transition-transform ${settingsOpenDropdown === "voice" ? "rotate-180" : ""}`} />
                           </button>
                           {settingsOpenDropdown === "voice" && (
-                            <div className="absolute right-0 top-full mt-1.5 w-48 bg-white rounded-xl border border-[var(--color-sand-200)] shadow-xl z-30 py-1 overflow-hidden">
-                              {voices.map((v) => (
-                                <button key={v.id} onClick={(e) => { e.stopPropagation(); setSettingsVoice(v.id); setSettingsOpenDropdown(null); }}
-                                  className={`w-full flex items-center gap-3 px-3.5 py-2.5 text-left transition-colors cursor-pointer ${settingsVoice === v.id ? "bg-[var(--color-sand-900)] text-white" : "hover:bg-[var(--color-sand-50)]"}`}>
-                                  <div className="w-2 h-2 rounded-full shrink-0" style={{ background: v.color }} />
-                                  <div>
-                                    <span className={`text-[12px] block ${settingsVoice === v.id ? "text-white" : "text-[var(--color-sand-900)]"}`} style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>{v.name}</span>
-                                    <span className={`text-[10px] ${settingsVoice === v.id ? "text-white/50" : "text-[var(--color-sand-400)]"}`} style={{ fontFamily: "var(--font-body)" }}>{v.desc}</span>
-                                  </div>
-                                  {settingsVoice === v.id && <Check className="w-3.5 h-3.5 ml-auto" />}
-                                </button>
-                              ))}
-                            </div>
+                            <>
+                              <div className="fixed inset-0 z-[200]" onClick={(e) => { e.stopPropagation(); setSettingsOpenDropdown(null); }} />
+                              <div className="absolute right-0 top-full mt-1 bg-white rounded-lg border border-[#e4e4e7] shadow-lg z-[210] w-52">
+                                {voices.map((v, i) => (
+                                  <button key={v.id} onClick={(e) => { e.stopPropagation(); setSettingsVoice(v.id); setSettingsOpenDropdown(null); }}
+                                    className={`w-full flex items-center gap-2.5 px-3 py-2.5 hover:bg-[#f4f4f5] transition-colors cursor-pointer text-left ${i > 0 ? "border-t border-[#f0f0f3]" : ""}`}>
+                                    <div className="w-6 h-6 rounded-full flex items-center justify-center shrink-0" style={{ background: v.color + "20" }}>
+                                      <div className="w-2 h-2 rounded-full" style={{ background: v.color }} />
+                                    </div>
+                                    <div className="flex-1">
+                                      <p className="text-sm text-[#18181b]" style={{ fontFamily: "var(--font-body)" }}>{v.name}</p>
+                                      <p className="text-[10px] text-[#71717a]" style={{ fontFamily: "var(--font-body)" }}>{v.desc}</p>
+                                    </div>
+                                    {settingsVoice === v.id && <Check className="w-3.5 h-3.5 text-[#6b9a70]" />}
+                                  </button>
+                                ))}
+                              </div>
+                            </>
                           )}
                         </div>
                       </div>
@@ -2326,40 +2391,11 @@ export default function StudioPage() {
                         </div>
                       </div>
 
-                      {/* Ambient sound */}
-                      <div className="flex items-center justify-between px-6 py-4 group hover:bg-[var(--color-sand-50)]/50 transition-colors">
-                        <div>
-                          <span className="text-[13px] text-[var(--color-sand-900)] block" style={{ fontFamily: "var(--font-body)", fontWeight: 450 }}>Ambient sound</span>
-                          <span className="text-[11px] text-[var(--color-sand-400)]" style={{ fontFamily: "var(--font-body)" }}>Starting soundscape for new sessions</span>
-                        </div>
-                        <div className="relative">
-                          <button
-                            onClick={(e) => { e.stopPropagation(); setSettingsOpenDropdown(settingsOpenDropdown === "sound" ? null : "sound"); }}
-                            className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[var(--color-sand-50)] border border-[var(--color-sand-200)] hover:border-[var(--color-sand-300)] hover:bg-white transition-all cursor-pointer"
-                          >
-                            <Music className="w-3 h-3 text-[var(--color-sand-400)]" />
-                            <span className="text-[12px] text-[var(--color-sand-700)]" style={{ fontFamily: "var(--font-body)", fontWeight: 450 }}>{settingsSound}</span>
-                            <ChevronDown className={`w-3.5 h-3.5 text-[var(--color-sand-400)] transition-transform ${settingsOpenDropdown === "sound" ? "rotate-180" : ""}`} />
-                          </button>
-                          {settingsOpenDropdown === "sound" && (
-                            <div className="absolute right-0 top-full mt-1.5 w-48 bg-white rounded-xl border border-[var(--color-sand-200)] shadow-xl z-30 py-1 overflow-hidden">
-                              {["Sanctuary", "Deep Night", "Soft Drift", "Safe Harbor", "Flow State", "Still Water", "Open Sky", "Forest Floor"].map((s) => (
-                                <button key={s} onClick={(e) => { e.stopPropagation(); setSettingsSound(s); setSettingsOpenDropdown(null); }}
-                                  className={`w-full flex items-center gap-2.5 px-3.5 py-2.5 text-left transition-colors cursor-pointer ${settingsSound === s ? "bg-[var(--color-sand-900)] text-white" : "hover:bg-[var(--color-sand-50)]"}`}>
-                                  <Music className={`w-3 h-3 ${settingsSound === s ? "text-white/50" : "text-[var(--color-sand-400)]"}`} />
-                                  <span className={`text-[12px] ${settingsSound === s ? "text-white" : "text-[var(--color-sand-700)]"}`} style={{ fontFamily: "var(--font-body)", fontWeight: settingsSound === s ? 500 : 400 }}>{s}</span>
-                                  {settingsSound === s && <Check className="w-3.5 h-3.5 ml-auto" />}
-                                </button>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      </div>
                     </div>
                   </div>
 
                   {/* Behavior */}
-                  <div className="bg-[#fdfcfb] rounded-2xl border border-[#e7e5e4] overflow-hidden shadow-sm">
+                  <div className="bg-[#fdfcfb] rounded-2xl border border-[#e7e5e4] shadow-sm">
                     <div className="px-6 py-4 border-b border-[#e7e5e4] bg-[#f5f3f0]">
                       <h3 className="text-[11px] uppercase tracking-wide text-[var(--color-sand-900)]" style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}>Behavior</h3>
                       <p className="text-[11px] text-[var(--color-sand-400)] mt-0.5" style={{ fontFamily: "var(--font-body)" }}>Automate common actions</p>
