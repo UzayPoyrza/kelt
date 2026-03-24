@@ -1092,30 +1092,36 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, onBack }: {
                 {generateWarning}
               </div>
             )}
-          <button
-            onClick={handleGenerateAudio}
-            disabled={isGenerating}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-[#18181b] text-white hover:bg-[#27272a] transition-colors text-sm cursor-pointer shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
-            style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}>
-            {isGenerating ? (
-              <>
-                <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }}>
+          <div className="relative">
+            <div
+              className="absolute -inset-[2px] rounded-[10px] bg-[length:300%_300%] animate-[border-glow_4s_ease_infinite] opacity-70 blur-[1px]"
+              style={{ background: "linear-gradient(135deg, var(--color-sage), var(--color-ocean), var(--color-dusk), var(--color-ember), var(--color-sage))", backgroundSize: "300% 300%" }}
+            />
+            <button
+              onClick={handleGenerateAudio}
+              disabled={isGenerating}
+              className="relative flex items-center gap-2 px-5 py-2.5 rounded-lg bg-[#18181b] text-white hover:bg-[#27272a] transition-colors text-sm cursor-pointer shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
+              style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}>
+              {isGenerating ? (
+                <>
+                  <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }}>
+                    <Sparkles className="w-3.5 h-3.5" />
+                  </motion.div>
+                  Generating...
+                </>
+              ) : hasGenerated ? (
+                <>
                   <Sparkles className="w-3.5 h-3.5" />
-                </motion.div>
-                Generating...
-              </>
-            ) : hasGenerated ? (
-              <>
-                <Sparkles className="w-3.5 h-3.5" />
-                Regenerate Audio
-              </>
-            ) : (
-              <>
-                <Sparkles className="w-3.5 h-3.5" />
-                Generate Audio
-              </>
-            )}
-          </button>
+                  Regenerate Audio
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-3.5 h-3.5" />
+                  Generate Audio
+                </>
+              )}
+            </button>
+          </div>
           </div>
         </div>
 
@@ -1503,6 +1509,12 @@ export default function StudioPage() {
   const [sessionsPage, setSessionsPage] = useState(1);
   const [generationsPage, setGenerationsPage] = useState(1);
   const [confirmDialog, setConfirmDialog] = useState<{ type: "regenerate" | "delete" | "generate"; sessionId: string; sessionTitle: string } | null>(null);
+  const [settingsVoice, setSettingsVoice] = useState("aria");
+  const [settingsDuration, setSettingsDuration] = useState(10);
+  const [settingsSound, setSettingsSound] = useState("Sanctuary");
+  const [settingsAutoDownload, setSettingsAutoDownload] = useState(false);
+  const [settingsAmbientPreview, setSettingsAmbientPreview] = useState(true);
+  const [settingsOpenDropdown, setSettingsOpenDropdown] = useState<string | null>(null);
 
   const handleQuickGenerate = useCallback(() => {
     const intent = detectIntent(genConfig.prompt);
@@ -1546,14 +1558,7 @@ export default function StudioPage() {
               </div>
             </a>
           </div>
-          <div className="px-3 mb-4">
-            <button onClick={() => { navigateTo("generate" as NavId); setGenStep("input"); }}
-              className="w-full flex items-center justify-center gap-2 px-3 py-3 rounded-xl text-sm transition-all cursor-pointer shadow-[0_2px_8px_rgba(107,154,112,0.3)] hover:shadow-[0_4px_16px_rgba(107,154,112,0.4)] hover:scale-[1.02] active:scale-[0.98]"
-              style={{ fontFamily: "var(--font-body)", fontWeight: 600, background: "linear-gradient(135deg, #5a9a62, #6bb070)", color: "#fff" }}>
-              <Sparkles className="w-4 h-4" />
-              Generate
-            </button>
-          </div>
+          {/* Generate button hidden in studio session — use bottom bar Generate Audio instead */}
           <nav className="flex-1 px-3 space-y-0.5">
             {navItems.map((item) => (
               <button key={item.id} onClick={() => navigateTo(item.id)}
@@ -1738,17 +1743,17 @@ export default function StudioPage() {
             {activeNav === "history" && (
               <motion.div key="history" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
                 {/* Filter tabs */}
-                <div className="flex items-center gap-1 mb-5 bg-[#f4f4f5] rounded-lg p-1 w-fit">
+                <div className="flex items-center gap-1 mb-6 bg-[var(--color-sand-900)] rounded-full p-1 w-fit shadow-md">
                   {([["all", "All"], ["generations", "Generations"], ["sessions", "Sessions"]] as const).map(([key, label]) => (
                     <button
                       key={key}
                       onClick={() => { setHistoryFilter(key); setSessionsPage(1); setGenerationsPage(1); }}
-                      className={`px-3.5 py-1.5 rounded-md text-[12px] transition-all cursor-pointer ${
+                      className={`px-4 py-2 rounded-full text-[12px] transition-all cursor-pointer ${
                         historyFilter === key
-                          ? "bg-white text-[#18181b] shadow-sm"
-                          : "text-[#71717a] hover:text-[#18181b]"
+                          ? "bg-white text-[var(--color-sand-900)] shadow-sm"
+                          : "text-white/50 hover:text-white/80"
                       }`}
-                      style={{ fontFamily: "var(--font-body)", fontWeight: historyFilter === key ? 500 : 400 }}
+                      style={{ fontFamily: "var(--font-body)", fontWeight: historyFilter === key ? 600 : 400 }}
                     >
                       {label}
                     </button>
@@ -1763,10 +1768,13 @@ export default function StudioPage() {
                   return (
                   <div className="mb-6">
                     {historyFilter === "all" && (
-                      <h3 className="text-[11px] uppercase tracking-wider text-[#a1a1aa] mb-3" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>Generations</h3>
+                      <h3 className="text-[11px] uppercase tracking-wider text-[#78716c] mb-3 flex items-center gap-2" style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}>
+                        <Sparkles className="w-3 h-3" />
+                        Generations
+                      </h3>
                     )}
-                    <div className="bg-white rounded-xl border border-[#e8e8ec] overflow-hidden">
-                      <div className="grid grid-cols-[1fr_80px_70px_90px_70px_130px] gap-4 px-5 py-3 border-b border-[#f0f0f3] bg-[#fafafa]">
+                    <div className="bg-[#fdfcfb] rounded-xl border border-[#e7e5e4] overflow-hidden shadow-sm">
+                      <div className="grid grid-cols-[1fr_80px_70px_90px_70px_130px] gap-4 px-5 py-3 border-b border-[#e7e5e4] bg-[#f5f3f0]">
                         {["Prompt", "Voice", "Duration", "Protocol", "Credit", ""].map((h) => (
                           <span key={h} className="text-[10px] uppercase tracking-wider text-[#a1a1aa]" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>{h}</span>
                         ))}
@@ -1822,7 +1830,7 @@ export default function StudioPage() {
                               <button
                                 onClick={(e) => { e.stopPropagation(); }}
                                 disabled={(gen.status as string) === "failed"}
-                                className="w-8 h-8 rounded-lg hover:bg-[#f0f0f3] flex items-center justify-center text-[#71717a] hover:text-[#18181b] transition-colors disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+                                className="w-8 h-8 rounded-lg hover:bg-[#e7e5e4] flex items-center justify-center text-[#3f3f46] hover:text-[#18181b] transition-colors disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
                               >
                                 <Download className="w-4 h-4" />
                               </button>
@@ -1867,10 +1875,13 @@ export default function StudioPage() {
                   return (
                   <div className="mb-6">
                     {historyFilter === "all" && (
-                      <h3 className="text-[11px] uppercase tracking-wider text-[#a1a1aa] mb-3" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>Sessions Created</h3>
+                      <h3 className="text-[11px] uppercase tracking-wider text-[#78716c] mb-3 flex items-center gap-2" style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}>
+                        <FileText className="w-3 h-3" />
+                        Sessions Created
+                      </h3>
                     )}
-                    <div className="bg-white rounded-xl border border-[#e8e8ec] overflow-hidden">
-                      <div className="grid grid-cols-[1fr_100px_80px_80px_140px_130px] gap-4 px-5 py-3 border-b border-[#f0f0f3] bg-[#fafafa]">
+                    <div className="bg-[#fcfcfd] rounded-xl border border-[#ddd6fe]/40 overflow-hidden shadow-sm" style={{ borderColor: "#e0dff0" }}>
+                      <div className="grid grid-cols-[1fr_100px_80px_80px_140px_130px] gap-4 px-5 py-3 border-b bg-[#f4f3fb]" style={{ borderColor: "#e0dff0" }}>
                         {["Session", "Protocol", "Duration", "Voice", "Created", ""].map((h) => (
                           <span key={h} className="text-[10px] uppercase tracking-wider text-[#a1a1aa]" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>{h}</span>
                         ))}
@@ -1906,7 +1917,7 @@ export default function StudioPage() {
                               <div className="relative group/tip">
                                 <button
                                   onClick={(e) => { e.stopPropagation(); setGenConfig({ prompt: session.title, voice: session.voice.toLowerCase(), duration: parseInt(session.duration), sound: session.sound, sessionId: session.id }); setActiveNav("generate" as NavId); setGenStep("studio"); }}
-                                  className="w-8 h-8 rounded-lg hover:bg-[#f0f0f3] flex items-center justify-center text-[#71717a] hover:text-[#18181b] transition-colors cursor-pointer"
+                                  className="w-8 h-8 rounded-lg hover:bg-[#ededfc] flex items-center justify-center text-[#3f3f46] hover:text-[#18181b] transition-colors cursor-pointer"
                                 >
                                   <PenLine className="w-4 h-4" />
                                 </button>
@@ -1915,7 +1926,7 @@ export default function StudioPage() {
                               <div className="relative group/tip">
                                 <button
                                   onClick={(e) => { e.stopPropagation(); setConfirmDialog({ type: "regenerate", sessionId: session.id, sessionTitle: session.title }); }}
-                                  className="w-8 h-8 rounded-lg hover:bg-[#f0f0f3] flex items-center justify-center text-[#71717a] hover:text-[#18181b] transition-colors cursor-pointer"
+                                  className="w-8 h-8 rounded-lg hover:bg-[#ededfc] flex items-center justify-center text-[#3f3f46] hover:text-[#18181b] transition-colors cursor-pointer"
                                 >
                                   <RotateCcw className="w-4 h-4" />
                                 </button>
@@ -1924,7 +1935,7 @@ export default function StudioPage() {
                               <div className="relative group/tip">
                                 <button
                                   onClick={(e) => { e.stopPropagation(); setConfirmDialog({ type: "delete", sessionId: session.id, sessionTitle: session.title }); }}
-                                  className="w-8 h-8 rounded-lg hover:bg-[#fef2f2] flex items-center justify-center text-[#71717a] hover:text-[#ef4444] transition-colors cursor-pointer"
+                                  className="w-8 h-8 rounded-lg hover:bg-[#fef2f2] flex items-center justify-center text-[#dc2626] hover:text-[#b91c1c] transition-colors cursor-pointer"
                                 >
                                   <Trash2 className="w-4 h-4" />
                                 </button>
@@ -2211,99 +2222,179 @@ export default function StudioPage() {
 
             {/* Settings */}
             {activeNav === "settings" && (
-              <motion.div key="settings" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }} className="max-w-xl mx-auto">
-                <div className="space-y-5">
+              <motion.div key="settings" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }} className="max-w-xl mx-auto" onClick={() => settingsOpenDropdown && setSettingsOpenDropdown(null)}>
+                <div className="space-y-6">
                   {/* Account */}
-                  <div className="bg-white rounded-xl border border-[#e8e8ec] overflow-hidden">
-                    <div className="px-5 py-3.5 border-b border-[#f0f0f3] bg-[#fafafa]">
-                      <h3 className="text-[13px] text-[#18181b]" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>Account</h3>
+                  <div className="bg-white rounded-2xl border border-[var(--color-sand-200)] overflow-hidden shadow-sm">
+                    <div className="px-6 py-4 border-b border-[var(--color-sand-100)]" style={{ background: "var(--color-sand-50)" }}>
+                      <h3 className="text-[13px] text-[var(--color-sand-900)]" style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}>Account</h3>
                     </div>
-                    <div className="p-5">
-                      <div className="flex items-center justify-between">
+                    <div className="p-6">
+                      <div className="flex items-center justify-between mb-5">
                         <div className="flex items-center gap-3.5">
-                          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#e4e4e7] to-[#d4d4d8] flex items-center justify-center">
-                            <span className="text-sm text-[#52525b]" style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}>U</span>
+                          <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ background: "linear-gradient(135deg, var(--color-sage), var(--color-ocean))" }}>
+                            <span className="text-sm text-white" style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}>U</span>
                           </div>
                           <div>
-                            <p className="text-[13px] text-[#18181b]" style={{ fontFamily: "var(--font-body)", fontWeight: 450 }}>user@example.com</p>
+                            <p className="text-[13px] text-[var(--color-sand-900)]" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>user@example.com</p>
                             <div className="flex items-center gap-2 mt-0.5">
-                              <span className="inline-flex items-center gap-1 px-1.5 py-[1px] rounded text-[10px] bg-[#f4f4f5] text-[#71717a] border border-[#e4e4e7]" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>Free</span>
-                              <span className="text-[11px] text-[#a1a1aa]" style={{ fontFamily: "var(--font-body)" }}>3 credits remaining</span>
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] bg-[var(--color-sand-100)] text-[var(--color-sand-600)] border border-[var(--color-sand-200)]" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>Free</span>
+                              <span className="text-[11px] text-[var(--color-sand-400)]" style={{ fontFamily: "var(--font-body)" }}>3 credits remaining</span>
                             </div>
                           </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => router.push("/upgrade")}
-                            className="px-4 py-2 rounded-lg bg-[#18181b] text-white text-[12px] hover:bg-[#27272a] transition-colors cursor-pointer shadow-sm"
-                            style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>
-                            Upgrade to Pro
-                          </button>
-                        </div>
+                        <button
+                          onClick={() => router.push("/upgrade")}
+                          className="px-4 py-2 rounded-full text-[12px] text-white cursor-pointer transition-all hover:scale-[1.02] active:scale-[0.97] shadow-sm"
+                          style={{ fontFamily: "var(--font-body)", fontWeight: 600, background: "linear-gradient(135deg, #5a9a62, #6bb070)" }}>
+                          Upgrade to Pro
+                        </button>
                       </div>
-                      {/* Subscription management */}
-                      <div className="mt-4 pt-4 border-t border-[#f0f0f3]">
+                      <div className="pt-4 border-t border-[var(--color-sand-100)]">
                         <div className="flex items-center justify-between">
                           <div>
-                            <span className="text-[12px] text-[#71717a] block" style={{ fontFamily: "var(--font-body)", fontWeight: 450 }}>Subscription</span>
-                            <span className="text-[11px] text-[#a1a1aa]" style={{ fontFamily: "var(--font-body)" }}>Manage billing, invoices, and plan changes</span>
+                            <span className="text-[12px] text-[var(--color-sand-700)] block" style={{ fontFamily: "var(--font-body)", fontWeight: 450 }}>Subscription</span>
+                            <span className="text-[11px] text-[var(--color-sand-400)]" style={{ fontFamily: "var(--font-body)" }}>Manage billing, invoices, and plan changes</span>
                           </div>
                           <button
                             onClick={() => router.push("/upgrade")}
-                            className="px-3.5 py-1.5 rounded-lg border border-[#e4e4e7] bg-white text-[12px] text-[#3f3f46] hover:bg-[#f4f4f5] hover:border-[#d4d4d8] transition-colors cursor-pointer"
+                            className="px-4 py-2 rounded-full border border-[var(--color-sand-200)] text-[12px] text-[var(--color-sand-600)] hover:bg-[var(--color-sand-50)] hover:border-[var(--color-sand-300)] transition-all cursor-pointer"
                             style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>
-                            Manage Subscription
+                            Manage
                           </button>
                         </div>
                       </div>
                     </div>
                   </div>
 
-                  {/* Preferences */}
-                  <div className="bg-white rounded-xl border border-[#e8e8ec] overflow-hidden">
-                    <div className="px-5 py-3.5 border-b border-[#f0f0f3] bg-[#fafafa]">
-                      <h3 className="text-[13px] text-[#18181b]" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>Defaults</h3>
+                  {/* Defaults */}
+                  <div className="bg-white rounded-2xl border border-[var(--color-sand-200)] overflow-hidden shadow-sm">
+                    <div className="px-6 py-4 border-b border-[var(--color-sand-100)]" style={{ background: "var(--color-sand-50)" }}>
+                      <h3 className="text-[13px] text-[var(--color-sand-900)]" style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}>Defaults</h3>
+                      <p className="text-[11px] text-[var(--color-sand-400)] mt-0.5" style={{ fontFamily: "var(--font-body)" }}>Set your preferred starting point for new sessions</p>
                     </div>
-                    <div className="divide-y divide-[#f4f4f5]">
-                      {[
-                        { label: "Voice", value: "Aria", desc: "Calm, gentle female" },
-                        { label: "Duration", value: "10 min", desc: "Standard session length" },
-                        { label: "Ambient sound", value: "Sanctuary", desc: "Adaptive all-purpose" },
-                      ].map((pref) => (
-                        <div key={pref.label} className="flex items-center justify-between px-5 py-3.5 group hover:bg-[#fafafa] transition-colors">
+                    <div className="divide-y divide-[var(--color-sand-100)]">
+                      {/* Voice */}
+                      <div className="flex items-center justify-between px-6 py-4 group hover:bg-[var(--color-sand-50)]/50 transition-colors">
+                        <div className="flex items-center gap-3">
+                          <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: voices.find(v => v.id === settingsVoice)?.color || "#a1a1aa" }} />
                           <div>
-                            <span className="text-[13px] text-[#18181b] block" style={{ fontFamily: "var(--font-body)", fontWeight: 450 }}>{pref.label}</span>
-                            <span className="text-[11px] text-[#a1a1aa]" style={{ fontFamily: "var(--font-body)" }}>{pref.desc}</span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <span className="text-[12px] text-[#71717a] px-2.5 py-1 rounded-md bg-[#f4f4f5] border border-[#e8e8ec]" style={{ fontFamily: "var(--font-body)" }}>{pref.value}</span>
-                            <ChevronDown className="w-3.5 h-3.5 text-[#a1a1aa]" />
+                            <span className="text-[13px] text-[var(--color-sand-900)] block" style={{ fontFamily: "var(--font-body)", fontWeight: 450 }}>Voice</span>
+                            <span className="text-[11px] text-[var(--color-sand-400)]" style={{ fontFamily: "var(--font-body)" }}>{voices.find(v => v.id === settingsVoice)?.desc || ""}</span>
                           </div>
                         </div>
-                      ))}
+                        <div className="relative">
+                          <button
+                            onClick={(e) => { e.stopPropagation(); setSettingsOpenDropdown(settingsOpenDropdown === "voice" ? null : "voice"); }}
+                            className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[var(--color-sand-50)] border border-[var(--color-sand-200)] hover:border-[var(--color-sand-300)] hover:bg-white transition-all cursor-pointer"
+                          >
+                            <span className="text-[12px] text-[var(--color-sand-700)]" style={{ fontFamily: "var(--font-body)", fontWeight: 450 }}>{voices.find(v => v.id === settingsVoice)?.name || "Aria"}</span>
+                            <ChevronDown className={`w-3.5 h-3.5 text-[var(--color-sand-400)] transition-transform ${settingsOpenDropdown === "voice" ? "rotate-180" : ""}`} />
+                          </button>
+                          {settingsOpenDropdown === "voice" && (
+                            <div className="absolute right-0 top-full mt-1.5 w-48 bg-white rounded-xl border border-[var(--color-sand-200)] shadow-xl z-30 py-1 overflow-hidden">
+                              {voices.map((v) => (
+                                <button key={v.id} onClick={(e) => { e.stopPropagation(); setSettingsVoice(v.id); setSettingsOpenDropdown(null); }}
+                                  className={`w-full flex items-center gap-3 px-3.5 py-2.5 text-left transition-colors cursor-pointer ${settingsVoice === v.id ? "bg-[var(--color-sand-900)] text-white" : "hover:bg-[var(--color-sand-50)]"}`}>
+                                  <div className="w-2 h-2 rounded-full shrink-0" style={{ background: v.color }} />
+                                  <div>
+                                    <span className={`text-[12px] block ${settingsVoice === v.id ? "text-white" : "text-[var(--color-sand-900)]"}`} style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>{v.name}</span>
+                                    <span className={`text-[10px] ${settingsVoice === v.id ? "text-white/50" : "text-[var(--color-sand-400)]"}`} style={{ fontFamily: "var(--font-body)" }}>{v.desc}</span>
+                                  </div>
+                                  {settingsVoice === v.id && <Check className="w-3.5 h-3.5 ml-auto" />}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Duration */}
+                      <div className="flex items-center justify-between px-6 py-4 group hover:bg-[var(--color-sand-50)]/50 transition-colors">
+                        <div>
+                          <span className="text-[13px] text-[var(--color-sand-900)] block" style={{ fontFamily: "var(--font-body)", fontWeight: 450 }}>Duration</span>
+                          <span className="text-[11px] text-[var(--color-sand-400)]" style={{ fontFamily: "var(--font-body)" }}>Default session length</span>
+                        </div>
+                        <div className="flex items-center gap-1 bg-[var(--color-sand-50)] border border-[var(--color-sand-200)] rounded-lg p-0.5">
+                          {[5, 10, 15, 20].map((d) => (
+                            <button key={d} onClick={(e) => { e.stopPropagation(); setSettingsDuration(d); }}
+                              className={`px-3 py-1.5 rounded-md text-[12px] transition-all cursor-pointer ${settingsDuration === d ? "bg-[var(--color-sand-900)] text-white shadow-sm" : "text-[var(--color-sand-500)] hover:text-[var(--color-sand-900)]"}`}
+                              style={{ fontFamily: "var(--font-body)", fontWeight: settingsDuration === d ? 500 : 400 }}>
+                              {d}m
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Ambient sound */}
+                      <div className="flex items-center justify-between px-6 py-4 group hover:bg-[var(--color-sand-50)]/50 transition-colors">
+                        <div>
+                          <span className="text-[13px] text-[var(--color-sand-900)] block" style={{ fontFamily: "var(--font-body)", fontWeight: 450 }}>Ambient sound</span>
+                          <span className="text-[11px] text-[var(--color-sand-400)]" style={{ fontFamily: "var(--font-body)" }}>Starting soundscape for new sessions</span>
+                        </div>
+                        <div className="relative">
+                          <button
+                            onClick={(e) => { e.stopPropagation(); setSettingsOpenDropdown(settingsOpenDropdown === "sound" ? null : "sound"); }}
+                            className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[var(--color-sand-50)] border border-[var(--color-sand-200)] hover:border-[var(--color-sand-300)] hover:bg-white transition-all cursor-pointer"
+                          >
+                            <Music className="w-3 h-3 text-[var(--color-sand-400)]" />
+                            <span className="text-[12px] text-[var(--color-sand-700)]" style={{ fontFamily: "var(--font-body)", fontWeight: 450 }}>{settingsSound}</span>
+                            <ChevronDown className={`w-3.5 h-3.5 text-[var(--color-sand-400)] transition-transform ${settingsOpenDropdown === "sound" ? "rotate-180" : ""}`} />
+                          </button>
+                          {settingsOpenDropdown === "sound" && (
+                            <div className="absolute right-0 top-full mt-1.5 w-48 bg-white rounded-xl border border-[var(--color-sand-200)] shadow-xl z-30 py-1 overflow-hidden">
+                              {["Sanctuary", "Deep Night", "Soft Drift", "Safe Harbor", "Flow State", "Still Water", "Open Sky", "Forest Floor"].map((s) => (
+                                <button key={s} onClick={(e) => { e.stopPropagation(); setSettingsSound(s); setSettingsOpenDropdown(null); }}
+                                  className={`w-full flex items-center gap-2.5 px-3.5 py-2.5 text-left transition-colors cursor-pointer ${settingsSound === s ? "bg-[var(--color-sand-900)] text-white" : "hover:bg-[var(--color-sand-50)]"}`}>
+                                  <Music className={`w-3 h-3 ${settingsSound === s ? "text-white/50" : "text-[var(--color-sand-400)]"}`} />
+                                  <span className={`text-[12px] ${settingsSound === s ? "text-white" : "text-[var(--color-sand-700)]"}`} style={{ fontFamily: "var(--font-body)", fontWeight: settingsSound === s ? 500 : 400 }}>{s}</span>
+                                  {settingsSound === s && <Check className="w-3.5 h-3.5 ml-auto" />}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </div>
                     </div>
                   </div>
 
-                  {/* Auto-download toggle */}
-                  <div className="bg-white rounded-xl border border-[#e8e8ec] overflow-hidden">
-                    <div className="px-5 py-3.5 border-b border-[#f0f0f3] bg-[#fafafa]">
-                      <h3 className="text-[13px] text-[#18181b]" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>Behavior</h3>
+                  {/* Behavior */}
+                  <div className="bg-white rounded-2xl border border-[var(--color-sand-200)] overflow-hidden shadow-sm">
+                    <div className="px-6 py-4 border-b border-[var(--color-sand-100)]" style={{ background: "var(--color-sand-50)" }}>
+                      <h3 className="text-[13px] text-[var(--color-sand-900)]" style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}>Behavior</h3>
+                      <p className="text-[11px] text-[var(--color-sand-400)] mt-0.5" style={{ fontFamily: "var(--font-body)" }}>Automate common actions</p>
                     </div>
-                    <div className="divide-y divide-[#f4f4f5]">
-                      {[
-                        { label: "Auto-download after generation", desc: "Save audio files automatically", on: false },
-                        { label: "Ambient sound preview", desc: "Play soundscape preview on select", on: true },
-                      ].map((toggle) => (
-                        <div key={toggle.label} className="flex items-center justify-between px-5 py-3.5">
-                          <div>
-                            <span className="text-[13px] text-[#18181b] block" style={{ fontFamily: "var(--font-body)", fontWeight: 450 }}>{toggle.label}</span>
-                            <span className="text-[11px] text-[#a1a1aa]" style={{ fontFamily: "var(--font-body)" }}>{toggle.desc}</span>
-                          </div>
-                          <div className={`w-9 h-5 rounded-full relative cursor-pointer transition-colors ${toggle.on ? "bg-[#18181b]" : "bg-[#d4d4d8]"}`}>
-                            <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-all ${toggle.on ? "left-[18px]" : "left-0.5"}`} />
-                          </div>
+                    <div className="divide-y divide-[var(--color-sand-100)]">
+                      <div className="flex items-center justify-between px-6 py-4">
+                        <div>
+                          <span className="text-[13px] text-[var(--color-sand-900)] block" style={{ fontFamily: "var(--font-body)", fontWeight: 450 }}>Auto-download after generation</span>
+                          <span className="text-[11px] text-[var(--color-sand-400)]" style={{ fontFamily: "var(--font-body)" }}>Save audio files automatically</span>
                         </div>
-                      ))}
+                        <button
+                          onClick={() => setSettingsAutoDownload(!settingsAutoDownload)}
+                          className={`w-11 h-6 rounded-full relative cursor-pointer transition-colors ${settingsAutoDownload ? "bg-[var(--color-sage)]" : "bg-[var(--color-sand-200)]"}`}>
+                          <motion.div
+                            className="absolute top-1 w-4 h-4 rounded-full bg-white shadow-sm"
+                            animate={{ left: settingsAutoDownload ? 22 : 4 }}
+                            transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                          />
+                        </button>
+                      </div>
+                      <div className="flex items-center justify-between px-6 py-4">
+                        <div>
+                          <span className="text-[13px] text-[var(--color-sand-900)] block" style={{ fontFamily: "var(--font-body)", fontWeight: 450 }}>Ambient sound preview</span>
+                          <span className="text-[11px] text-[var(--color-sand-400)]" style={{ fontFamily: "var(--font-body)" }}>Play soundscape preview on select</span>
+                        </div>
+                        <button
+                          onClick={() => setSettingsAmbientPreview(!settingsAmbientPreview)}
+                          className={`w-11 h-6 rounded-full relative cursor-pointer transition-colors ${settingsAmbientPreview ? "bg-[var(--color-sage)]" : "bg-[var(--color-sand-200)]"}`}>
+                          <motion.div
+                            className="absolute top-1 w-4 h-4 rounded-full bg-white shadow-sm"
+                            animate={{ left: settingsAmbientPreview ? 22 : 4 }}
+                            transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                          />
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
