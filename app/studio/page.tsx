@@ -86,18 +86,18 @@ const soundCategories = {
 };
 
 const mockSessions = [
-  { id: "1", title: "Deep sleep after a long day", duration: "15 min", voice: "Aria", protocol: "CBT-I + NSDR", sound: "Deep Night", createdAt: "Mar 24, 2026 · 12:34 PM", createdAtShort: "2 hours ago", accessedAt: "Just now", category: "sleep", icon: Moon },
-  { id: "2", title: "Morning focus before standup", duration: "10 min", voice: "James", protocol: "MBSR", sound: "Flow State", createdAt: "Mar 23, 2026 · 8:15 AM", createdAtShort: "Yesterday", accessedAt: "3 hours ago", category: "focus", icon: Sun },
-  { id: "3", title: "Calm my nerves before the flight", duration: "8 min", voice: "Kai", protocol: "HRV-BF + ACT", sound: "Still Water", createdAt: "Mar 22, 2026 · 3:47 PM", createdAtShort: "2 days ago", accessedAt: "Yesterday", category: "anxiety", icon: Heart },
-  { id: "4", title: "Stress relief after deadline", duration: "20 min", voice: "Luna", protocol: "PMR + ACT", sound: "Safe Harbor", createdAt: "Mar 21, 2026 · 6:22 PM", createdAtShort: "3 days ago", accessedAt: "2 days ago", category: "stress", icon: Wind },
-  { id: "5", title: "Quick breathing reset", duration: "5 min", voice: "Aria", protocol: "HRV-BF", sound: "Sanctuary", createdAt: "Mar 17, 2026 · 10:05 AM", createdAtShort: "Last week", accessedAt: "4 days ago", category: "focus", icon: Brain },
-  { id: "6", title: "Wind down for bed", duration: "15 min", voice: "Luna", protocol: "NSDR", sound: "Soft Drift", createdAt: "Mar 16, 2026 · 11:12 PM", createdAtShort: "Last week", accessedAt: "Last week", category: "sleep", icon: Moon },
-  { id: "7", title: "Body scan for tension release", duration: "12 min", voice: "Aria", protocol: "PMR", sound: "Letting Go", createdAt: "Mar 14, 2026 · 7:45 PM", createdAtShort: "Last week", accessedAt: "Last week", category: "stress", icon: Heart },
-  { id: "8", title: "Pre-presentation confidence boost", duration: "8 min", voice: "Kai", protocol: "ACT", sound: "Open Sky", createdAt: "Mar 13, 2026 · 9:00 AM", createdAtShort: "2 weeks ago", accessedAt: "Last week", category: "anxiety", icon: Heart },
-  { id: "9", title: "Late night overthinking reset", duration: "20 min", voice: "Luna", protocol: "CBT-I", sound: "Deep Night", createdAt: "Mar 11, 2026 · 11:55 PM", createdAtShort: "2 weeks ago", accessedAt: "2 weeks ago", category: "sleep", icon: Moon },
-  { id: "10", title: "Post-workout recovery calm", duration: "10 min", voice: "James", protocol: "NSDR", sound: "Still Water", createdAt: "Mar 10, 2026 · 6:30 PM", createdAtShort: "2 weeks ago", accessedAt: "2 weeks ago", category: "focus", icon: Sun },
-  { id: "11", title: "Midday energy recharge", duration: "5 min", voice: "Kai", protocol: "HRV-BF", sound: "Flow State", createdAt: "Mar 8, 2026 · 1:15 PM", createdAtShort: "2 weeks ago", accessedAt: "2 weeks ago", category: "focus", icon: Brain },
-  { id: "12", title: "Sunday evening wind down", duration: "15 min", voice: "Aria", protocol: "PMR + NSDR", sound: "Safe Harbor", createdAt: "Mar 7, 2026 · 9:20 PM", createdAtShort: "2 weeks ago", accessedAt: "2 weeks ago", category: "sleep", icon: Moon },
+  { id: "1", title: "Deep sleep after a long day", duration: "15 min", voice: "Aria", protocol: "CBT-I + NSDR", sound: "Deep Night", createdAt: "Mar 24, 2026 · 12:34 PM", createdAtShort: "2 hours ago", accessedAt: "Just now", category: "sleep", icon: Moon, hasGeneration: true },
+  { id: "2", title: "Morning focus before standup", duration: "10 min", voice: "James", protocol: "MBSR", sound: "Flow State", createdAt: "Mar 23, 2026 · 8:15 AM", createdAtShort: "Yesterday", accessedAt: "3 hours ago", category: "focus", icon: Sun, hasGeneration: true },
+  { id: "3", title: "Calm my nerves before the flight", duration: "8 min", voice: "Kai", protocol: "HRV-BF + ACT", sound: "Still Water", createdAt: "Mar 22, 2026 · 3:47 PM", createdAtShort: "2 days ago", accessedAt: "Yesterday", category: "anxiety", icon: Heart, hasGeneration: true },
+  { id: "4", title: "Stress relief after deadline", duration: "20 min", voice: "Luna", protocol: "PMR + ACT", sound: "Safe Harbor", createdAt: "Mar 21, 2026 · 6:22 PM", createdAtShort: "3 days ago", accessedAt: "2 days ago", category: "stress", icon: Wind, hasGeneration: true },
+  { id: "5", title: "Quick breathing reset", duration: "5 min", voice: "Aria", protocol: "HRV-BF", sound: "Sanctuary", createdAt: "Mar 17, 2026 · 10:05 AM", createdAtShort: "Last week", accessedAt: "4 days ago", category: "focus", icon: Brain, hasGeneration: true },
+  { id: "6", title: "Wind down for bed", duration: "15 min", voice: "Luna", protocol: "NSDR", sound: "Soft Drift", createdAt: "Mar 16, 2026 · 11:12 PM", createdAtShort: "Last week", accessedAt: "Last week", category: "sleep", icon: Moon, hasGeneration: true },
+  { id: "7", title: "Body scan for tension release", duration: "12 min", voice: "Aria", protocol: "PMR", sound: "Letting Go", createdAt: "Mar 14, 2026 · 7:45 PM", createdAtShort: "Last week", accessedAt: "Last week", category: "stress", icon: Heart, hasGeneration: false },
+  { id: "8", title: "Pre-presentation confidence boost", duration: "8 min", voice: "Kai", protocol: "ACT", sound: "Open Sky", createdAt: "Mar 13, 2026 · 9:00 AM", createdAtShort: "2 weeks ago", accessedAt: "Last week", category: "anxiety", icon: Heart, hasGeneration: false },
+  { id: "9", title: "Late night overthinking reset", duration: "20 min", voice: "Luna", protocol: "CBT-I", sound: "Deep Night", createdAt: "Mar 11, 2026 · 11:55 PM", createdAtShort: "2 weeks ago", accessedAt: "2 weeks ago", category: "sleep", icon: Moon, hasGeneration: true },
+  { id: "10", title: "Post-workout recovery calm", duration: "10 min", voice: "James", protocol: "NSDR", sound: "Still Water", createdAt: "Mar 10, 2026 · 6:30 PM", createdAtShort: "2 weeks ago", accessedAt: "2 weeks ago", category: "focus", icon: Sun, hasGeneration: false },
+  { id: "11", title: "Midday energy recharge", duration: "5 min", voice: "Kai", protocol: "HRV-BF", sound: "Flow State", createdAt: "Mar 8, 2026 · 1:15 PM", createdAtShort: "2 weeks ago", accessedAt: "2 weeks ago", category: "focus", icon: Brain, hasGeneration: false },
+  { id: "12", title: "Sunday evening wind down", duration: "15 min", voice: "Aria", protocol: "PMR + NSDR", sound: "Safe Harbor", createdAt: "Mar 7, 2026 · 9:20 PM", createdAtShort: "2 weeks ago", accessedAt: "2 weeks ago", category: "sleep", icon: Moon, hasGeneration: true },
 ];
 
 const mockGenerations = [
@@ -190,136 +190,153 @@ const categoryColors: Record<string, { accent: string; bg: string }> = {
   stress: { accent: "#c4876c", bg: "rgba(196,135,108,0.08)" },
 };
 
-function SessionCard({ session, delay, isNowPlaying, onPlay, onOpenStudio }: {
-  session: (typeof mockSessions)[number]; delay: number;
+/* ─── Hero Session Card (most recently accessed) ─── */
+function HeroSessionCard({ session, isNowPlaying, onPlay, onOpenStudio }: {
+  session: (typeof mockSessions)[number];
   isNowPlaying: boolean; onPlay: () => void; onOpenStudio: () => void;
 }) {
-  const [showMenu, setShowMenu] = useState(false);
   const Icon = session.icon;
   const colors = categoryColors[session.category] || categoryColors.focus;
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 8 }}
+      initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay, duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-      className="group relative bg-white rounded-xl border border-[#e8e8ec] hover:border-[#d0d0d6] transition-all duration-300 cursor-pointer hover:shadow-[0_2px_12px_rgba(0,0,0,0.06)]"
+      transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+      className="group relative rounded-2xl cursor-pointer transition-all duration-300 overflow-hidden"
+      style={{ background: `linear-gradient(135deg, ${colors.accent}08, ${colors.accent}15, ${colors.accent}05)`, border: `1px solid ${colors.accent}25` }}
       onClick={onOpenStudio}
     >
-      {/* Accent line */}
-      <div className="absolute top-0 left-0 w-full h-[2px] opacity-0 group-hover:opacity-100 transition-opacity duration-300" style={{ background: `linear-gradient(90deg, ${colors.accent}, transparent)` }} />
+      {/* Accent bar */}
+      <div className="absolute top-0 left-0 w-full h-[3px]" style={{ background: `linear-gradient(90deg, ${colors.accent}, ${colors.accent}60, transparent)` }} />
 
-      <div className="p-5">
-        {/* Header row */}
-        <div className="flex items-start justify-between mb-4">
-          <div className="flex items-center gap-3 min-w-0">
-            <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0" style={{ background: colors.bg }}>
-              <Icon className="w-[18px] h-[18px]" style={{ color: colors.accent }} />
+      <div className="p-6">
+        <div className="flex items-start justify-between mb-1">
+          <div className="flex items-center gap-2">
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: colors.accent + "18", border: `1px solid ${colors.accent}30` }}>
+              <Icon className="w-5 h-5" style={{ color: colors.accent }} />
             </div>
-            <div className="min-w-0">
-              <h3 className="text-[13px] text-[#18181b] leading-tight truncate" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>{session.title}</h3>
-              <p className="text-[11px] text-[#a1a1aa] mt-0.5" style={{ fontFamily: "var(--font-body)" }}>{session.createdAt}</p>
+            <div>
+              <span className="text-[10px] uppercase tracking-wider block mb-0.5" style={{ fontFamily: "var(--font-body)", fontWeight: 600, color: colors.accent }}>Last opened</span>
+              <span className="text-[13px] text-[#18181b]" style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}>{session.accessedAt}</span>
             </div>
           </div>
-          {isNowPlaying && (
-            <div className="shrink-0 flex items-end gap-[2px] h-4">
-              {[0, 1, 2].map(i => (
-                <motion.div
-                  key={i}
-                  className="w-[3px] rounded-full"
-                  style={{ background: colors.accent }}
-                  animate={{ height: ["40%", "100%", "40%"] }}
-                  transition={{ duration: 0.5 + i * 0.15, repeat: Infinity, ease: "easeInOut", delay: i * 0.1 }}
-                />
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Waveform hint */}
-        <div className="flex items-end gap-[3px] h-6 mb-4 px-0.5">
-          {Array.from({ length: 32 }).map((_, i) => {
-            const h = 15 + Math.sin(i * 0.6) * 35 + Math.cos(i * 1.2) * 25;
-            return (
-              <div
-                key={i}
-                className="flex-1 rounded-full transition-all duration-500"
-                style={{
-                  height: `${Math.max(12, Math.min(95, h))}%`,
-                  background: isNowPlaying
-                    ? colors.accent
-                    : `linear-gradient(180deg, #d4d4d8, #e4e4e7)`,
-                  opacity: isNowPlaying ? 0.7 : 0.4,
-                }}
-              />
-            );
-          })}
-        </div>
-
-        {/* Metadata row */}
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className="inline-flex items-center gap-1 px-2 py-[3px] rounded-md text-[10px] tracking-wide" style={{ fontFamily: "var(--font-body)", fontWeight: 500, background: colors.bg, color: colors.accent }}>
-            <Zap className="w-2.5 h-2.5" />
-            {session.protocol}
-          </span>
-          <span className="text-[10px] text-[#a1a1aa]" style={{ fontFamily: "var(--font-body)" }}>·</span>
-          <span className="text-[11px] text-[#71717a]" style={{ fontFamily: "var(--font-body)" }}>{session.duration}</span>
-          <span className="text-[10px] text-[#a1a1aa]" style={{ fontFamily: "var(--font-body)" }}>·</span>
-          <span className="text-[11px] text-[#71717a]" style={{ fontFamily: "var(--font-body)" }}>{session.voice}</span>
-        </div>
-
-        {/* Open in Studio overlay on hover */}
-        <div className="absolute inset-0 flex items-center justify-center bg-white/80 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none">
-          <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[#18181b] text-white shadow-lg">
-            <PenLine className="w-3.5 h-3.5" />
-            <span className="text-[12px]" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>Open in Studio</span>
-          </div>
-        </div>
-        {/* Play + Options buttons sit above the overlay */}
-        <div className="absolute top-4 right-4 z-10 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all duration-200">
-          <button
-            onClick={(e) => { e.stopPropagation(); onPlay(); }}
-            className="w-8 h-8 rounded-lg flex items-center justify-center transition-all shadow-sm"
-            style={{ background: isNowPlaying ? colors.accent : "#18181b", color: "#fff" }}
-          >
-            {isNowPlaying ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5 ml-0.5" />}
-          </button>
-          <div className="relative">
-            <button
-              onClick={(e) => { e.stopPropagation(); setShowMenu(!showMenu); }}
-              className="w-8 h-8 rounded-lg bg-white/90 hover:bg-white flex items-center justify-center text-[#71717a] hover:text-[#18181b] transition-colors shadow-sm border border-[#e4e4e7]"
-            >
-              <MoreHorizontal className="w-4 h-4" />
-            </button>
-            {showMenu && (
-              <div
-                className="absolute top-full right-0 mt-1 w-40 bg-white rounded-lg border border-[#e4e4e7] shadow-xl z-30 overflow-hidden"
-                onClick={(e) => e.stopPropagation()}
+          <div className="flex items-center gap-1.5">
+            {session.hasGeneration ? (
+              <button
+                onClick={(e) => { e.stopPropagation(); onPlay(); }}
+                className="w-10 h-10 rounded-xl flex items-center justify-center transition-all shadow-sm hover:scale-105 active:scale-95 cursor-pointer"
+                style={{ background: isNowPlaying ? colors.accent : "#18181b", color: "#fff" }}
               >
-                {[
-                  { label: "Open", icon: PenLine, action: () => { setShowMenu(false); onOpenStudio(); } },
-                  { label: "Download", icon: Download, action: () => setShowMenu(false) },
-                  { label: "Rename", icon: PenLine, action: () => setShowMenu(false) },
-                  { label: "Delete", icon: Trash2, action: () => setShowMenu(false), danger: true },
-                ].map((item) => (
-                  <button
-                    key={item.label}
-                    onClick={item.action}
-                    className={`w-full flex items-center gap-2.5 px-3 py-2 text-left text-[12px] transition-colors cursor-pointer ${
-                      (item as { danger?: boolean }).danger
-                        ? "text-red-500 hover:bg-red-50"
-                        : "text-[#3f3f46] hover:bg-[#f4f4f5]"
-                    }`}
-                    style={{ fontFamily: "var(--font-body)" }}
-                  >
-                    <item.icon className="w-3.5 h-3.5" />
-                    {item.label}
-                  </button>
-                ))}
-              </div>
+                {isNowPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4 ml-0.5" />}
+              </button>
+            ) : (
+              <div className="w-10 h-10" />
             )}
           </div>
         </div>
+
+        <h3 className="text-[18px] text-[#18181b] mt-4 mb-1 leading-snug" style={{ fontFamily: "var(--font-display)", fontWeight: 500 }}>{session.title}</h3>
+
+        <div className="flex items-center gap-2 mt-3">
+          <span className="inline-flex items-center gap-1 px-2 py-[3px] rounded-md text-[10px] tracking-wide" style={{ fontFamily: "var(--font-body)", fontWeight: 500, background: colors.accent + "15", color: colors.accent }}>
+            <Zap className="w-2.5 h-2.5" />
+            {session.protocol}
+          </span>
+          <span className="text-[11px] text-[#71717a]" style={{ fontFamily: "var(--font-body)" }}>{session.duration} · {session.voice}</span>
+          <span className="text-[10px] text-[#d4d4d8]">·</span>
+          <span className="text-[11px] text-[#a1a1aa]" style={{ fontFamily: "var(--font-body)" }}>Created {session.createdAtShort}</span>
+        </div>
+
+        {!session.hasGeneration && (
+          <div className="mt-3">
+            <span className="text-[11px] italic text-[#a1a1aa]" style={{ fontFamily: "var(--font-body)" }}>Not yet generated</span>
+          </div>
+        )}
+
+        {/* Now playing indicator */}
+        {isNowPlaying && (
+          <div className="flex items-center gap-2 mt-3">
+            <div className="flex items-end gap-[2px] h-3">
+              {[0, 1, 2, 3].map(i => (
+                <motion.div
+                  key={i}
+                  className="w-[2px] rounded-full"
+                  style={{ background: colors.accent }}
+                  animate={{ height: ["30%", "100%", "30%"] }}
+                  transition={{ duration: 0.5 + i * 0.12, repeat: Infinity, ease: "easeInOut", delay: i * 0.08 }}
+                />
+              ))}
+            </div>
+            <span className="text-[10px]" style={{ fontFamily: "var(--font-body)", fontWeight: 500, color: colors.accent }}>Now playing</span>
+          </div>
+        )}
+      </div>
+    </motion.div>
+  );
+}
+
+/* ─── Compact Session Row ─── */
+function SessionRow({ session, delay, isNowPlaying, onPlay, onOpenStudio }: {
+  session: (typeof mockSessions)[number]; delay: number;
+  isNowPlaying: boolean; onPlay: () => void; onOpenStudio: () => void;
+}) {
+  const Icon = session.icon;
+  const colors = categoryColors[session.category] || categoryColors.focus;
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, x: -6 }}
+      animate={{ opacity: 1, x: 0 }}
+      transition={{ delay, duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+      className="group flex items-center gap-4 px-4 py-3.5 rounded-xl bg-white border border-[#e8e8ec] hover:border-[#d0d0d6] hover:shadow-[0_2px_8px_rgba(0,0,0,0.04)] transition-all duration-200 cursor-pointer"
+      onClick={onOpenStudio}
+    >
+      {/* Left accent + icon */}
+      <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0" style={{ background: colors.bg }}>
+        <Icon className="w-[18px] h-[18px]" style={{ color: colors.accent }} />
+      </div>
+
+      {/* Title + meta */}
+      <div className="flex-1 min-w-0">
+        <h3 className="text-[13px] text-[#18181b] truncate leading-tight" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>{session.title}</h3>
+        <div className="flex items-center gap-1.5 mt-0.5">
+          <span className="text-[10px] tracking-wide" style={{ fontFamily: "var(--font-body)", fontWeight: 500, color: colors.accent }}>{session.protocol}</span>
+          <span className="text-[10px] text-[#d4d4d8]">·</span>
+          <span className="text-[11px] text-[#a1a1aa]" style={{ fontFamily: "var(--font-body)" }}>{session.duration} · {session.voice}</span>
+          <span className="text-[10px] text-[#d4d4d8]">·</span>
+          <span className="text-[11px] text-[#a1a1aa]" style={{ fontFamily: "var(--font-body)" }}>Created {session.createdAtShort}</span>
+        </div>
+      </div>
+
+      {/* Last accessed — primary differentiator */}
+      <div className="shrink-0 text-right mr-1">
+        <span className="text-[12px] text-[#18181b] block" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>{session.accessedAt}</span>
+        <span className="text-[10px] text-[#c4c4c8]" style={{ fontFamily: "var(--font-body)" }}>last opened</span>
+      </div>
+
+      {/* Play button only if session has generated audio */}
+      <div className="shrink-0">
+        {session.hasGeneration ? (
+          isNowPlaying ? (
+            <button
+              onClick={(e) => { e.stopPropagation(); onPlay(); }}
+              className="w-9 h-9 rounded-lg flex items-center justify-center transition-all cursor-pointer"
+              style={{ background: colors.accent, color: "#fff" }}
+            >
+              <Pause className="w-3.5 h-3.5" />
+            </button>
+          ) : (
+            <button
+              onClick={(e) => { e.stopPropagation(); onPlay(); }}
+              className="w-9 h-9 rounded-lg flex items-center justify-center bg-[#f4f4f5] text-[#71717a] hover:bg-[#18181b] hover:text-white transition-all cursor-pointer"
+            >
+              <Play className="w-3.5 h-3.5 ml-0.5" />
+            </button>
+          )
+        ) : (
+          <span className="text-[10px] italic text-[#c4c4c8] shrink-0" style={{ fontFamily: "var(--font-body)" }}>No audio</span>
+        )}
       </div>
     </motion.div>
   );
@@ -327,14 +344,19 @@ function SessionCard({ session, delay, isNowPlaying, onPlay, onOpenStudio }: {
 
 /* ─── Bottom Player Bar ─── */
 
-function PlayerBar({ session, isPlaying, onTogglePlay, onClose, inline }: {
+function PlayerBar({ session, isPlaying, onTogglePlay, onClose, inline, sound, volume, onSoundChange, onVolumeChange }: {
   session: (typeof mockSessions)[number]; isPlaying: boolean;
   onTogglePlay: () => void; onClose: () => void; inline?: boolean;
+  sound?: string; volume?: number; onSoundChange?: (s: string) => void; onVolumeChange?: (v: number) => void;
 }) {
   const [progress, setProgress] = useState(0);
   const [showBgSound, setShowBgSound] = useState(false);
-  const [bgSound, setBgSound] = useState(session.sound);
-  const [bgVol, setBgVol] = useState(70);
+  const [_bgSound, _setBgSound] = useState(session.sound);
+  const [_bgVol, _setBgVol] = useState(70);
+  const bgSound = sound ?? _bgSound;
+  const setBgSound = onSoundChange ?? _setBgSound;
+  const bgVol = volume ?? _bgVol;
+  const setBgVol = onVolumeChange ?? _setBgVol;
   const colors = categoryColors[session.category] || categoryColors.focus;
   const Icon = session.icon;
 
@@ -494,6 +516,7 @@ function StudioSession({ prompt, voice, duration, sound, onBack }: {
   const [showDurationInfo, setShowDurationInfo] = useState(false);
   const [editingPauseId, setEditingPauseId] = useState<string | null>(null);
   const [generateWarning, setGenerateWarning] = useState<string | null>(null);
+  const [errorPauseIds, setErrorPauseIds] = useState<Set<string>>(new Set());
   const [rightTab, setRightTab] = useState<"settings" | "history">("settings");
   const [isGenerating, setIsGenerating] = useState(false);
   const [studioPlaying, setStudioPlaying] = useState(false);
@@ -508,9 +531,11 @@ function StudioSession({ prompt, voice, duration, sound, onBack }: {
     const emptyPauses = script.filter(b => b.type === "pause" && (!b.pauseDuration || b.pauseDuration === 0));
     if (emptyPauses.length > 0) {
       setGenerateWarning(`${emptyPauses.length} pause${emptyPauses.length > 1 ? "s have" : " has"} no duration set. Set a value or remove the segment.`);
+      setErrorPauseIds(new Set(emptyPauses.map(b => b.id)));
       return;
     }
     setGenerateWarning(null);
+    setErrorPauseIds(new Set());
     setIsGenerating(true);
     setTimeout(() => {
       setIsGenerating(false);
@@ -535,6 +560,7 @@ function StudioSession({ prompt, voice, duration, sound, onBack }: {
     accessedAt: "Just now",
     category: intent,
     icon: iconMap[intent] || Brain,
+    hasGeneration: hasGenerated,
   };
 
   const selectedVoice = voices.find(v => v.id === sessionVoice) || voices[0];
@@ -548,6 +574,7 @@ function StudioSession({ prompt, voice, duration, sound, onBack }: {
       b.id === id ? { ...b, pauseDuration: Math.max(0, seconds) } : b
     ));
     setGenerateWarning(null);
+    setErrorPauseIds(prev => { const next = new Set(prev); next.delete(id); return next; });
     markEdited();
   }, [markEdited]);
 
@@ -684,6 +711,7 @@ function StudioSession({ prompt, voice, duration, sound, onBack }: {
             if (block.type === "pause") {
               const dur = block.pauseDuration ?? 0;
               const isEmpty = dur === 0;
+              const hasError = errorPauseIds.has(block.id);
               const isLong = dur >= 3;
               const isEditingDur = editingPauseId === block.id;
               // Check if reorder is possible
@@ -696,16 +724,18 @@ function StudioSession({ prompt, voice, duration, sound, onBack }: {
                     onClick={() => setSelectedBlock(isSelected ? null : block.id)}
                     className="relative flex items-center gap-0 cursor-pointer group/row py-1"
                   >
-                    <div className="flex-1 h-px" style={{ background: isEmpty ? "#e8e8ec" : isLong ? "var(--color-dusk)" : "#d4d4d8", opacity: isEmpty ? 0.3 : isLong ? 0.5 : 0.4 }} />
+                    <div className="flex-1 h-px" style={{ background: hasError ? "#fca5a5" : isEmpty ? "#e8e8ec" : isLong ? "var(--color-dusk)" : "#d4d4d8", opacity: hasError ? 0.7 : isEmpty ? 0.3 : isLong ? 0.5 : 0.4 }} />
 
                     <div className={`flex items-center gap-2 px-3.5 py-1.5 rounded-full mx-2 transition-all border ${
-                      isEmpty
-                        ? "border-dashed border-[#d4d4d8] bg-[#fafafa]"
-                        : isSelected
-                          ? "border-[var(--color-dusk)] bg-[var(--color-dusk-light)]"
-                          : isLong
-                            ? "border-[rgba(139,126,166,0.25)] bg-[rgba(139,126,166,0.08)] hover:bg-[var(--color-dusk-light)]"
-                            : "border-[#e4e4e7] bg-white hover:bg-[#f9f9fb]"
+                      hasError
+                        ? "border-red-400 bg-red-50 ring-1 ring-red-300/50"
+                        : isEmpty
+                          ? "border-dashed border-[#d4d4d8] bg-[#fafafa]"
+                          : isSelected
+                            ? "border-[var(--color-dusk)] bg-[var(--color-dusk-light)]"
+                            : isLong
+                              ? "border-[rgba(139,126,166,0.25)] bg-[rgba(139,126,166,0.08)] hover:bg-[var(--color-dusk-light)]"
+                              : "border-[#e4e4e7] bg-white hover:bg-[#f9f9fb]"
                     }`}>
                       {/* Reorder arrows — always visible, dim when disabled */}
                       <div className="flex flex-col gap-px">
@@ -733,9 +763,9 @@ function StudioSession({ prompt, voice, duration, sound, onBack }: {
 
                       <span className="text-[11px]" style={{
                         fontFamily: "var(--font-body)", fontWeight: 600,
-                        color: isEmpty ? "#c4c4c4" : isLong ? "var(--color-dusk)" : "#91919b",
+                        color: hasError ? "#dc2626" : isEmpty ? "#c4c4c4" : isLong ? "var(--color-dusk)" : "#91919b",
                       }}>
-                        {isEmpty ? "Empty" : isLong ? "Long" : "Short"}
+                        {hasError ? "Empty" : isEmpty ? "Empty" : isLong ? "Long" : "Short"}
                       </span>
 
                       <div className="w-px h-3.5" style={{ background: isEmpty ? "#e4e4e7" : isLong ? "rgba(139,126,166,0.25)" : "#e4e4e7" }} />
@@ -780,7 +810,7 @@ function StudioSession({ prompt, voice, duration, sound, onBack }: {
                       >+</button>
                     </div>
 
-                    <div className="flex-1 h-px" style={{ background: isEmpty ? "#e8e8ec" : isLong ? "var(--color-dusk)" : "#d4d4d8", opacity: isEmpty ? 0.3 : isLong ? 0.5 : 0.4 }} />
+                    <div className="flex-1 h-px" style={{ background: hasError ? "#fca5a5" : isEmpty ? "#e8e8ec" : isLong ? "var(--color-dusk)" : "#d4d4d8", opacity: hasError ? 0.7 : isEmpty ? 0.3 : isLong ? 0.5 : 0.4 }} />
                   </div>
                 </div>
               );
@@ -817,15 +847,23 @@ function StudioSession({ prompt, voice, duration, sound, onBack }: {
                     {/* Content */}
                     <div className="flex-1 min-w-0">
                       {isSelected ? (
-                        <textarea
-                          value={block.text}
-                          onChange={(e) => updateBlockText(block.id, e.target.value)}
-                          onClick={(e) => e.stopPropagation()}
-                          className="w-full text-[14px] text-[#1a1614] bg-white/60 outline-none resize-none leading-[1.75] rounded-lg px-3 py-2 border border-[rgba(122,158,126,0.25)] focus:border-[var(--color-sage)] transition-colors"
-                          style={{ fontFamily: "var(--font-body)" }}
-                          rows={Math.max(2, Math.ceil(block.text.length / 60))}
-                          autoFocus
-                        />
+                        <div>
+                          <textarea
+                            value={block.text}
+                            onChange={(e) => { if (e.target.value.length <= 90) updateBlockText(block.id, e.target.value); }}
+                            onClick={(e) => e.stopPropagation()}
+                            className="w-full text-[14px] text-[#1a1614] bg-white/60 outline-none resize-none leading-[1.75] rounded-lg px-3 py-2 border border-[rgba(122,158,126,0.25)] focus:border-[var(--color-sage)] transition-colors"
+                            style={{ fontFamily: "var(--font-body)" }}
+                            rows={Math.max(2, Math.ceil(block.text.length / 60))}
+                            maxLength={90}
+                            autoFocus
+                          />
+                          <div className="flex justify-end mt-1 pr-1">
+                            <span className={`text-[10px] tabular-nums ${block.text.length >= 90 ? "text-red-500 font-semibold" : block.text.length >= 75 ? "text-amber-500" : "text-[#a1a1aa]"}`} style={{ fontFamily: "var(--font-body)" }}>
+                              {block.text.length >= 90 ? "Limit reached" : `${90 - block.text.length} left`}
+                            </span>
+                          </div>
+                        </div>
                       ) : (
                         <p className="text-[14px] text-[#2d2926] leading-[1.75]" style={{ fontFamily: "var(--font-body)" }}>
                           {block.text}
@@ -959,6 +997,10 @@ function StudioSession({ prompt, voice, duration, sound, onBack }: {
               onTogglePlay={() => setStudioPlaying(prev => !prev)}
               onClose={() => { setShowStudioPlayer(false); setStudioPlaying(false); }}
               inline
+              sound={sessionSound}
+              volume={soundVolume}
+              onSoundChange={(s) => { setSessionSound(s); markEdited(); }}
+              onVolumeChange={setSoundVolume}
             />
           )}
         </AnimatePresence>
@@ -1136,23 +1178,24 @@ function StudioSession({ prompt, voice, duration, sound, onBack }: {
 
           {/* Pause types */}
           <div>
-            <label className="text-[10px] uppercase tracking-wider text-[#71717a] mb-2.5 block" style={{ fontFamily: "var(--font-body)" }}>Pause Types</label>
-            <div className="p-3 rounded-lg bg-[#f9f9fb] border border-[#f0f0f3] space-y-3">
+            <label className="text-[11px] uppercase tracking-wider text-[#52525b] mb-2.5 block" style={{ fontFamily: "var(--font-body)", fontWeight: 600, letterSpacing: "0.08em" }}>Pause Types</label>
+            <div className="p-4 rounded-xl bg-white border border-[#e4e4e7] shadow-sm space-y-4">
               <div>
-                <div className="flex items-center gap-2 mb-1">
-                  <div className="w-2 h-2 rounded-full shrink-0" style={{ background: "#a1a1aa" }} />
-                  <span className="text-[11px] text-[#71717a]" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>Short</span>
-                  <span className="text-[10px] text-[#a1a1aa]" style={{ fontFamily: "var(--font-body)" }}>under 3s</span>
+                <div className="flex items-center gap-2.5 mb-1.5">
+                  <div className="w-2.5 h-2.5 rounded-full shrink-0 border-2 border-[#a1a1aa]" style={{ background: "#d4d4d8" }} />
+                  <span className="text-[12px] text-[#3f3f46]" style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}>Short</span>
+                  <span className="text-[10px] text-[#a1a1aa] bg-[#f4f4f5] px-1.5 py-0.5 rounded" style={{ fontFamily: "var(--font-body)" }}>under 3s</span>
                 </div>
-                <p className="text-[11px] text-[#a1a1aa] leading-relaxed pl-4" style={{ fontFamily: "var(--font-body)" }}>Voice continues naturally, like a brief breath between sentences</p>
+                <p className="text-[11.5px] text-[#71717a] leading-relaxed pl-5" style={{ fontFamily: "var(--font-body)" }}>Voice continues naturally, like a brief breath between sentences</p>
               </div>
+              <div className="border-t border-[#f0f0f3]" />
               <div>
-                <div className="flex items-center gap-2 mb-1">
-                  <div className="w-2 h-2 rounded-full shrink-0" style={{ background: "var(--color-dusk)" }} />
-                  <span className="text-[11px]" style={{ fontFamily: "var(--font-body)", fontWeight: 500, color: "var(--color-dusk)" }}>Long</span>
-                  <span className="text-[10px] text-[#a1a1aa]" style={{ fontFamily: "var(--font-body)" }}>3s or more</span>
+                <div className="flex items-center gap-2.5 mb-1.5">
+                  <div className="w-2.5 h-2.5 rounded-full shrink-0 border-2" style={{ background: "var(--color-dusk-light)", borderColor: "var(--color-dusk)" }} />
+                  <span className="text-[12px]" style={{ fontFamily: "var(--font-body)", fontWeight: 600, color: "var(--color-dusk)" }}>Long</span>
+                  <span className="text-[10px] bg-[var(--color-dusk-light)] px-1.5 py-0.5 rounded" style={{ fontFamily: "var(--font-body)", color: "var(--color-dusk)" }}>3s or more</span>
                 </div>
-                <p className="text-[11px] text-[#a1a1aa] leading-relaxed pl-4" style={{ fontFamily: "var(--font-body)" }}>Creates a distinct break, voice re-entry is slightly more deliberate</p>
+                <p className="text-[11.5px] text-[#71717a] leading-relaxed pl-5" style={{ fontFamily: "var(--font-body)" }}>Creates a distinct break, voice re-entry is slightly more deliberate</p>
               </div>
             </div>
           </div>
@@ -1517,12 +1560,24 @@ export default function StudioPage() {
             {activeNav === "sessions" && (
               <motion.div key="sessions" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
                 {filteredSessions.length > 0 ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                    {filteredSessions.map((session, i) => (
-                      <SessionCard
+                  <div className="space-y-3">
+                    {/* Hero card — most recently accessed */}
+                    <HeroSessionCard
+                      session={filteredSessions[0]}
+                      isNowPlaying={nowPlayingId === filteredSessions[0].id && playerPlaying}
+                      onPlay={() => handlePlaySession(filteredSessions[0].id)}
+                      onOpenStudio={() => {
+                        setGenConfig({ prompt: filteredSessions[0].title, voice: filteredSessions[0].voice.toLowerCase(), duration: parseInt(filteredSessions[0].duration), sound: filteredSessions[0].sound });
+                        setActiveNav("generate" as NavId);
+                        setGenStep("studio");
+                      }}
+                    />
+                    {/* Remaining sessions as compact rows */}
+                    {filteredSessions.slice(1).map((session, i) => (
+                      <SessionRow
                         key={session.id}
                         session={session}
-                        delay={i * 0.05}
+                        delay={0.1 + i * 0.04}
                         isNowPlaying={nowPlayingId === session.id && playerPlaying}
                         onPlay={() => handlePlaySession(session.id)}
                         onOpenStudio={() => {
