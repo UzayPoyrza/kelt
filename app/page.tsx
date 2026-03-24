@@ -32,13 +32,13 @@ import svgPaths from "@/lib/svg-paths";
 
 /* ─── Data ─── */
 
-const durations = [3, 5, 10, 15, 20, 30];
+const durations = [3, 5, 10, 15];
 
 const voices = [
-  { id: "serene-f", label: "Serene", description: "Calm, gentle female" },
-  { id: "warm-m", label: "Warm", description: "Grounded, steady male" },
-  { id: "whisper", label: "Whisper", description: "Soft, intimate tone" },
-  { id: "resonant", label: "Resonant", description: "Deep, spacious" },
+  { id: "aria", label: "Aria", description: "Calm, gentle female" },
+  { id: "james", label: "James", description: "Grounded, steady male" },
+  { id: "luna", label: "Luna", description: "Soft, intimate tone" },
+  { id: "kai", label: "Kai", description: "Deep, spacious" },
 ];
 
 const ambients = [
@@ -123,10 +123,10 @@ const protocols = [
 ];
 
 const samples = [
-  { id: "sleep", label: "Deep Sleep", duration: "0:30", protocol: "CBT-I + NSDR", src: "/samples/sleep.mp3", prompt: "I can't fall asleep, my mind keeps racing with tomorrow's tasks", description: "A 20-min sleep onset session blending cognitive restructuring with yoga nidra body scan. Notice how pauses lengthen as the session progresses.", voice: "Serene", ambient: "Soft Drift" },
-  { id: "focus", label: "Sharp Focus", duration: "0:25", protocol: "MBSR", src: "/samples/focus.mp3", prompt: "Morning focus session before a big presentation", description: "10-min attention anchor using breath counting and open monitoring. The pacing adapts to build sustained concentration.", voice: "Warm", ambient: "Flow State" },
-  { id: "stress", label: "Stress Relief", duration: "0:30", protocol: "PMR + ACT", src: "/samples/stress.mp3", prompt: "I'm overwhelmed and need to calm down right now", description: "15-min progressive muscle release paired with acceptance exercises. Each muscle group gets precise tension-release timing.", voice: "Whisper", ambient: "Safe Harbor" },
-  { id: "anxiety", label: "Ease Anxiety", duration: "0:20", protocol: "HRV-BF", src: "/samples/anxiety.mp3", prompt: "Help me breathe through this anxiety before my flight", description: "8-min resonance breathing at 5.5 breaths/min with real-time pace guidance. Inhale and exhale windows are precision-timed.", voice: "Resonant", ambient: "Still Water" },
+  { id: "sleep", label: "Deep Sleep", duration: "0:30", protocol: "CBT-I + NSDR", src: "/samples/sleep.mp3", prompt: "I can't fall asleep, my mind keeps racing with tomorrow's tasks", description: "A 20-min sleep onset session blending cognitive restructuring with yoga nidra body scan. Notice how pauses lengthen as the session progresses.", voice: "Aria", ambient: "Soft Drift" },
+  { id: "focus", label: "Sharp Focus", duration: "0:25", protocol: "MBSR", src: "/samples/focus.mp3", prompt: "Morning focus session before a big presentation", description: "10-min attention anchor using breath counting and open monitoring. The pacing adapts to build sustained concentration.", voice: "James", ambient: "Flow State" },
+  { id: "stress", label: "Stress Relief", duration: "0:30", protocol: "PMR + ACT", src: "/samples/stress.mp3", prompt: "I'm overwhelmed and need to calm down right now", description: "15-min progressive muscle release paired with acceptance exercises. Each muscle group gets precise tension-release timing.", voice: "Luna", ambient: "Safe Harbor" },
+  { id: "anxiety", label: "Ease Anxiety", duration: "0:20", protocol: "HRV-BF", src: "/samples/anxiety.mp3", prompt: "Help me breathe through this anxiety before my flight", description: "8-min resonance breathing at 5.5 breaths/min with real-time pace guidance. Inhale and exhale windows are precision-timed.", voice: "Kai", ambient: "Still Water" },
 ];
 
 /* ─── Logo ─── */
@@ -167,7 +167,7 @@ function AmbientBackground() {
 
 function CinematicTransition() {
   const ref = useRef<HTMLDivElement>(null);
-  const inView = useInView(ref, { once: true, margin: "-30px" });
+  const inView = useInView(ref, { once: true, margin: "-40%" });
 
   return (
     <div
@@ -461,13 +461,17 @@ export default function HomePage() {
   const [stage, setStage] = useState<"input" | "options" | "generating" | "ready">("input");
   const [prompt, setPrompt] = useState("");
   const [duration, setDuration] = useState<number>(10);
-  const [voice, setVoice] = useState<string>("serene-f");
+  const [voice, setVoice] = useState<string>("aria");
+  const [voicePlaying, setVoicePlaying] = useState<string | null>(null);
   const [ambient, setAmbient] = useState<string>("none");
   const [isPlaying, setIsPlaying] = useState(false);
   const [soundscape, setSoundscape] = useState<string | null>(null);
   const [detectedIntent, setDetectedIntent] = useState<string>("default");
   const [playing, setPlaying] = useState<string | null>(null);
   const [sampleProgress, setSampleProgress] = useState<Record<string, number>>({});
+  const [sampleSound, setSampleSound] = useState<Record<string, string>>(
+    Object.fromEntries(samples.map((s) => [s.id, s.ambient]))
+  );
   const sampleIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const infoRef = useRef<HTMLDivElement>(null);
 
@@ -720,6 +724,17 @@ export default function HomePage() {
                 transition={{ duration: 0.4 }}
                 className="w-full max-w-xl mx-auto"
               >
+                {/* Back button — top left */}
+                <motion.button
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  onClick={() => { setStage("input"); setPrompt(""); }}
+                  className="flex items-center gap-1 text-sm text-[var(--color-sand-500)] hover:text-[var(--color-sand-900)] transition-colors cursor-pointer mb-6"
+                  style={{ fontFamily: "var(--font-body)" }}
+                >
+                  <ChevronLeft className="w-4 h-4" />Back
+                </motion.button>
+
                 <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="mb-10 text-center">
                   <p className="text-sm text-[var(--color-sand-500)] mb-2" style={{ fontFamily: "var(--font-body)" }}>Your meditation</p>
                   <p className="text-lg text-[var(--color-sand-900)] max-w-md mx-auto" style={{ fontFamily: "var(--font-display)" }}>&ldquo;{prompt}&rdquo;</p>
@@ -738,69 +753,56 @@ export default function HomePage() {
                   <p className="text-xs uppercase tracking-widest text-[var(--color-sand-500)] mb-3 font-medium" style={{ fontFamily: "var(--font-body)" }}>Voice</p>
                   <div className="grid grid-cols-2 gap-2">
                     {voices.map((v) => (
-                      <button key={v.id} onClick={() => setVoice(v.id)} className={`flex flex-col items-start p-3.5 rounded-xl transition-all cursor-pointer ${voice === v.id ? "bg-[var(--color-sand-900)] text-[var(--color-sand-50)] shadow-sm" : "bg-white/60 text-[var(--color-sand-900)] hover:bg-white"}`}>
-                        <span className="text-sm font-medium" style={{ fontFamily: "var(--font-body)" }}>{v.label}</span>
-                        <span className={`text-xs mt-0.5 ${voice === v.id ? "opacity-60" : "text-[var(--color-sand-500)]"}`} style={{ fontFamily: "var(--font-body)" }}>{v.description}</span>
+                      <button key={v.id} onClick={() => setVoice(v.id)} className={`flex items-center gap-3 p-3.5 rounded-xl transition-all cursor-pointer text-left ${voice === v.id ? "bg-[var(--color-sand-900)] text-[var(--color-sand-50)] shadow-sm" : "bg-white/60 text-[var(--color-sand-900)] hover:bg-white"}`}>
+                        <div className="flex-1 min-w-0">
+                          <span className="text-sm font-medium block" style={{ fontFamily: "var(--font-body)" }}>{v.label}</span>
+                          <span className={`text-xs mt-0.5 block ${voice === v.id ? "opacity-60" : "text-[var(--color-sand-500)]"}`} style={{ fontFamily: "var(--font-body)" }}>{v.description}</span>
+                        </div>
+                        <div
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setVoice(v.id);
+                            setVoicePlaying(voicePlaying === v.id ? null : v.id);
+                            // TODO: play actual voice sample audio
+                            if (voicePlaying !== v.id) {
+                              setTimeout(() => setVoicePlaying(null), 3000);
+                            }
+                          }}
+                          className={`shrink-0 w-8 h-8 rounded-full flex items-center justify-center transition-all ${voice === v.id ? "bg-white/20 text-white" : "bg-[var(--color-sand-100)] text-[var(--color-sand-500)] hover:bg-[var(--color-sand-200)]"}`}
+                        >
+                          {voicePlaying === v.id ? <Pause className="w-3 h-3" /> : <Play className="w-3 h-3 ml-0.5" />}
+                        </div>
                       </button>
                     ))}
                   </div>
                 </motion.div>
 
                 <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="mb-10">
-                  <div className="flex items-center gap-2 mb-3">
-                    <p className="text-xs uppercase tracking-widest text-[var(--color-sand-500)] font-medium" style={{ fontFamily: "var(--font-body)" }}>Soundscape</p>
-                    <span className="px-2 py-0.5 rounded-full bg-[var(--color-sage-light)] text-[var(--color-sage)] text-[10px] font-medium" style={{ fontFamily: "var(--font-body)" }}>
-                      Auto-selected for your session
-                    </span>
-                  </div>
-                  <div className="space-y-2">
-                    {(soundscapePresets[detectedIntent] || soundscapePresets.default).map((preset) => {
-                      const isSelected = soundscape === preset.label;
-                      return (
-                        <button
-                          key={preset.label}
-                          onClick={() => setSoundscape(preset.label)}
-                          className={`w-full flex items-start gap-4 p-4 rounded-xl transition-all cursor-pointer text-left ${isSelected ? "bg-[var(--color-sand-900)] text-[var(--color-sand-50)] shadow-sm" : "bg-white/60 text-[var(--color-sand-900)] hover:bg-white"}`}
-                        >
-                          <div
-                            className="w-2 h-2 rounded-full mt-1.5 shrink-0"
-                            style={{ background: isSelected ? "var(--color-sand-50)" : preset.color }}
-                          />
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 mb-0.5">
-                              <span className="text-sm font-medium" style={{ fontFamily: "var(--font-body)" }}>{preset.label}</span>
-                              <span className={`px-1.5 py-0.5 rounded text-[10px] font-mono ${isSelected ? "bg-white/15 text-white/60" : "bg-[var(--color-sand-100)] text-[var(--color-sand-500)]"}`}>
-                                {preset.protocol}
-                              </span>
-                            </div>
-                            <p className={`text-xs mb-1.5 ${isSelected ? "opacity-60" : "text-[var(--color-sand-500)]"}`} style={{ fontFamily: "var(--font-body)" }}>
-                              {preset.description}
-                            </p>
-                            <div className="flex flex-wrap gap-1">
-                              {preset.layers.map((layer) => (
-                                <span
-                                  key={layer}
-                                  className={`px-1.5 py-0.5 rounded text-[10px] ${isSelected ? "bg-white/10 text-white/50" : "bg-[var(--color-sand-50)] text-[var(--color-sand-400)]"}`}
-                                  style={{ fontFamily: "var(--font-body)" }}
-                                >
-                                  {layer}
-                                </span>
-                              ))}
-                            </div>
-                          </div>
-                        </button>
-                      );
-                    })}
+                  <div className="flex items-center gap-3 p-4 rounded-xl bg-[var(--color-sage-light)]/40 border border-[var(--color-sage)]/10">
+                    <div className="w-8 h-8 rounded-full bg-[var(--color-sage)]/10 flex items-center justify-center shrink-0">
+                      <Headphones className="w-4 h-4 text-[var(--color-sage)]" />
+                    </div>
+                    <div>
+                      <p className="text-sm text-[var(--color-sand-900)] font-medium" style={{ fontFamily: "var(--font-body)" }}>Soundscape options available after generation</p>
+                      <p className="text-xs text-[var(--color-sand-500)]" style={{ fontFamily: "var(--font-body)" }}>We&apos;ll suggest ambient layers matched to your session</p>
+                    </div>
                   </div>
                 </motion.div>
 
-                <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }} className="flex items-center justify-between">
-                  <button onClick={() => { setStage("input"); setPrompt(""); }} className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-[var(--color-sand-600)] hover:bg-white/60 transition-all text-sm cursor-pointer" style={{ fontFamily: "var(--font-body)" }}>
-                    <ChevronLeft className="w-4 h-4" />Back
-                  </button>
-                  <motion.button onClick={handleGenerate} className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-[var(--color-sand-900)] text-[var(--color-sand-50)] hover:bg-[var(--color-sand-800)] transition-all text-sm shadow-sm cursor-pointer" style={{ fontFamily: "var(--font-body)" }} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                    <Sparkles className="w-4 h-4" />Generate Meditation
-                  </motion.button>
+                <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }} className="flex justify-center">
+                  <div className="relative rounded-2xl group">
+                    <div className="absolute -inset-[2px] rounded-2xl bg-[length:300%_300%] animate-[border-glow_4s_ease_infinite] opacity-80 group-hover:opacity-100 transition-opacity duration-300 blur-[0.5px]" style={{ background: "linear-gradient(135deg, var(--color-sage), var(--color-ocean), var(--color-dusk), var(--color-ember), var(--color-sage))", backgroundSize: "300% 300%" }} />
+                    <motion.button
+                      onClick={handleGenerate}
+                      className="relative flex items-center justify-center gap-3 px-12 py-4 rounded-2xl bg-[var(--color-sand-900)] text-[var(--color-sand-50)] hover:bg-[var(--color-sand-800)] transition-all text-base shadow-lg cursor-pointer"
+                      style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.97 }}
+                    >
+                      <Sparkles className="w-5 h-5" />
+                      Generate Meditation
+                    </motion.button>
+                  </div>
                 </motion.div>
               </motion.div>
             )}
@@ -891,10 +893,11 @@ export default function HomePage() {
         )}
       </section>
 
+      {stage === "input" && (<>
       {/* ════════════════════════════════════════════
           SECTION 0 — AUDIO SAMPLES
          ════════════════════════════════════════════ */}
-      <section ref={infoRef} className="relative min-h-screen py-24 px-6 flex flex-col justify-center" style={{ background: "var(--color-sand-900)" }}>
+      <section ref={infoRef} className="relative min-h-screen pt-16 pb-24 px-6 flex flex-col justify-start" style={{ background: "var(--color-sand-900)" }}>
         <div className="max-w-6xl mx-auto w-full">
           <FadeIn className="text-center mb-14">
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 text-white/60 text-xs mb-5" style={{ fontFamily: "var(--font-body)" }}>
@@ -937,7 +940,7 @@ export default function HomePage() {
                       </div>
 
                       {/* Labeled fields */}
-                      <div className="space-y-2 mb-3" style={{ fontFamily: "var(--font-body)" }}>
+                      <div className="space-y-2.5 mb-3" style={{ fontFamily: "var(--font-body)" }}>
                         <div className="flex items-baseline gap-2">
                           <span className="text-[10px] uppercase tracking-wider text-white/25 w-14 shrink-0">Prompt</span>
                           <span className="text-xs text-white/50 italic">&ldquo;{s.prompt}&rdquo;</span>
@@ -946,37 +949,29 @@ export default function HomePage() {
                           <span className="text-[10px] uppercase tracking-wider text-white/25 w-14 shrink-0">Voice</span>
                           <span className="text-xs text-white/50">{s.voice}</span>
                         </div>
-                        <div className="flex items-baseline gap-2">
-                          <span className="text-[10px] uppercase tracking-wider text-white/25 w-14 shrink-0">Sound</span>
-                          <span className="text-xs text-white/50">{s.ambient}</span>
+                        <div className="flex items-start gap-2">
+                          <span className="text-[10px] uppercase tracking-wider text-white/25 w-20 shrink-0 mt-1">Change sound</span>
+                          <div className="flex flex-wrap gap-1">
+                            {(soundscapePresets[s.id] || soundscapePresets.default).map((preset) => {
+                              const isSelected = sampleSound[s.id] === preset.label;
+                              return (
+                                <button
+                                  key={preset.label}
+                                  onClick={() => setSampleSound((prev) => ({ ...prev, [s.id]: preset.label }))}
+                                  className={`px-2 py-0.5 rounded-full text-[10px] transition-all cursor-pointer ${isSelected ? "bg-white/20 text-white/90" : "bg-white/[0.04] text-white/35 hover:bg-white/10 hover:text-white/60"}`}
+                                >
+                                  {preset.label}
+                                </button>
+                              );
+                            })}
+                          </div>
                         </div>
                         <div className="flex items-baseline gap-2">
-                          <span className="text-[10px] uppercase tracking-wider text-white/25 w-14 shrink-0">Protocol</span>
+                          <span className="text-[10px] uppercase tracking-wider text-white/25 shrink-0">Protocol (Advanced)</span>
                           <span className="text-xs text-white/50">{s.protocol}</span>
                         </div>
                       </div>
 
-                      {/* Waveform + duration */}
-                      <div className="flex items-center gap-2">
-                        <div className="flex items-end gap-[1.5px] h-5 flex-1">
-                          {Array.from({ length: 40 }).map((_, i) => {
-                            const h = 15 + Math.sin(i * 0.5 + idx * 2) * 25 + Math.cos(i * 0.8) * 18;
-                            return (
-                              <motion.div
-                                key={i}
-                                className="flex-1 rounded-full min-w-[1.5px]"
-                                style={{
-                                  height: `${h}%`,
-                                  background: isActive && (pct * 40) > i ? "rgba(255,255,255,0.45)" : "rgba(255,255,255,0.1)",
-                                }}
-                                animate={isActive ? { height: [`${h}%`, `${15 + Math.random() * 55}%`, `${h}%`] } : {}}
-                                transition={isActive ? { duration: 0.5 + Math.random() * 0.4, repeat: Infinity, ease: "easeInOut" } : {}}
-                              />
-                            );
-                          })}
-                        </div>
-                        <span className="text-[10px] font-mono text-white/25 shrink-0">{s.duration}</span>
-                      </div>
                     </div>
                   </div>
                 </FadeIn>
@@ -984,6 +979,13 @@ export default function HomePage() {
             })}
           </div>
         </div>
+
+        <motion.div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1 }}>
+          <span className="text-[10px] uppercase tracking-[0.2em] text-white/25" style={{ fontFamily: "var(--font-body)" }}>Scroll</span>
+          <motion.div animate={{ y: [0, 6, 0] }} transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}>
+            <ChevronDown className="w-5 h-5 text-white/30" />
+          </motion.div>
+        </motion.div>
       </section>
 
       {/* ════════════════════════════════════════════
@@ -1269,6 +1271,7 @@ export default function HomePage() {
           </p>
         </div>
       </footer>
+      </>)}
     </div>
   );
 }
