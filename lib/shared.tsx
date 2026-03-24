@@ -1,13 +1,14 @@
 "use client";
 
-import { useRef } from "react";
-import { motion, useInView } from "motion/react";
+import { useRef, useState, useEffect } from "react";
+import { motion, useInView, AnimatePresence } from "motion/react";
 import {
   CloudRain,
   Waves,
   TreePine,
   Wind,
   Volume2,
+  Sparkles,
 } from "lucide-react";
 import svgPaths from "@/lib/svg-paths";
 
@@ -175,50 +176,119 @@ export function FadeIn({ children, className = "", delay = 0 }: { children: Reac
 
 /* ─── Shared Header ─── */
 
-export function Header({ showNavLinks = false, onScrollToInfo, onScrollToHow }: { showNavLinks?: boolean; onScrollToInfo?: () => void; onScrollToHow?: () => void }) {
+export function Header({ showNavLinks = false, onScrollToInfo, onScrollToHow, onGenerate }: { showNavLinks?: boolean; onScrollToInfo?: () => void; onScrollToHow?: () => void; onGenerate?: () => void }) {
+  const [showBlob, setShowBlob] = useState(false);
+  const lastScrollY = useRef(0);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const y = window.scrollY;
+      const goingUp = y < lastScrollY.current;
+      lastScrollY.current = y;
+
+      if (y <= 80) {
+        setShowBlob(false);
+      } else {
+        setShowBlob(goingUp);
+      }
+    };
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
   return (
-    <header className="relative z-50 px-8 py-5">
-      <div className="max-w-7xl mx-auto flex items-center justify-between">
-        <a href="/" className="flex items-center gap-2 text-[var(--color-sand-900)] cursor-pointer">
-          <Logo />
-          <span className="text-lg tracking-tight" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>
-            MindFlow
-          </span>
-        </a>
-        <div className="flex items-center gap-5">
-          {showNavLinks && (
-            <>
-              <button
-                onClick={onScrollToInfo}
-                className="text-sm text-[var(--color-sand-500)] hover:text-[var(--color-sand-900)] transition-colors cursor-pointer"
-                style={{ fontFamily: "var(--font-body)" }}
-              >
-                Listen to examples
-              </button>
-              <button
-                onClick={onScrollToHow}
-                className="text-sm text-[var(--color-sand-500)] hover:text-[var(--color-sand-900)] transition-colors cursor-pointer"
-                style={{ fontFamily: "var(--font-body)" }}
-              >
-                How it works
-              </button>
-            </>
-          )}
-          <a
-            href="/login"
-            className="px-4 py-2 rounded-xl bg-[var(--color-sand-900)] hover:bg-[var(--color-sand-800)] transition-colors text-sm cursor-pointer"
-            style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}
-          >
-            <span className="text-[var(--color-sand-50)]">Sign in / </span>
-            <span
-              className="bg-clip-text text-transparent bg-[length:300%_300%] animate-[border-glow_4s_ease_infinite]"
-              style={{ backgroundImage: "linear-gradient(135deg, var(--color-sage), var(--color-ocean), var(--color-dusk), var(--color-ember), var(--color-sage))", backgroundSize: "300% 300%" }}
-            >
-              Kilt Studio
+    <>
+      {/* Default header */}
+      <header className="relative z-50 px-8 py-5">
+        <div className="max-w-7xl mx-auto flex items-center justify-between">
+          <a href="/" className="flex items-center gap-2 text-[var(--color-sand-900)] cursor-pointer">
+            <Logo />
+            <span className="text-lg tracking-tight" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>
+              MindFlow
             </span>
           </a>
+          <div className="flex items-center gap-5">
+            {showNavLinks && (
+              <>
+                <button
+                  onClick={onScrollToInfo}
+                  className="text-sm text-[var(--color-sand-500)] hover:text-[var(--color-sand-900)] transition-colors cursor-pointer"
+                  style={{ fontFamily: "var(--font-body)" }}
+                >
+                  Listen to examples
+                </button>
+                <button
+                  onClick={onScrollToHow}
+                  className="text-sm text-[var(--color-sand-500)] hover:text-[var(--color-sand-900)] transition-colors cursor-pointer"
+                  style={{ fontFamily: "var(--font-body)" }}
+                >
+                  How it works
+                </button>
+              </>
+            )}
+            <a
+              href="/login"
+              className="px-4 py-2 rounded-xl bg-[var(--color-sand-900)] hover:bg-[var(--color-sand-800)] transition-colors text-sm cursor-pointer"
+              style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}
+            >
+              <span className="text-[var(--color-sand-50)]">Sign in / </span>
+              <span
+                className="bg-clip-text text-transparent bg-[length:300%_300%] animate-[border-glow_4s_ease_infinite]"
+                style={{ backgroundImage: "linear-gradient(135deg, var(--color-sage), var(--color-ocean), var(--color-dusk), var(--color-ember), var(--color-sage))", backgroundSize: "300% 300%" }}
+              >
+                Kilt Studio
+              </span>
+            </a>
+          </div>
         </div>
-      </div>
-    </header>
+      </header>
+
+      {/* Floating blob nav — hides while scrolling, reappears when you stop */}
+      <AnimatePresence>
+        {showBlob && (
+          <motion.div
+            initial={{ y: -30, opacity: 0, scale: 0.9 }}
+            animate={{ y: 0, opacity: 1, scale: 1 }}
+            exit={{ y: -20, opacity: 0, scale: 0.95 }}
+            transition={{ type: "spring", stiffness: 400, damping: 28, mass: 0.8 }}
+            className="fixed top-4 left-1/2 -translate-x-1/2 z-[100]"
+          >
+            <div className="flex items-center gap-3 px-3 py-2 rounded-full bg-[var(--color-sand-900)]/95 backdrop-blur-md shadow-lg border border-white/[0.08]">
+              <a href="/" className="flex items-center gap-2 text-[var(--color-sand-50)] pl-1 cursor-pointer">
+                <Logo />
+                <span className="text-sm tracking-tight" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>
+                  MindFlow
+                </span>
+              </a>
+
+              <div className="w-[1px] h-5 bg-white/10" />
+
+              <button
+                onClick={onGenerate || (() => window.scrollTo({ top: 0, behavior: "smooth" }))}
+                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white/10 hover:bg-white/15 text-[var(--color-sand-50)] text-sm transition-colors cursor-pointer"
+                style={{ fontFamily: "var(--font-body)" }}
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                Generate
+              </button>
+
+              <a
+                href="/login"
+                className="flex items-center gap-0 px-3.5 py-1.5 rounded-full bg-white/10 hover:bg-white/15 text-sm transition-colors cursor-pointer"
+                style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}
+              >
+                <span className="text-[var(--color-sand-50)]">Sign in /&nbsp;</span>
+                <span
+                  className="bg-clip-text text-transparent bg-[length:300%_300%] animate-[border-glow_4s_ease_infinite]"
+                  style={{ backgroundImage: "linear-gradient(135deg, var(--color-sage), var(--color-ocean), var(--color-dusk), var(--color-ember), var(--color-sage))", backgroundSize: "300% 300%" }}
+                >
+                  Kilt Studio
+                </span>
+              </a>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>
   );
 }

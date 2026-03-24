@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "motion/react";
 import {
   LayoutGrid,
@@ -29,6 +30,7 @@ import {
   PenLine,
   Headphones,
   ChevronLeft,
+  Info,
 } from "lucide-react";
 import svgPaths from "@/lib/svg-paths";
 import { suggestions, voices as sharedVoices, durations as sharedDurations, detectIntent } from "@/lib/shared";
@@ -78,33 +80,62 @@ const navItems = [
   { id: "settings" as const, label: "Settings", icon: Settings },
 ];
 
-type NavId = (typeof navItems)[number]["id"];
+type NavId = (typeof navItems)[number]["id"] | "generate";
 
 type ScriptBlock = {
   id: string;
   type: "voice" | "pause" | "breath";
   text: string;
-  pauseLength?: "short" | "long";
+  pauseDuration?: number; // seconds — under 3s is "short", 3s+ is "long"
 };
+
+function deriveSessionName(prompt: string): string {
+  const lower = prompt.toLowerCase();
+  if (/sleep|insomnia|bed|night|dream|tired/i.test(lower)) return "Deep Sleep Session";
+  if (/focus|concentrat|work|study|morning|productivity/i.test(lower)) return "Focus & Clarity";
+  if (/stress|anxi|worry|overwhelm|calm|relax|tension/i.test(lower)) return "Calm & Release";
+  if (/breath/i.test(lower)) return "Breathing Reset";
+  if (/body scan|muscle/i.test(lower)) return "Body Scan";
+  // Fallback: capitalize first few words
+  const words = prompt.split(/\s+/).slice(0, 4).join(" ");
+  return words.length > 30 ? words.slice(0, 30) + "…" : words;
+}
+
+function estimateDuration(script: ScriptBlock[]): { minutes: number; seconds: number } {
+  let totalSeconds = 0;
+  for (const block of script) {
+    if (block.type === "voice") {
+      // ~150 words per minute, avg 5 chars per word
+      totalSeconds += Math.ceil((block.text.length / 5) / 150 * 60);
+    } else if (block.type === "pause") {
+      totalSeconds += block.pauseDuration || 2;
+    } else if (block.type === "breath") {
+      // Extract seconds from text like "Inhale — 4 seconds"
+      const match = block.text.match(/(\d+)/);
+      totalSeconds += match ? parseInt(match[1]) : 4;
+    }
+  }
+  return { minutes: Math.floor(totalSeconds / 60), seconds: totalSeconds % 60 };
+}
 
 const generateScript = (prompt: string): ScriptBlock[] => [
   { id: "1", type: "voice", text: "Find a comfortable position. Let your body settle into wherever you are right now." },
-  { id: "2", type: "pause", text: "Settle in", pauseLength: "short" },
+  { id: "2", type: "pause", text: "Settle in", pauseDuration: 2 },
   { id: "3", type: "voice", text: "Gently close your eyes. Take a moment to notice how you\u2019re feeling without judgment." },
-  { id: "4", type: "pause", text: "Awareness", pauseLength: "long" },
+  { id: "4", type: "pause", text: "Awareness", pauseDuration: 5 },
   { id: "5", type: "voice", text: "Now take a slow, deep breath in through your nose\u2026" },
   { id: "6", type: "breath", text: "Inhale \u2014 4 seconds" },
   { id: "7", type: "voice", text: "And release it slowly through your mouth. Let everything go." },
   { id: "8", type: "breath", text: "Exhale \u2014 6 seconds" },
   { id: "9", type: "voice", text: "Notice any tension in your shoulders. With each exhale, let them drop a little lower." },
-  { id: "10", type: "pause", text: "Body responds", pauseLength: "long" },
+  { id: "10", type: "pause", text: "Body responds", pauseDuration: 5 },
   { id: "11", type: "voice", text: "You\u2019re doing great. There\u2019s nowhere else you need to be right now." },
-  { id: "12", type: "pause", text: "Rest", pauseLength: "short" },
+  { id: "12", type: "pause", text: "Rest", pauseDuration: 2 },
   { id: "13", type: "voice", text: "Let\u2019s continue with another deep breath. In through the nose\u2026" },
   { id: "14", type: "breath", text: "Inhale \u2014 4 seconds" },
   { id: "15", type: "voice", text: "And out through the mouth. Feel your body becoming heavier, more relaxed." },
   { id: "16", type: "breath", text: "Exhale \u2014 6 seconds" },
-  { id: "17", type: "pause", text: "Integration", pauseLength: "long" },
+  { id: "17", type: "pause", text: "Integration", pauseDuration: 4 },
   { id: "18", type: "voice", text: "When you\u2019re ready, slowly begin to bring your awareness back. Take your time." },
 ];
 
@@ -183,11 +214,21 @@ function StudioSession({ prompt, voice, duration, sound, onBack }: {
   const [showVoiceDropdown, setShowVoiceDropdown] = useState(false);
   const [showSoundDropdown, setShowSoundDropdown] = useState(false);
 
+  const [showDurationInfo, setShowDurationInfo] = useState(false);
+  const sessionName = deriveSessionName(prompt);
+  const estimated = estimateDuration(script);
+
   const selectedVoice = voices.find(v => v.id === sessionVoice) || voices[0];
 
-  const togglePauseLength = useCallback((id: string) => {
+  const setPauseDuration = useCallback((id: string, seconds: number) => {
     setScript(prev => prev.map(b =>
-      b.id === id ? { ...b, pauseLength: b.pauseLength === "short" ? "long" : "short" } : b
+      b.id === id ? { ...b, pauseDuration: Math.max(1, seconds) } : b
+    ));
+  }, []);
+
+  const togglePauseType = useCallback((id: string) => {
+    setScript(prev => prev.map(b =>
+      b.id === id ? { ...b, pauseDuration: (b.pauseDuration || 2) < 3 ? 4 : 2 } : b
     ));
   }, []);
 
@@ -196,31 +237,26 @@ function StudioSession({ prompt, voice, duration, sound, onBack }: {
   }, []);
 
   return (
-    <div className="flex h-[calc(100vh-65px)]" style={{ background: "var(--color-sand-100)" }}>
+    <div className="flex flex-1 min-h-0" style={{ background: "#ffffff" }}>
       {/* ─── Script Editor (left) ─── */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Script toolbar */}
-        <div className="flex items-center justify-between px-6 py-3 border-b border-[var(--color-sand-200)]" style={{ background: "var(--color-sand-50)" }}>
-          <button onClick={onBack} className="flex items-center gap-1.5 text-xs text-[var(--color-sand-500)] hover:text-[var(--color-sand-900)] transition-colors cursor-pointer" style={{ fontFamily: "var(--font-body)" }}>
+        <div className="relative flex items-center justify-between px-6 py-3 border-b border-[#e4e4e7]" style={{ background: "#fafafa" }}>
+          <button onClick={onBack} className="flex items-center gap-1.5 text-xs text-[#71717a] hover:text-[#18181b] transition-colors cursor-pointer" style={{ fontFamily: "var(--font-body)" }}>
             <ArrowLeft className="w-3.5 h-3.5" />
             Back
           </button>
+          <h2 className="text-sm text-[#18181b] absolute left-1/2 -translate-x-1/2" style={{ fontFamily: "var(--font-display)", fontWeight: 500 }}>{sessionName}</h2>
           <div className="flex items-center gap-4">
-            <span className="text-[10px] text-[var(--color-sand-400)]" style={{ fontFamily: "var(--font-body)" }}>
+            <span className="text-[10px] text-[#a1a1aa]" style={{ fontFamily: "var(--font-body)" }}>
               {script.filter(b => b.type === "voice").length} segments · {script.filter(b => b.type === "pause").length} pauses · {script.filter(b => b.type === "breath").length} breaths
             </span>
           </div>
         </div>
 
-        {/* Prompt display */}
-        <div className="px-6 py-4 border-b border-[var(--color-sand-200)]/60">
-          <p className="text-[10px] uppercase tracking-wider text-[var(--color-sand-400)] mb-1" style={{ fontFamily: "var(--font-body)" }}>Prompt</p>
-          <p className="text-sm text-[var(--color-sand-700)] italic" style={{ fontFamily: "var(--font-display)" }}>&ldquo;{prompt}&rdquo;</p>
-        </div>
-
         {/* Script blocks */}
-        <div className="flex-1 overflow-y-auto px-6 py-4 space-y-1">
-          {script.map((block) => {
+        <div className="flex-1 overflow-y-auto px-6 py-4 space-y-0.5 studio-scroll">
+          {script.map((block, index) => {
             const isSelected = selectedBlock === block.id;
 
             if (block.type === "pause" || block.type === "breath") {
@@ -228,28 +264,42 @@ function StudioSession({ prompt, voice, duration, sound, onBack }: {
                 <div key={block.id}
                   onClick={() => setSelectedBlock(isSelected ? null : block.id)}
                   className={`flex items-center gap-3 px-4 py-2.5 rounded-lg cursor-pointer transition-all ${
-                    isSelected ? "bg-white shadow-sm border border-[var(--color-sand-200)]" : "hover:bg-white/60"
+                    isSelected ? "bg-white shadow-sm border border-[#e4e4e7]" : "hover:bg-white/80"
                   }`}>
+                  <span className="text-[10px] text-[#a1a1aa] w-5 text-right tabular-nums shrink-0" style={{ fontFamily: "var(--font-body)" }}>{index + 1}</span>
                   <div className="w-5 h-5 rounded-full flex items-center justify-center shrink-0"
-                    style={{ background: block.type === "pause" ? "var(--color-dusk-light)" : "var(--color-ocean-light)" }}>
+                    style={{ background: block.type === "pause" ? "#f0ecf5" : "#e8f2f7" }}>
                     <div className="w-1.5 h-1.5 rounded-full"
-                      style={{ background: block.type === "pause" ? "var(--color-dusk)" : "var(--color-ocean)" }} />
+                      style={{ background: block.type === "pause" ? "#8b7ea6" : "#6d9ab5" }} />
                   </div>
-                  <span className="text-xs italic flex-1" style={{ fontFamily: "var(--font-body)", color: block.type === "pause" ? "var(--color-dusk)" : "var(--color-ocean)" }}>
+                  <span className="text-xs italic flex-1" style={{ fontFamily: "var(--font-body)", color: block.type === "pause" ? "#7c6f96" : "#5a8aa5" }}>
                     {block.type === "pause" ? `⏸ ${block.text}` : `🫁 ${block.text}`}
                   </span>
                   {block.type === "pause" && (
-                    <button
-                      onClick={(e) => { e.stopPropagation(); togglePauseLength(block.id); }}
-                      className="text-[10px] px-2.5 py-1 rounded-full border transition-all cursor-pointer"
-                      style={{
-                        fontFamily: "var(--font-body)",
-                        borderColor: block.pauseLength === "long" ? "var(--color-dusk)" : "var(--color-sand-300)",
-                        color: block.pauseLength === "long" ? "var(--color-dusk)" : "var(--color-sand-500)",
-                        background: block.pauseLength === "long" ? "var(--color-dusk-light)" : "transparent",
-                      }}>
-                      {block.pauseLength === "long" ? "Long pause" : "Short pause"}
-                    </button>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <button
+                        onClick={(e) => { e.stopPropagation(); togglePauseType(block.id); }}
+                        className="text-[10px] px-2.5 py-1 rounded-full border transition-all cursor-pointer"
+                        style={{
+                          fontFamily: "var(--font-body)",
+                          borderColor: (block.pauseDuration || 2) >= 3 ? "#8b7ea6" : "#d4d4d8",
+                          color: (block.pauseDuration || 2) >= 3 ? "#7c6f96" : "#71717a",
+                          background: (block.pauseDuration || 2) >= 3 ? "#f0ecf5" : "transparent",
+                        }}>
+                        {(block.pauseDuration || 2) >= 3 ? "Long" : "Short"}
+                      </button>
+                      <div className="flex items-center gap-0.5 bg-[#f4f4f5] rounded-md px-1 py-0.5">
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setPauseDuration(block.id, (block.pauseDuration || 2) - 1); }}
+                          className="w-5 h-5 rounded flex items-center justify-center text-[#a1a1aa] hover:text-[#18181b] hover:bg-white transition-all cursor-pointer text-xs"
+                        >−</button>
+                        <span className="text-[10px] text-[#52525b] w-5 text-center tabular-nums" style={{ fontFamily: "var(--font-body)" }}>{block.pauseDuration || 2}s</span>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setPauseDuration(block.id, (block.pauseDuration || 2) + 1); }}
+                          className="w-5 h-5 rounded flex items-center justify-center text-[#a1a1aa] hover:text-[#18181b] hover:bg-white transition-all cursor-pointer text-xs"
+                        >+</button>
+                      </div>
+                    </div>
                   )}
                 </div>
               );
@@ -259,24 +309,25 @@ function StudioSession({ prompt, voice, duration, sound, onBack }: {
               <div key={block.id}
                 onClick={() => setSelectedBlock(isSelected ? null : block.id)}
                 className={`group/block px-4 py-3 rounded-lg cursor-pointer transition-all ${
-                  isSelected ? "bg-white shadow-sm border border-[var(--color-sand-200)]" : "hover:bg-white/60"
+                  isSelected ? "bg-white shadow-sm border border-[#e4e4e7]" : "hover:bg-white/80"
                 }`}>
                 <div className="flex items-start gap-3">
+                  <span className="text-[10px] text-[#a1a1aa] w-5 text-right tabular-nums shrink-0 mt-1" style={{ fontFamily: "var(--font-body)" }}>{index + 1}</span>
                   <div className="w-5 h-5 rounded-full flex items-center justify-center shrink-0 mt-0.5"
-                    style={{ background: "var(--color-sage-light)" }}>
-                    <div className="w-1.5 h-1.5 rounded-full" style={{ background: "var(--color-sage)" }} />
+                    style={{ background: "#e8f0e9" }}>
+                    <div className="w-1.5 h-1.5 rounded-full" style={{ background: "#6b9a70" }} />
                   </div>
                   {isSelected ? (
                     <textarea
                       value={block.text}
                       onChange={(e) => updateBlockText(block.id, e.target.value)}
                       onClick={(e) => e.stopPropagation()}
-                      className="flex-1 text-sm text-[var(--color-sand-800)] bg-transparent outline-none resize-none leading-relaxed"
+                      className="flex-1 text-sm text-[#18181b] bg-transparent outline-none resize-none leading-relaxed"
                       style={{ fontFamily: "var(--font-body)" }}
                       rows={Math.max(2, Math.ceil(block.text.length / 70))}
                     />
                   ) : (
-                    <p className="flex-1 text-sm text-[var(--color-sand-700)] leading-relaxed" style={{ fontFamily: "var(--font-body)" }}>
+                    <p className="flex-1 text-sm text-[#3f3f46] leading-relaxed" style={{ fontFamily: "var(--font-body)" }}>
                       {block.text}
                     </p>
                   )}
@@ -287,14 +338,14 @@ function StudioSession({ prompt, voice, duration, sound, onBack }: {
         </div>
 
         {/* Bottom bar */}
-        <div className="flex items-center justify-between px-6 py-3 border-t border-[var(--color-sand-200)]" style={{ background: "var(--color-sand-50)" }}>
-          <div className="flex items-center gap-2">
-            <span className="text-[10px] text-[var(--color-sand-400)]" style={{ fontFamily: "var(--font-body)" }}>
+        <div className="flex items-center justify-between px-6 py-3 border-t border-[#e4e4e7]" style={{ background: "#fafafa" }}>
+          <div className="flex items-center gap-4">
+            <span className="text-[10px] text-[#a1a1aa]" style={{ fontFamily: "var(--font-body)" }}>
               3 credits remaining
             </span>
           </div>
-          <button className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-[var(--color-sand-900)] text-[var(--color-sand-50)] hover:bg-[var(--color-sand-800)] transition-colors text-sm cursor-pointer shadow-sm"
-            style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>
+          <button className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-[#18181b] text-white hover:bg-[#27272a] transition-colors text-sm cursor-pointer shadow-sm"
+            style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}>
             <Sparkles className="w-3.5 h-3.5" />
             Generate Audio
           </button>
@@ -302,43 +353,43 @@ function StudioSession({ prompt, voice, duration, sound, onBack }: {
       </div>
 
       {/* ─── Settings Panel (right) ─── */}
-      <div className="w-72 shrink-0 border-l border-[var(--color-sand-200)] flex flex-col overflow-y-auto" style={{ background: "var(--color-sand-50)" }}>
-        <div className="px-5 py-4 border-b border-[var(--color-sand-200)]">
-          <h3 className="text-sm text-[var(--color-sand-900)]" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>Settings</h3>
+      <div className="w-72 shrink-0 border-l border-[#e4e4e7] flex flex-col overflow-y-auto studio-scroll" style={{ background: "#fafafa" }}>
+        <div className="px-5 py-4 border-b border-[#e4e4e7]">
+          <h3 className="text-sm text-[#18181b]" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>Settings</h3>
         </div>
 
         <div className="px-5 py-4 space-y-6">
           {/* Voice */}
           <div>
-            <label className="text-[10px] uppercase tracking-wider text-[var(--color-sand-400)] mb-2.5 block" style={{ fontFamily: "var(--font-body)" }}>Voice</label>
+            <label className="text-[10px] uppercase tracking-wider text-[#71717a] mb-2.5 block" style={{ fontFamily: "var(--font-body)" }}>Voice</label>
             <div className="relative">
               <button
                 onClick={() => setShowVoiceDropdown(!showVoiceDropdown)}
-                className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg bg-white border border-[var(--color-sand-200)] hover:border-[var(--color-sand-300)] transition-colors cursor-pointer text-left">
+                className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg bg-white border border-[#e4e4e7] hover:border-[#d4d4d8] transition-colors cursor-pointer text-left">
                 <div className="flex items-center gap-2.5">
                   <div className="w-6 h-6 rounded-full flex items-center justify-center" style={{ background: selectedVoice.color + "20" }}>
                     <div className="w-2 h-2 rounded-full" style={{ background: selectedVoice.color }} />
                   </div>
                   <div>
-                    <p className="text-sm text-[var(--color-sand-900)]" style={{ fontFamily: "var(--font-body)" }}>{selectedVoice.name}</p>
-                    <p className="text-[10px] text-[var(--color-sand-400)]" style={{ fontFamily: "var(--font-body)" }}>{selectedVoice.desc}</p>
+                    <p className="text-sm text-[#18181b]" style={{ fontFamily: "var(--font-body)" }}>{selectedVoice.name}</p>
+                    <p className="text-[10px] text-[#71717a]" style={{ fontFamily: "var(--font-body)" }}>{selectedVoice.desc}</p>
                   </div>
                 </div>
-                <ChevronDown className="w-3.5 h-3.5 text-[var(--color-sand-400)]" />
+                <ChevronDown className="w-3.5 h-3.5 text-[#a1a1aa]" />
               </button>
               {showVoiceDropdown && (
-                <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-lg border border-[var(--color-sand-200)] shadow-lg z-20 overflow-hidden">
+                <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-lg border border-[#e4e4e7] shadow-lg z-20 overflow-hidden">
                   {voices.map(v => (
                     <button key={v.id} onClick={() => { setSessionVoice(v.id); setShowVoiceDropdown(false); }}
-                      className="w-full flex items-center gap-2.5 px-3 py-2.5 hover:bg-[var(--color-sand-50)] transition-colors cursor-pointer text-left">
+                      className="w-full flex items-center gap-2.5 px-3 py-2.5 hover:bg-[#f4f4f5] transition-colors cursor-pointer text-left">
                       <div className="w-6 h-6 rounded-full flex items-center justify-center" style={{ background: v.color + "20" }}>
                         <div className="w-2 h-2 rounded-full" style={{ background: v.color }} />
                       </div>
                       <div className="flex-1">
-                        <p className="text-sm text-[var(--color-sand-900)]" style={{ fontFamily: "var(--font-body)" }}>{v.name}</p>
-                        <p className="text-[10px] text-[var(--color-sand-400)]" style={{ fontFamily: "var(--font-body)" }}>{v.desc}</p>
+                        <p className="text-sm text-[#18181b]" style={{ fontFamily: "var(--font-body)" }}>{v.name}</p>
+                        <p className="text-[10px] text-[#71717a]" style={{ fontFamily: "var(--font-body)" }}>{v.desc}</p>
                       </div>
-                      {v.id === sessionVoice && <Check className="w-3.5 h-3.5 text-[var(--color-sage)]" />}
+                      {v.id === sessionVoice && <Check className="w-3.5 h-3.5 text-[#6b9a70]" />}
                     </button>
                   ))}
                 </div>
@@ -348,24 +399,24 @@ function StudioSession({ prompt, voice, duration, sound, onBack }: {
 
           {/* Sound */}
           <div>
-            <label className="text-[10px] uppercase tracking-wider text-[var(--color-sand-400)] mb-2.5 block" style={{ fontFamily: "var(--font-body)" }}>Ambient Sound</label>
+            <label className="text-[10px] uppercase tracking-wider text-[#71717a] mb-2.5 block" style={{ fontFamily: "var(--font-body)" }}>Ambient Sound</label>
             <div className="relative">
               <button
                 onClick={() => setShowSoundDropdown(!showSoundDropdown)}
-                className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg bg-white border border-[var(--color-sand-200)] hover:border-[var(--color-sand-300)] transition-colors cursor-pointer text-left">
+                className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg bg-white border border-[#e4e4e7] hover:border-[#d4d4d8] transition-colors cursor-pointer text-left">
                 <div className="flex items-center gap-2.5">
-                  <Music className="w-4 h-4 text-[var(--color-sand-400)]" />
-                  <span className="text-sm text-[var(--color-sand-900)]" style={{ fontFamily: "var(--font-body)" }}>{sessionSound}</span>
+                  <Music className="w-4 h-4 text-[#71717a]" />
+                  <span className="text-sm text-[#18181b]" style={{ fontFamily: "var(--font-body)" }}>{sessionSound}</span>
                 </div>
-                <ChevronDown className="w-3.5 h-3.5 text-[var(--color-sand-400)]" />
+                <ChevronDown className="w-3.5 h-3.5 text-[#a1a1aa]" />
               </button>
               {showSoundDropdown && (
-                <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-lg border border-[var(--color-sand-200)] shadow-lg z-20 overflow-hidden">
+                <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-lg border border-[#e4e4e7] shadow-lg z-20 overflow-hidden">
                   {soundPresets.map(s => (
                     <button key={s} onClick={() => { setSessionSound(s); setShowSoundDropdown(false); }}
-                      className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-[var(--color-sand-50)] transition-colors cursor-pointer text-left">
-                      <span className="text-sm text-[var(--color-sand-900)]" style={{ fontFamily: "var(--font-body)" }}>{s}</span>
-                      {s === sessionSound && <Check className="w-3.5 h-3.5 text-[var(--color-sage)]" />}
+                      className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-[#f4f4f5] transition-colors cursor-pointer text-left">
+                      <span className="text-sm text-[#18181b]" style={{ fontFamily: "var(--font-body)" }}>{s}</span>
+                      {s === sessionSound && <Check className="w-3.5 h-3.5 text-[#6b9a70]" />}
                     </button>
                   ))}
                 </div>
@@ -373,49 +424,45 @@ function StudioSession({ prompt, voice, duration, sound, onBack }: {
             </div>
           </div>
 
-          {/* Duration display */}
+          {/* Estimated duration */}
           <div>
-            <label className="text-[10px] uppercase tracking-wider text-[var(--color-sand-400)] mb-2.5 block" style={{ fontFamily: "var(--font-body)" }}>Duration</label>
-            <div className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg bg-white border border-[var(--color-sand-200)]">
-              <Timer className="w-4 h-4 text-[var(--color-sand-400)]" />
-              <span className="text-sm text-[var(--color-sand-900)]" style={{ fontFamily: "var(--font-body)" }}>{duration} min</span>
+            <div className="flex items-center gap-1.5 mb-2.5">
+              <label className="text-[10px] uppercase tracking-wider text-[#71717a]" style={{ fontFamily: "var(--font-body)" }}>Estimated Duration</label>
+              <div className="relative">
+                <button
+                  onClick={() => setShowDurationInfo(!showDurationInfo)}
+                  className="w-4 h-4 rounded-full flex items-center justify-center text-[#a1a1aa] hover:text-[#18181b] hover:bg-[#f4f4f5] transition-all cursor-pointer">
+                  <Info className="w-3 h-3" />
+                </button>
+                {showDurationInfo && (
+                  <div className="absolute left-1/2 -translate-x-1/2 top-full mt-1.5 w-52 p-3 rounded-lg bg-[#18181b] text-white shadow-xl z-30">
+                    <p className="text-[11px] leading-relaxed" style={{ fontFamily: "var(--font-body)" }}>
+                      Duration is calculated from script length, pause times, and breathing cues. Edit pauses or script text to adjust.
+                    </p>
+                    <div className="w-2 h-2 bg-[#18181b] rotate-45 absolute -top-1 left-1/2 -translate-x-1/2" />
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
-
-          {/* Pause controls */}
-          <div>
-            <label className="text-[10px] uppercase tracking-wider text-[var(--color-sand-400)] mb-2.5 block" style={{ fontFamily: "var(--font-body)" }}>All Pauses</label>
-            <div className="flex gap-2">
-              <button
-                onClick={() => setScript(prev => prev.map(b => b.type === "pause" ? { ...b, pauseLength: "short" } : b))}
-                className="flex-1 px-3 py-2 rounded-lg border text-xs transition-all cursor-pointer text-center"
-                style={{ fontFamily: "var(--font-body)", borderColor: "var(--color-sand-200)", color: "var(--color-sand-600)" }}>
-                All Short
-              </button>
-              <button
-                onClick={() => setScript(prev => prev.map(b => b.type === "pause" ? { ...b, pauseLength: "long" } : b))}
-                className="flex-1 px-3 py-2 rounded-lg border text-xs transition-all cursor-pointer text-center"
-                style={{ fontFamily: "var(--font-body)", borderColor: "var(--color-sand-200)", color: "var(--color-sand-600)" }}>
-                All Long
-              </button>
+            <div className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg bg-white border border-[#e4e4e7]">
+              <Timer className="w-4 h-4 text-[#71717a]" />
+              <span className="text-sm text-[#18181b] tabular-nums" style={{ fontFamily: "var(--font-body)" }}>~{estimated.minutes}m {estimated.seconds > 0 ? `${estimated.seconds}s` : ""}</span>
             </div>
           </div>
 
           {/* Legend */}
           <div>
-            <label className="text-[10px] uppercase tracking-wider text-[var(--color-sand-400)] mb-2.5 block" style={{ fontFamily: "var(--font-body)" }}>Legend</label>
-            <div className="space-y-2">
+            <label className="text-[10px] uppercase tracking-wider text-[#71717a] mb-2.5 block" style={{ fontFamily: "var(--font-body)" }}>Legend</label>
+            <div className="space-y-2.5">
               {[
-                { color: "var(--color-sage)", label: "Voice segment", desc: "Click to edit text" },
-                { color: "var(--color-dusk)", label: "Pause", desc: "Toggle short / long" },
-                { color: "var(--color-ocean)", label: "Breathing cue", desc: "Guided breath" },
+                { color: "#6b9a70", label: "Voice segment", desc: "Click to edit" },
+                { color: "#8b7ea6", label: "Pause", desc: "Adjust duration" },
+                { color: "#6d9ab5", label: "Breathing cue", desc: "Guided breath" },
               ].map(item => (
-                <div key={item.label} className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full" style={{ background: item.color, opacity: 0.5 }} />
-                  <div>
-                    <span className="text-[11px] text-[var(--color-sand-700)]" style={{ fontFamily: "var(--font-body)" }}>{item.label}</span>
-                    <span className="text-[10px] text-[var(--color-sand-400)] ml-1" style={{ fontFamily: "var(--font-body)" }}>— {item.desc}</span>
-                  </div>
+                <div key={item.label} className="flex items-center gap-2.5">
+                  <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: item.color }} />
+                  <span className="text-[11px] text-[#3f3f46]" style={{ fontFamily: "var(--font-body)" }}>{item.label}</span>
+                  <span className="text-[10px] text-[#a1a1aa]" style={{ fontFamily: "var(--font-body)" }}>— {item.desc}</span>
                 </div>
               ))}
             </div>
@@ -429,6 +476,7 @@ function StudioSession({ prompt, voice, duration, sound, onBack }: {
 /* ─── Main Studio Page ─── */
 
 export default function StudioPage() {
+  const router = useRouter();
   const [activeNav, setActiveNav] = useState<NavId>("sessions");
   const [searchQuery, setSearchQuery] = useState("");
   const [generatePrompt, setGeneratePrompt] = useState("");
@@ -437,6 +485,17 @@ export default function StudioPage() {
   // Generate flow: "input" → "choose" → "studio"
   const [genStep, setGenStep] = useState<"input" | "choose" | "studio">("input");
   const [genConfig, setGenConfig] = useState({ prompt: "", voice: "aria", duration: 10, sound: "Sanctuary" });
+
+  const handleQuickGenerate = useCallback(() => {
+    const intent = detectIntent(genConfig.prompt);
+    const params = new URLSearchParams({
+      prompt: genConfig.prompt,
+      voice: genConfig.voice,
+      duration: String(genConfig.duration),
+      intent,
+    });
+    router.push(`/session?${params.toString()}`);
+  }, [router, genConfig]);
 
   const handlePromptSubmit = (text: string) => {
     if (!text.trim()) return;
@@ -454,12 +513,12 @@ export default function StudioPage() {
     s.title.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  // Full-screen studio view — no sidebar chrome
+  // Studio view — sidebar stays, top header hidden
   if (activeNav === "generate" && genStep === "studio") {
     return (
-      <div className="min-h-screen flex" style={{ background: "var(--color-sand-50)" }}>
-        {/* Sidebar (slim) */}
-        <aside className="w-56 shrink-0 border-r border-[var(--color-sand-200)] bg-white flex flex-col" style={{ minHeight: "100vh" }}>
+      <div className="h-screen flex" style={{ background: "#ffffff" }}>
+        {/* Sidebar */}
+        <aside className="w-56 shrink-0 border-r border-[#e4e4e7] flex flex-col" style={{ background: "#f4f4f5" }}>
           <div className="px-5 pt-6 pb-5">
             <a href="/" className="flex items-center gap-2 text-[var(--color-sand-900)]">
               <Logo />
@@ -505,21 +564,16 @@ export default function StudioPage() {
           </div>
         </aside>
 
-        {/* Studio content */}
-        <main className="flex-1 min-h-screen flex flex-col">
-          <header className="sticky top-0 z-10 bg-[var(--color-sand-50)]/80 backdrop-blur-md border-b border-[var(--color-sand-200)] px-8 py-4">
-            <div className="flex items-center justify-between">
-              <h1 className="text-xl text-[var(--color-sand-900)]" style={{ fontFamily: "var(--font-display)" }}>Studio</h1>
-            </div>
-          </header>
+        {/* Studio content — no top header */}
+        <div className="flex-1 flex flex-col min-h-0">
           <StudioSession
             prompt={genConfig.prompt}
             voice={genConfig.voice}
             duration={genConfig.duration}
             sound={genConfig.sound}
-            onBack={() => setGenStep("configure")}
+            onBack={() => setGenStep("choose")}
           />
-        </main>
+        </div>
       </div>
     );
   }
@@ -779,7 +833,7 @@ export default function StudioPage() {
                   <span className="text-[10px] uppercase tracking-widest text-[var(--color-sand-400)]" style={{ fontFamily: "var(--font-body)" }}>or</span>
 
                   {/* Quick Generate — secondary */}
-                  <button onClick={() => { /* TODO: quick generate */ }}
+                  <button onClick={handleQuickGenerate}
                     className="w-full flex items-center justify-center gap-2.5 py-4 rounded-full text-sm text-[var(--color-sand-900)] bg-white border-2 border-[var(--color-sand-900)] hover:bg-[var(--color-sand-50)] transition-all cursor-pointer"
                     style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>
                     <Zap className="w-4 h-4" />

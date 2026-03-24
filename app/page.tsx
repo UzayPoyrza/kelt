@@ -186,7 +186,12 @@ export default function HomePage() {
   }, [router]);
 
   const scrollToInfo = () => {
-    infoRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (infoRef.current) {
+      // Section has pt-32 (128px) before heading. Blob nav clears ~76px from top.
+      // So: section_top + 128 (padding) - 76 (nav) = +52
+      const top = infoRef.current.getBoundingClientRect().top + window.scrollY + 52;
+      window.scrollTo({ top, behavior: "smooth" });
+    }
   };
 
   const handleSamplePlay = useCallback((id: string, durationStr: string) => {
@@ -389,8 +394,8 @@ export default function HomePage() {
       {/* ════════════════════════════════════════════
           SECTION 0 — AUDIO SAMPLES
          ════════════════════════════════════════════ */}
-      <section ref={infoRef} className="relative min-h-screen pt-10 pb-24 px-6 flex flex-col justify-start" style={{ background: "var(--color-sand-900)" }}>
-        <div className="max-w-6xl mx-auto w-full">
+      <section ref={infoRef} className="relative min-h-screen pb-24 px-6 scroll-mt-0" style={{ background: "var(--color-sand-900)" }}>
+        <div className="max-w-6xl mx-auto w-full pt-32">
           <FadeIn className="text-center mb-10">
             <h2 className="text-[2.5rem] md:text-[3.5rem] text-[var(--color-sand-50)] leading-tight mb-4">
               Don&apos;t take our word for it.<br />Listen.
