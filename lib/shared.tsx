@@ -206,10 +206,16 @@ export function Header({ showNavLinks = false, onScrollToInfo, onScrollToHow }: 
           )}
           <a
             href="/login"
-            className="px-4 py-2 rounded-xl bg-[var(--color-sand-900)] text-[var(--color-sand-50)] hover:bg-[var(--color-sand-800)] transition-colors text-sm cursor-pointer"
+            className="px-4 py-2 rounded-xl bg-[var(--color-sand-900)] hover:bg-[var(--color-sand-800)] transition-colors text-sm cursor-pointer"
             style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}
           >
-            Sign in / Kilt Studio
+            <span className="text-[var(--color-sand-50)]">Sign in / </span>
+            <span
+              className="bg-clip-text text-transparent bg-[length:300%_300%] animate-[border-glow_4s_ease_infinite]"
+              style={{ backgroundImage: "linear-gradient(135deg, var(--color-sage), var(--color-ocean), var(--color-dusk), var(--color-ember), var(--color-sage))", backgroundSize: "300% 300%" }}
+            >
+              Kilt Studio
+            </span>
           </a>
         </div>
       </div>
