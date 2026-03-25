@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect, useRef } from "react";
+import React, { useState, useCallback, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "motion/react";
 import {
@@ -721,6 +721,29 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, onBack }: {
     markEdited();
   }, [markEdited]);
 
+  const addBlockBefore = useCallback((beforeId: string) => {
+    const voiceBlock: ScriptBlock = {
+      id: String(nextId.current++),
+      type: "voice",
+      text: "New text segment...",
+    };
+    const pauseBlock: ScriptBlock = {
+      id: String(nextId.current++),
+      type: "pause",
+      text: "Pause",
+      pauseDuration: 3,
+    };
+    setScript(prev => {
+      const idx = prev.findIndex(b => b.id === beforeId);
+      const next = [...prev];
+      // Insert voice + pause before the target
+      next.splice(idx, 0, voiceBlock, pauseBlock);
+      setSelectedBlock(voiceBlock.id);
+      return next;
+    });
+    markEdited();
+  }, [markEdited]);
+
   const addBlockAfter = useCallback((afterId: string, type: "voice" | "pause") => {
     const voiceBlock: ScriptBlock = {
       id: String(nextId.current++),
@@ -834,6 +857,20 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, onBack }: {
         {/* Script blocks — Timeline Editor */}
         <div className="flex-1 overflow-y-auto studio-scroll" style={{ background: "#fafaf9" }}>
           <div className="max-w-[680px] mx-auto px-8 py-6">
+            {/* Add segment at top */}
+            {script.length > 0 && (
+              <div className="relative flex items-center justify-center group/addtop" style={{ height: "32px", marginLeft: "51px" }}>
+                <div className="absolute inset-x-0 top-1/2 border-t border-dashed border-transparent group-hover/addtop:border-[rgba(122,158,126,0.35)] transition-colors" />
+                <button
+                  onClick={() => addBlockBefore(script[0].id)}
+                  className="relative opacity-0 group-hover/addtop:opacity-100 w-5 h-5 rounded-full bg-white border border-[#e4e4e7] hover:border-[var(--color-sage)] hover:bg-[var(--color-sage-light)] flex items-center justify-center text-[#a1a1aa] hover:text-[var(--color-sage)] shadow-sm transition-all cursor-pointer z-10"
+                  title="Add segment above"
+                >
+                  <Plus className="w-3 h-3" />
+                </button>
+              </div>
+            )}
+
             {(() => {
               let voiceIndex = 0;
               return script.map((block, index) => {
@@ -849,8 +886,8 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, onBack }: {
                   const canMoveUp = script.slice(0, index).some(b => b.type === "pause");
                   const canMoveDown = script.slice(index + 1).some(b => b.type === "pause");
 
-                  return (
-                    <div key={block.id} className="relative flex items-center group/pause" style={{ height: isLong ? "52px" : "40px", animation: swapAnim ? `${swapAnim} 0.35s ease` : undefined }}>
+                  return <React.Fragment key={block.id}>
+                    <div className="relative flex items-center group/pause" style={{ height: isLong ? "52px" : "40px", animation: swapAnim ? `${swapAnim} 0.35s ease` : undefined }}>
                       {/* Timeline connector */}
                       <div className="absolute left-[19px] top-0 bottom-0 w-px" style={{ background: hasError ? "#fca5a5" : "rgba(122,158,126,0.15)" }} />
                       {/* Timeline dot */}
@@ -948,7 +985,19 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, onBack }: {
                         </div>
                       </div>
                     </div>
-                  );
+
+                    {/* Add segment — hover zone below pause */}
+                    <div className="relative flex items-center justify-center group/addpause" style={{ height: "32px", marginLeft: "51px" }}>
+                      <div className="absolute inset-x-0 top-1/2 border-t border-dashed border-transparent group-hover/addpause:border-[rgba(122,158,126,0.35)] transition-colors" />
+                      <button
+                        onClick={() => addBlockAfter(block.id, "voice")}
+                        className="relative opacity-0 group-hover/addpause:opacity-100 w-5 h-5 rounded-full bg-white border border-[#e4e4e7] hover:border-[var(--color-sage)] hover:bg-[var(--color-sage-light)] flex items-center justify-center text-[#a1a1aa] hover:text-[var(--color-sage)] shadow-sm transition-all cursor-pointer z-10"
+                        title="Add segment"
+                      >
+                        <Plus className="w-3 h-3" />
+                      </button>
+                    </div>
+                  </React.Fragment>;
                 }
 
                 // Voice block
@@ -1081,12 +1130,13 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, onBack }: {
                         </div>
                       </div>
 
-                      {/* Add segment — hover zone */}
-                      <div className="flex items-center justify-center h-0 relative group/add overflow-visible">
+                      {/* Add segment — hover zone below */}
+                      <div className="relative flex items-center justify-center group/add" style={{ height: "32px" }}>
+                        <div className="absolute inset-x-0 top-1/2 border-t border-dashed border-transparent group-hover/add:border-[rgba(122,158,126,0.35)] transition-colors" />
                         <button
                           onClick={() => addBlockAfter(block.id, "voice")}
-                          className="absolute top-1/2 -translate-y-1/2 opacity-0 group-hover/add:opacity-100 w-5 h-5 rounded-full bg-white border border-[#e4e4e7] hover:border-[var(--color-sage)] hover:bg-[var(--color-sage-light)] flex items-center justify-center text-[#a1a1aa] hover:text-[var(--color-sage)] shadow-sm transition-all cursor-pointer z-10"
-                          title="Add segment"
+                          className="relative opacity-0 group-hover/add:opacity-100 w-5 h-5 rounded-full bg-white border border-[#e4e4e7] hover:border-[var(--color-sage)] hover:bg-[var(--color-sage-light)] flex items-center justify-center text-[#a1a1aa] hover:text-[var(--color-sage)] shadow-sm transition-all cursor-pointer z-10"
+                          title="Add segment below"
                         >
                           <Plus className="w-3 h-3" />
                         </button>
