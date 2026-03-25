@@ -44,6 +44,7 @@ export async function PATCH(
   if (body.prompt !== undefined) updates.prompt = body.prompt;
   if (body.category !== undefined) updates.category = body.category;
   if (body.intent !== undefined) updates.intent = body.intent;
+  if (body.sound_volume !== undefined) updates.sound_volume = body.sound_volume;
 
   const { data, error: dbError } = await supabase
     .from("sessions")

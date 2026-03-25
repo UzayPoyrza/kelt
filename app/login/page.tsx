@@ -66,39 +66,39 @@ function StudioPreview() {
   let voiceNum = 0;
 
   return (
-    <div className="w-full rounded-2xl overflow-hidden border border-[var(--color-sand-200)] shadow-sm" style={{ background: "white" }}>
+    <div className="w-full rounded-xl overflow-hidden border border-[var(--color-sand-200)] shadow-sm" style={{ background: "white" }}>
       {/* ─── Mock toolbar ─── */}
       <motion.div
         initial={{ opacity: 0, y: -6 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.3, duration: 0.4 }}
-        className="flex items-center justify-between px-5 py-3.5 border-b border-[var(--color-sand-200)]"
+        className="flex items-center justify-between px-4 py-2.5 border-b border-[var(--color-sand-200)]"
         style={{ background: "var(--color-sand-50)" }}
       >
-        <div className="flex items-center gap-2.5">
-          <svg width={16} height={17} fill="none" viewBox="0 0 36 37.8281" className="text-[var(--color-sand-400)]">
+        <div className="flex items-center gap-2">
+          <svg width={13} height={14} fill="none" viewBox="0 0 36 37.8281" className="text-[var(--color-sand-400)]">
             <path d={svgPaths.p1c4d2300} fill="currentColor" />
             <path d={svgPaths.p2128f680} fill="currentColor" />
             <path d={svgPaths.p1c2ff500} fill="currentColor" />
           </svg>
-          <div className="w-px h-4 bg-[var(--color-sand-200)]" />
-          <span className="text-[13px] text-[var(--color-sand-900)] italic" style={{ fontFamily: "var(--font-display)" }}>
+          <div className="w-px h-3.5 bg-[var(--color-sand-200)]" />
+          <span className="text-[11px] text-[var(--color-sand-900)] italic" style={{ fontFamily: "var(--font-display)" }}>
             Deep sleep after a long day
           </span>
         </div>
-        <div className="flex items-center gap-3">
-          <span className="text-[11px] text-[var(--color-sage)] flex items-center gap-1" style={{ fontFamily: "var(--font-body)" }}>
-            <svg width="10" height="10" viewBox="0 0 16 16" fill="none"><path d="M6.5 12L2 7.5l1.4-1.4L6.5 9.2l6.1-6.1L14 4.5 6.5 12z" fill="currentColor"/></svg>
+        <div className="flex items-center gap-2.5">
+          <span className="text-[10px] text-[var(--color-sage)] flex items-center gap-1" style={{ fontFamily: "var(--font-body)" }}>
+            <svg width="9" height="9" viewBox="0 0 16 16" fill="none"><path d="M6.5 12L2 7.5l1.4-1.4L6.5 9.2l6.1-6.1L14 4.5 6.5 12z" fill="currentColor"/></svg>
             Saved
           </span>
-          <span className="text-[10px] text-[var(--color-sand-400)] tabular-nums" style={{ fontFamily: "var(--font-body)" }}>
+          <span className="text-[9px] text-[var(--color-sand-400)] tabular-nums" style={{ fontFamily: "var(--font-body)" }}>
             4 segments · ~10 min
           </span>
         </div>
       </motion.div>
 
       {/* ─── Script blocks ─── */}
-      <div className="px-5 py-4 space-y-0" style={{ background: "#fafaf9" }}>
+      <div className="px-4 py-3 space-y-0" style={{ background: "#fafaf9" }}>
         {mockBlocks.map((block, i) => {
           if (block.type === "pause") {
             return (
@@ -107,16 +107,16 @@ function StudioPreview() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.45 + i * 0.06 }}
-                className="flex items-center py-1.5 ml-10"
+                className="flex items-center py-1 ml-8"
               >
-                <div className="flex-1 flex items-center gap-2">
+                <div className="flex-1 flex items-center gap-1.5">
                   <div className="flex-1 h-px bg-[var(--color-sand-200)]" />
-                  <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[var(--color-sand-50)] border border-[var(--color-sand-200)]">
-                    <svg width="8" height="8" viewBox="0 0 14 14" fill="none" style={{ opacity: 0.5 }}>
+                  <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-[var(--color-sand-50)] border border-[var(--color-sand-200)]">
+                    <svg width="7" height="7" viewBox="0 0 14 14" fill="none" style={{ opacity: 0.5 }}>
                       <rect x="2" y="2" width="3.5" height="10" rx="1" fill="var(--color-sand-400)" />
                       <rect x="8.5" y="2" width="3.5" height="10" rx="1" fill="var(--color-sand-400)" />
                     </svg>
-                    <span className="text-[10px] text-[var(--color-sand-500)] tabular-nums" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>{block.duration}</span>
+                    <span className="text-[9px] text-[var(--color-sand-500)] tabular-nums" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>{block.duration}</span>
                   </div>
                   <div className="flex-1 h-px bg-[var(--color-sand-200)]" />
                 </div>
@@ -130,20 +130,20 @@ function StudioPreview() {
           return (
             <motion.div
               key={block.id}
-              initial={{ opacity: 0, y: 10 }}
+              initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.4 + i * 0.06, duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-              className="flex gap-3 py-1"
+              className="flex gap-2.5 py-0.5"
             >
               {/* Number badge */}
               <div
-                className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 mt-1 text-[11px] tabular-nums transition-all"
+                className="w-6 h-6 rounded-full flex items-center justify-center shrink-0 mt-0.5 text-[10px] tabular-nums transition-all"
                 style={{
                   fontFamily: "var(--font-body)", fontWeight: 600,
                   background: isSelected ? "var(--color-sage)" : "white",
                   color: isSelected ? "#fff" : "var(--color-sand-500)",
                   border: isSelected ? "2px solid var(--color-sage)" : "2px solid var(--color-sand-200)",
-                  boxShadow: isSelected ? "0 0 12px rgba(122,158,126,0.2)" : "none",
+                  boxShadow: isSelected ? "0 0 10px rgba(122,158,126,0.2)" : "none",
                 }}
               >
                 {num}
@@ -151,9 +151,9 @@ function StudioPreview() {
 
               {/* Card */}
               <div
-                className={`flex-1 rounded-xl px-4 py-3 transition-all ${
+                className={`flex-1 rounded-lg px-3 py-2 transition-all ${
                   isSelected
-                    ? "shadow-[0_2px_12px_rgba(122,158,126,0.12)]"
+                    ? "shadow-[0_2px_10px_rgba(122,158,126,0.12)]"
                     : ""
                 }`}
                 style={{
@@ -163,7 +163,7 @@ function StudioPreview() {
                 }}
               >
                 <p
-                  className={`text-[13px] leading-relaxed ${isSelected ? "text-[var(--color-sand-900)]" : "text-[var(--color-sand-600)]"}`}
+                  className={`text-[11px] leading-relaxed ${isSelected ? "text-[var(--color-sand-900)]" : "text-[var(--color-sand-600)]"}`}
                   style={{ fontFamily: "var(--font-body)" }}
                 >
                   {block.text}
@@ -173,12 +173,12 @@ function StudioPreview() {
                     initial={{ opacity: 0, y: 4 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.7, duration: 0.3 }}
-                    className="flex items-center gap-2 mt-2.5"
+                    className="flex items-center gap-2 mt-1.5"
                   >
-                    <div className="flex items-center gap-1 px-2.5 py-1 rounded-md text-[10px] text-white" style={{ fontFamily: "var(--font-body)", fontWeight: 500, background: "var(--color-sage)" }}>
-                      <PenLine className="w-2.5 h-2.5" /> Editing
+                    <div className="flex items-center gap-1 px-2 py-0.5 rounded-md text-[9px] text-white" style={{ fontFamily: "var(--font-body)", fontWeight: 500, background: "var(--color-sage)" }}>
+                      <PenLine className="w-2 h-2" /> Editing
                     </div>
-                    <span className="text-[10px] text-[var(--color-sand-400)] tabular-nums" style={{ fontFamily: "var(--font-body)" }}>
+                    <span className="text-[9px] text-[var(--color-sand-400)] tabular-nums" style={{ fontFamily: "var(--font-body)" }}>
                       {90 - (block.text?.length || 0)} chars left
                     </span>
                   </motion.div>
@@ -194,33 +194,33 @@ function StudioPreview() {
         initial={{ opacity: 0, y: 6 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.9, duration: 0.4 }}
-        className="flex items-center justify-between px-5 py-3 border-t border-[var(--color-sand-200)]"
+        className="flex items-center justify-between px-4 py-2.5 border-t border-[var(--color-sand-200)]"
         style={{ background: "white" }}
       >
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2.5">
           {/* Voice pill */}
-          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[var(--color-sage-light)] border border-[rgba(122,158,126,0.2)]">
-            <div className="w-2 h-2 rounded-full" style={{ background: "var(--color-sage)" }} />
-            <span className="text-[11px] text-[var(--color-sand-700)]" style={{ fontFamily: "var(--font-body)" }}>Aria</span>
+          <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-[var(--color-sage-light)] border border-[rgba(122,158,126,0.2)]">
+            <div className="w-1.5 h-1.5 rounded-full" style={{ background: "var(--color-sage)" }} />
+            <span className="text-[10px] text-[var(--color-sand-700)]" style={{ fontFamily: "var(--font-body)" }}>Aria</span>
           </div>
           {/* Sound pill */}
-          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full" style={{ background: "rgba(109,154,181,0.08)", border: "1px solid rgba(109,154,181,0.15)" }}>
-            <div className="w-2 h-2 rounded-full" style={{ background: "var(--color-ocean)" }} />
-            <span className="text-[11px] text-[var(--color-sand-700)]" style={{ fontFamily: "var(--font-body)" }}>Deep Night</span>
+          <div className="flex items-center gap-1 px-2 py-0.5 rounded-full" style={{ background: "rgba(109,154,181,0.08)", border: "1px solid rgba(109,154,181,0.15)" }}>
+            <div className="w-1.5 h-1.5 rounded-full" style={{ background: "var(--color-ocean)" }} />
+            <span className="text-[10px] text-[var(--color-sand-700)]" style={{ fontFamily: "var(--font-body)" }}>Deep Night</span>
           </div>
         </div>
 
         {/* Generate button */}
         <div className="relative">
           <div
-            className="absolute -inset-[2px] rounded-[10px] bg-[length:300%_300%] animate-[border-glow_4s_ease_infinite] opacity-70 blur-[1px]"
+            className="absolute -inset-[2px] rounded-[8px] bg-[length:300%_300%] animate-[border-glow_4s_ease_infinite] opacity-70 blur-[1px]"
             style={{ background: "linear-gradient(135deg, var(--color-sage), var(--color-ocean), var(--color-dusk), var(--color-ember), var(--color-sage))", backgroundSize: "300% 300%" }}
           />
           <div
-            className="relative flex items-center gap-1.5 px-4 py-2 rounded-lg text-[12px] text-[var(--color-sand-50)] shadow-sm"
+            className="relative flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[11px] text-[var(--color-sand-50)] shadow-sm"
             style={{ fontFamily: "var(--font-body)", fontWeight: 600, background: "var(--color-sand-900)" }}
           >
-            <Sparkles className="w-3 h-3" />
+            <Sparkles className="w-2.5 h-2.5" />
             Generate Audio
           </div>
         </div>
@@ -262,7 +262,7 @@ export default function LoginPage() {
       </div>
 
       {/* ─── Left: Studio Preview ─── */}
-      <div className="hidden lg:flex relative w-[60%] min-h-screen items-center justify-center p-8 xl:p-12 overflow-y-auto">
+      <div className="hidden lg:flex relative w-[60%] min-h-screen items-center justify-center pt-16 pb-6 px-6 xl:pt-18 xl:pb-10 xl:px-10 overflow-hidden">
         {/* Background for left panel */}
         <div className="absolute inset-0 bg-white/40 border-r border-[var(--color-sand-200)]" />
 
@@ -280,7 +280,7 @@ export default function LoginPage() {
           </span>
         </motion.a>
 
-        <div className="relative z-10 w-full max-w-2xl flex flex-col gap-8">
+        <div className="relative z-10 w-full max-w-xl flex flex-col gap-5 origin-top lg:scale-[0.82] xl:scale-[0.9] 2xl:scale-100">
           <motion.div
             initial={{ opacity: 0, x: -30 }}
             animate={{ opacity: 1, x: 0 }}
@@ -295,7 +295,7 @@ export default function LoginPage() {
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.7, duration: 0.5 }}
-            className="grid grid-cols-2 xl:grid-cols-3 gap-3"
+            className="grid grid-cols-2 xl:grid-cols-3 gap-2.5"
           >
             {[
               { icon: PenLine, title: "Edit scripts", desc: "Refine every word, pause, and breath cue", color: "#7a9e7e" },
@@ -311,16 +311,16 @@ export default function LoginPage() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.8 + i * 0.07, duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
                 whileHover={{ scale: 1.02, transition: { duration: 0.2 } }}
-                className="group relative overflow-hidden rounded-xl p-5 cursor-default transition-all duration-300 bg-white border border-[var(--color-sand-200)] shadow-sm hover:shadow-md"
+                className="group relative overflow-hidden rounded-lg p-3.5 cursor-default transition-all duration-300 bg-white border border-[var(--color-sand-200)] shadow-sm hover:shadow-md"
               >
                 {/* Accent glow on hover */}
-                <div className="absolute -top-10 -left-10 w-28 h-28 rounded-full opacity-0 group-hover:opacity-20 transition-opacity duration-500 blur-2xl" style={{ background: feature.color }} />
+                <div className="absolute -top-10 -left-10 w-24 h-24 rounded-full opacity-0 group-hover:opacity-20 transition-opacity duration-500 blur-2xl" style={{ background: feature.color }} />
                 <div className="relative z-10">
-                  <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-4" style={{ background: `${feature.color}15`, border: `1px solid ${feature.color}25` }}>
-                    <feature.icon className="w-[18px] h-[18px]" style={{ color: feature.color }} />
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center mb-2.5" style={{ background: `${feature.color}15`, border: `1px solid ${feature.color}25` }}>
+                    <feature.icon className="w-[15px] h-[15px]" style={{ color: feature.color }} />
                   </div>
-                  <p className="text-[14px] text-[var(--color-sand-900)] mb-1.5" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>{feature.title}</p>
-                  <p className="text-[12px] text-[var(--color-sand-500)] leading-relaxed" style={{ fontFamily: "var(--font-body)" }}>{feature.desc}</p>
+                  <p className="text-[12px] text-[var(--color-sand-900)] mb-1" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>{feature.title}</p>
+                  <p className="text-[11px] text-[var(--color-sand-500)] leading-relaxed" style={{ fontFamily: "var(--font-body)" }}>{feature.desc}</p>
                 </div>
               </motion.div>
             ))}
@@ -357,10 +357,10 @@ export default function LoginPage() {
             transition={{ delay: 0.1, duration: 0.5 }}
             className="mb-10"
           >
-            <h1 className="text-[1.75rem] sm:text-[2.25rem] md:text-[2.75rem] text-[var(--color-sand-900)] leading-tight mb-3">
+            <h1 className="text-[1.75rem] sm:text-[2.25rem] md:text-[2.75rem] lg:text-[2rem] xl:text-[2.5rem] text-[var(--color-sand-900)] leading-tight mb-3">
               Welcome to
               <br />
-              <span className="italic bg-clip-text text-transparent bg-[length:300%_300%] animate-[border-glow_4s_ease_infinite]" style={{ backgroundImage: "linear-gradient(135deg, var(--color-sage), var(--color-ocean), var(--color-dusk), var(--color-ember), var(--color-sage))", backgroundSize: "300% 300%" }}>Kelt Studio</span>
+              <span className="italic whitespace-nowrap bg-clip-text text-transparent bg-[length:300%_300%] animate-[border-glow_4s_ease_infinite]" style={{ backgroundImage: "linear-gradient(135deg, var(--color-sage), var(--color-ocean), var(--color-dusk), var(--color-ember), var(--color-sage))", backgroundSize: "300% 300%" }}>Kelt Studio</span>
             </h1>
             <p className="text-[var(--color-sand-500)] text-sm leading-relaxed" style={{ fontFamily: "var(--font-body)" }}>
               Sign in to edit, remix, and perfect your AI-generated meditations.

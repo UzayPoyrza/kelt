@@ -93,7 +93,7 @@ const soundCategories = {
 
 type HistoryFilter = "all" | "sessions" | "generations";
 type ScriptEntry = { type: string; text?: string; content?: string; pauseDuration?: number; label?: string };
-type SessionItem = { id: string; title: string; duration: string; voice: string; protocol: string; sound: string; createdAt: string; createdAtShort: string; accessedAt: string; category: string; icon: typeof Moon; hasGeneration: boolean; script: ScriptEntry[] | null };
+type SessionItem = { id: string; title: string; duration: string; voice: string; protocol: string; sound: string; createdAt: string; createdAtRaw: string; createdAtShort: string; accessedAt: string; category: string; icon: typeof Moon; hasGeneration: boolean; script: ScriptEntry[] | null };
 type GenerationItem = { id: string; prompt: string; voice: string; duration: string; protocol: string; status: "completed" | "failed" | "pending" | "processing"; timestamp: string; creditUsed: number; sessionId: string | null };
 
 const navItems = [
@@ -533,8 +533,8 @@ function EmptyState({ label }: { label: string }) {
 
 /* ─── Studio Session View ─── */
 
-function StudioSession({ prompt, voice, duration, sound, sessionId, savedScript, savedTitle, savedVolume, onBack, onToggleSidebar }: {
-  prompt: string; voice: string; duration: number; sound: string; sessionId: string | null; savedScript?: ScriptBlock[] | null; savedTitle?: string | null; savedVolume?: number; onBack: () => void; onToggleSidebar?: () => void;
+function StudioSession({ prompt, voice, duration, sound, sessionId, savedScript, savedTitle, savedVolume, onBack, onToggleSidebar, onGenerated }: {
+  prompt: string; voice: string; duration: number; sound: string; sessionId: string | null; savedScript?: ScriptBlock[] | null; savedTitle?: string | null; savedVolume?: number; onBack: () => void; onToggleSidebar?: () => void; onGenerated?: () => void;
 }) {
   const { profile } = useProfile();
   const [script, setScript] = useState<ScriptBlock[]>(() => savedScript && savedScript.length > 0 ? savedScript : generateScript(prompt));
@@ -562,6 +562,30 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, savedScript,
   const [sessionName, setSessionName] = useState(() => savedTitle || deriveSessionName(prompt));
   const [sessionIdState, setSessionIdState] = useState<string | null>(sessionId);
   const [isRenamingSession, setIsRenamingSession] = useState(false);
+
+  // Session generations history
+  type GenHistoryItem = { id: string; prompt: string; voice: string; duration: string; protocol: string; status: string; timestamp: string; creditUsed: number; sessionId: string | null };
+  const [sessionGenerations, setSessionGenerations] = useState<GenHistoryItem[]>([]);
+  const fetchSessionGenerations = useCallback(async () => {
+    if (!sessionIdState) return;
+    try {
+      const res = await fetch(`/api/generations?session_id=${sessionIdState}&limit=50`);
+      if (!res.ok) return;
+      const data = await res.json();
+      setSessionGenerations(data.map((g: Record<string, unknown>) => ({
+        id: g.id,
+        prompt: (g.prompt as string) || "",
+        voice: (g.voice as string) || "Aria",
+        duration: (g.duration as string) || "10 min",
+        protocol: "",
+        status: g.status as string,
+        timestamp: new Intl.DateTimeFormat("en-US", { dateStyle: "medium", timeStyle: "short" }).format(new Date(g.created_at as string)),
+        creditUsed: (g.credit_cost as number) || 0,
+        sessionId: (g.session_id as string) || null,
+      })));
+    } catch { /* ignore */ }
+  }, [sessionIdState]);
+  useEffect(() => { fetchSessionGenerations(); }, [fetchSessionGenerations]);
   const renameInputRef = useRef<HTMLInputElement>(null);
 
   // ─── Undo / Redo history ───
@@ -749,20 +773,36 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, savedScript,
       if (data.session) {
         setSessionIdState(data.session.id);
       }
+      // Instantly add the new generation to session history
+      if (data.generation) {
+        const g = data.generation;
+        setSessionGenerations(prev => [{
+          id: g.id,
+          prompt: g.prompt || prompt,
+          voice: g.voice || sessionVoice,
+          duration: g.duration || `${estimated.minutes}`,
+          protocol: "",
+          status: g.status || "completed",
+          timestamp: new Intl.DateTimeFormat("en-US", { dateStyle: "medium", timeStyle: "short" }).format(new Date(g.created_at || Date.now())),
+          creditUsed: g.credit_cost || 1,
+          sessionId: g.session_id || data.session?.id || sessionIdState,
+        }, ...prev]);
+      }
       setIsGenerating(false);
       setShowStudioPlayer(true);
       setStudioPlaying(true);
       setHasGenerated(true);
+      onGenerated?.();
     } catch {
       setGenerateWarning("Generation failed. Please try again.");
       setIsGenerating(false);
     }
-  }, [script, prompt, sessionVoice, estimated.minutes, sessionSound, sessionIdState]);
+  }, [script, prompt, sessionVoice, estimated.minutes, sessionSound, sessionIdState, onGenerated]);
 
   // Build a mock session for the player
   const intent = prompt.toLowerCase().includes("sleep") ? "sleep" : prompt.toLowerCase().includes("focus") ? "focus" : prompt.toLowerCase().includes("stress") || prompt.toLowerCase().includes("anxi") ? "stress" : "focus";
   const iconMap: Record<string, typeof Moon> = { sleep: Moon, focus: Sun, stress: Heart, anxiety: Heart };
-  const studioSession = {
+  const studioSession: SessionItem = {
     id: "studio",
     title: sessionName,
     duration: `${estimated.minutes} min`,
@@ -770,11 +810,13 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, savedScript,
     protocol: "Custom",
     sound: sessionSound,
     createdAt: "Just now",
+    createdAtRaw: new Date().toISOString(),
     createdAtShort: "Just now",
     accessedAt: "Just now",
     category: intent,
     icon: iconMap[intent] || Brain,
     hasGeneration: hasGenerated,
+    script: script as unknown as ScriptEntry[] | null,
   };
 
   const selectedVoice = voices.find(v => v.id === sessionVoice) || voices[0];
@@ -1707,8 +1749,7 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, savedScript,
         {rightTab === "history" && (
           <div className="flex-1 overflow-y-auto studio-scroll p-4 space-y-3">
             {(() => {
-              // Filter generations to only this session
-              const sessionGens: { id: string; prompt: string; voice: string; duration: string; protocol: string; status: string; timestamp: string; creditUsed: number; sessionId: string | null }[] = [];
+              const sessionGens = sessionGenerations;
 
               if (sessionGens.length === 0) {
                 return (
@@ -1876,6 +1917,7 @@ function StudioPageContent() {
         protocol: (s.protocol as string) || "Custom",
         sound: (s.soundscape as string) || "Sanctuary",
         createdAt: new Intl.DateTimeFormat("en-US", { dateStyle: "medium", timeStyle: "short" }).format(new Date(s.created_at as string)),
+        createdAtRaw: s.created_at as string,
         createdAtShort: getRelativeTime(s.created_at as string),
         accessedAt: getRelativeTime(s.updated_at as string),
         category: (s.category as string) || "focus",
@@ -2137,6 +2179,7 @@ function StudioPageContent() {
             savedVolume={genConfig.soundVolume}
             onBack={() => { setActiveNav("sessions"); setGenStep("input"); fetchSessions(); refetchProfile(); }}
             onToggleSidebar={() => setSidebarOpen(true)}
+            onGenerated={() => { fetchGenerations(); fetchSessions(); refetchProfile(); }}
           />
         </div>
       </div>
@@ -2354,7 +2397,7 @@ function StudioPageContent() {
                 {(historyFilter === "all" || historyFilter === "generations") && (() => {
                   const perPage = 5;
                   const totalPages = Math.ceil(generations.length / perPage);
-                  const paged = generations;
+                  const paged = generations.slice((generationsPage - 1) * perPage, generationsPage * perPage);
                   return (
                   <div className="mb-6">
                     {historyFilter === "all" && (
@@ -2363,6 +2406,13 @@ function StudioPageContent() {
                         Generations
                       </h3>
                     )}
+                    {paged.length === 0 ? (
+                      <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
+                        <div className="w-10 h-10 rounded-full bg-[#f4f4f5] flex items-center justify-center mb-3"><Sparkles className="w-4 h-4 text-[#a1a1aa]" /></div>
+                        <p className="text-[13px] text-[#71717a] mb-1" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>No generations yet</p>
+                        <p className="text-[11px] text-[#a1a1aa]" style={{ fontFamily: "var(--font-body)" }}>Generate audio to see history here</p>
+                      </div>
+                    ) : (<>
                     <div className="bg-white rounded-xl border border-[#e7e5e4] overflow-hidden shadow-sm">
                       <div className="grid grid-cols-[1fr_70px_60px_80px] sm:grid-cols-[1fr_80px_70px_90px_70px_130px] gap-2 sm:gap-4 px-3 sm:px-5 py-3 border-b border-[#e7e5e4] bg-[#f5f3f0]">
                         <span className="text-[11px] uppercase tracking-wide text-[var(--color-sand-900)]" style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}>Prompt</span>
@@ -2456,6 +2506,7 @@ function StudioPageContent() {
                         </button>
                       </div>
                     )}
+                    </>)}
                   </div>
                   );
                 })()}
@@ -2463,8 +2514,11 @@ function StudioPageContent() {
                 {/* Sessions section (second) */}
                 {(historyFilter === "all" || historyFilter === "sessions") && (() => {
                   const perPage = 5;
-                  const totalPages = Math.ceil(sessions.length / perPage);
-                  const paged = sessions.slice((sessionsPage - 1) * perPage, sessionsPage * perPage);
+                  const sorted = [...sessions].sort((a, b) => {
+                    return new Date(b.createdAtRaw).getTime() - new Date(a.createdAtRaw).getTime();
+                  });
+                  const totalPages = Math.ceil(sorted.length / perPage);
+                  const paged = sorted.slice((sessionsPage - 1) * perPage, sessionsPage * perPage);
                   return (
                   <div className="mb-6">
                     {historyFilter === "all" && (

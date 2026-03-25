@@ -9,6 +9,7 @@ export async function GET(request: NextRequest) {
   const page = parseInt(searchParams.get("page") || "1");
   const limit = parseInt(searchParams.get("limit") || "5");
   const status = searchParams.get("status");
+  const sessionIdFilter = searchParams.get("session_id");
   const offset = (page - 1) * limit;
 
   let query = supabase
@@ -20,6 +21,9 @@ export async function GET(request: NextRequest) {
 
   if (status) {
     query = query.eq("status", status);
+  }
+  if (sessionIdFilter) {
+    query = query.eq("session_id", sessionIdFilter);
   }
 
   const { data, error: dbError } = await query;

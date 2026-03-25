@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { NavigationRemount } from "./navigation-remount";
 
 export const metadata: Metadata = {
   title: "MindFlow — AI Guided Meditation",
@@ -14,8 +15,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body>
-        {children}
+      <body style={{ backgroundColor: "#faf9f7" }}>
+        <NavigationRemount>
+          {children}
+        </NavigationRemount>
       </body>
     </html>
   );

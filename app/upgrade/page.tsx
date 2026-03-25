@@ -1,8 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "motion/react";
+import { loadStripe } from "@stripe/stripe-js";
+import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
 import {
   Check,
   Sparkles,
@@ -16,12 +18,13 @@ import {
   Infinity as InfinityIcon,
   ChevronDown,
   X,
-  CreditCard,
   Lock,
   Music,
   Plus,
   Minus,
 } from "lucide-react";
+
+const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
 import svgPaths from "@/lib/svg-paths";
 
 /* ─── Logo ─── */
@@ -161,6 +164,136 @@ function FAQItem({ item, index }: { item: (typeof faqs)[number]; index: number }
 
 /* ─── Checkout Modal ─── */
 
+function getPriceId(
+  plan: (typeof plans)[number] | null,
+  billing: "monthly" | "yearly" | "single",
+  creditCount?: number
+): string | null {
+  if (!plan && creditCount) {
+    return process.env.NEXT_PUBLIC_PRICE_SINGLE_CREDIT || null;
+  }
+  if (!plan) return null;
+  if (plan.id === "personal") {
+    return billing === "yearly"
+      ? process.env.NEXT_PUBLIC_PRICE_PERSONAL_YEARLY || null
+      : process.env.NEXT_PUBLIC_PRICE_PERSONAL_MONTHLY || null;
+  }
+  if (plan.id === "creator") {
+    return billing === "yearly"
+      ? process.env.NEXT_PUBLIC_PRICE_CREATOR_YEARLY || null
+      : process.env.NEXT_PUBLIC_PRICE_CREATOR_MONTHLY || null;
+  }
+  return null;
+}
+
+/* Inner form that has access to Stripe hooks */
+function CheckoutForm({
+  displayColor,
+  isSingleCredit,
+  price,
+  onSuccess,
+}: {
+  displayColor: string;
+  isSingleCredit: boolean;
+  price: string | number;
+  onSuccess: () => void;
+}) {
+  const stripe = useStripe();
+  const elements = useElements();
+  const [processing, setProcessing] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!stripe || !elements) return;
+
+    setProcessing(true);
+    setErrorMsg(null);
+
+    const { error } = await stripe.confirmPayment({
+      elements,
+      confirmParams: {
+        return_url: `${window.location.origin}/studio?checkout=success`,
+      },
+    });
+
+    // If error, it means the payment didn't redirect (card error, etc.)
+    if (error) {
+      setErrorMsg(error.message || "Something went wrong.");
+      setProcessing(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="px-5 sm:px-8 py-6 space-y-4">
+      <PaymentElement
+        options={{
+          layout: "tabs",
+          fields: {
+            billingDetails: {
+              address: {
+                postalCode: "auto",
+                country: "auto",
+              },
+            },
+          },
+        }}
+      />
+
+      {errorMsg && (
+        <p
+          className="text-[12px] text-red-500 text-center"
+          style={{ fontFamily: "var(--font-body)" }}
+        >
+          {errorMsg}
+        </p>
+      )}
+
+      <button
+        type="submit"
+        disabled={!stripe || processing}
+        className="w-full py-3 rounded-xl text-white text-[13px] transition-all cursor-pointer shadow-md hover:shadow-lg disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+        style={{
+          fontFamily: "var(--font-body)",
+          fontWeight: 600,
+          background: displayColor,
+        }}
+      >
+        {processing ? (
+          <>
+            <motion.div
+              animate={{ rotate: 360 }}
+              transition={{
+                duration: 1,
+                repeat: Infinity,
+                ease: "linear",
+              }}
+            >
+              <Sparkles className="w-4 h-4" />
+            </motion.div>
+            Processing...
+          </>
+        ) : (
+          <>
+            <Lock className="w-3.5 h-3.5" />
+            {isSingleCredit ? `Pay $${price}` : `Subscribe for $${price}/mo`}
+          </>
+        )}
+      </button>
+
+      <div className="flex items-center justify-center gap-1.5 pt-1">
+        <Shield className="w-3 h-3 text-[#d4d4d8]" />
+        <span
+          className="text-[10px] text-[#a1a1aa]"
+          style={{ fontFamily: "var(--font-body)" }}
+        >
+          Secured by Stripe. {isSingleCredit ? "One-time charge." : "Cancel anytime."}
+        </span>
+      </div>
+    </form>
+  );
+}
+
 function CheckoutModal({
   plan,
   billing,
@@ -172,8 +305,9 @@ function CheckoutModal({
   creditCount?: number;
   onClose: () => void;
 }) {
-  const [processing, setProcessing] = useState(false);
   const [done, setDone] = useState(false);
+  const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
   const isSingleCredit = !plan && creditCount;
   const displayName = plan ? plan.name : `${creditCount} Credit${creditCount !== 1 ? "s" : ""}`;
@@ -188,56 +322,26 @@ function CheckoutModal({
       : 0;
   const credits = plan ? plan.credits : creditCount || 0;
 
-  const handleSubmit = async () => {
-    setProcessing(true);
-    try {
-      const priceId = getPriceId(plan, billing, creditCount);
-      if (!priceId) {
-        setProcessing(false);
-        return;
-      }
-      const mode = isSingleCredit ? "payment" : "subscription";
-      const res = await fetch("/api/checkout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ priceId, mode }),
-      });
-      if (!res.ok) {
-        setProcessing(false);
-        return;
-      }
-      const data = await res.json();
-      if (data.url) {
-        window.location.href = data.url;
-      } else {
-        setProcessing(false);
-      }
-    } catch {
-      setProcessing(false);
+  useEffect(() => {
+    const priceId = getPriceId(plan, billing, creditCount);
+    if (!priceId) {
+      setLoading(false);
+      return;
     }
-  };
-
-  function getPriceId(
-    plan: (typeof plans)[number] | null,
-    billing: "monthly" | "yearly" | "single",
-    creditCount?: number
-  ): string | null {
-    if (!plan && creditCount) {
-      return process.env.NEXT_PUBLIC_PRICE_SINGLE_CREDIT || null;
-    }
-    if (!plan) return null;
-    if (plan.id === "personal") {
-      return billing === "yearly"
-        ? process.env.NEXT_PUBLIC_PRICE_PERSONAL_YEARLY || null
-        : process.env.NEXT_PUBLIC_PRICE_PERSONAL_MONTHLY || null;
-    }
-    if (plan.id === "creator") {
-      return billing === "yearly"
-        ? process.env.NEXT_PUBLIC_PRICE_CREATOR_YEARLY || null
-        : process.env.NEXT_PUBLIC_PRICE_CREATOR_MONTHLY || null;
-    }
-    return null;
-  }
+    const mode = isSingleCredit ? "payment" : "subscription";
+    fetch("/api/create-payment-intent", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ priceId, mode }),
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.clientSecret) {
+          setClientSecret(data.clientSecret);
+        }
+      })
+      .finally(() => setLoading(false));
+  }, [plan, billing, creditCount, isSingleCredit]);
 
   return (
     <motion.div
@@ -362,107 +466,73 @@ function CheckoutModal({
               </div>
             </div>
 
-            {/* Mock payment form */}
-            <div className="px-5 sm:px-8 py-6 space-y-4">
-              <div>
-                <label
-                  className="block text-[11px] text-[#71717a] mb-1.5 uppercase tracking-wider"
-                  style={{
-                    fontFamily: "var(--font-body)",
-                    fontWeight: 500,
-                  }}
+            {/* Stripe Payment Form */}
+            {loading ? (
+              <div className="px-5 sm:px-8 py-12 flex items-center justify-center">
+                <motion.div
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
                 >
-                  Card number
-                </label>
-                <div className="relative">
-                  <input
-                    type="text"
-                    placeholder="4242 4242 4242 4242"
-                    className="w-full px-4 py-2.5 rounded-lg border border-[#e4e4e7] bg-[#fafafa] text-[13px] text-[#18181b] outline-none focus:border-[#a1a1aa] transition-colors placeholder:text-[#d4d4d8]"
-                    style={{ fontFamily: "var(--font-body)" }}
-                  />
-                  <CreditCard className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#d4d4d8]" />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label
-                    className="block text-[11px] text-[#71717a] mb-1.5 uppercase tracking-wider"
-                    style={{
-                      fontFamily: "var(--font-body)",
-                      fontWeight: 500,
-                    }}
-                  >
-                    Expiry
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="MM / YY"
-                    className="w-full px-4 py-2.5 rounded-lg border border-[#e4e4e7] bg-[#fafafa] text-[13px] text-[#18181b] outline-none focus:border-[#a1a1aa] transition-colors placeholder:text-[#d4d4d8]"
-                    style={{ fontFamily: "var(--font-body)" }}
-                  />
-                </div>
-                <div>
-                  <label
-                    className="block text-[11px] text-[#71717a] mb-1.5 uppercase tracking-wider"
-                    style={{
-                      fontFamily: "var(--font-body)",
-                      fontWeight: 500,
-                    }}
-                  >
-                    CVC
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="123"
-                    className="w-full px-4 py-2.5 rounded-lg border border-[#e4e4e7] bg-[#fafafa] text-[13px] text-[#18181b] outline-none focus:border-[#a1a1aa] transition-colors placeholder:text-[#d4d4d8]"
-                    style={{ fontFamily: "var(--font-body)" }}
-                  />
-                </div>
-              </div>
-
-              <button
-                onClick={handleSubmit}
-                disabled={processing}
-                className="w-full py-3 rounded-xl text-white text-[13px] transition-all cursor-pointer shadow-md hover:shadow-lg disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                style={{
-                  fontFamily: "var(--font-body)",
-                  fontWeight: 600,
-                  background: displayColor,
-                }}
-              >
-                {processing ? (
-                  <>
-                    <motion.div
-                      animate={{ rotate: 360 }}
-                      transition={{
-                        duration: 1,
-                        repeat: Infinity,
-                        ease: "linear",
-                      }}
-                    >
-                      <Sparkles className="w-4 h-4" />
-                    </motion.div>
-                    Processing...
-                  </>
-                ) : (
-                  <>
-                    <Lock className="w-3.5 h-3.5" />
-                    {isSingleCredit ? `Buy for $${price}` : `Subscribe for $${price}/mo`}
-                  </>
-                )}
-              </button>
-
-              <div className="flex items-center justify-center gap-1.5 pt-1">
-                <Shield className="w-3 h-3 text-[#d4d4d8]" />
+                  <Sparkles className="w-5 h-5 text-[#a1a1aa]" />
+                </motion.div>
                 <span
-                  className="text-[10px] text-[#a1a1aa]"
+                  className="ml-2 text-[13px] text-[#a1a1aa]"
                   style={{ fontFamily: "var(--font-body)" }}
                 >
-                  Secured by Stripe. {isSingleCredit ? "One-time charge." : "Cancel anytime."}
+                  Loading payment form...
                 </span>
               </div>
-            </div>
+            ) : clientSecret ? (
+              <Elements
+                stripe={stripePromise}
+                options={{
+                  clientSecret,
+                  appearance: {
+                    theme: "stripe",
+                    variables: {
+                      colorPrimary: displayColor,
+                      fontFamily: '"DM Sans", system-ui, sans-serif',
+                      borderRadius: "8px",
+                      fontSizeBase: "13px",
+                    },
+                    rules: {
+                      ".Input": {
+                        backgroundColor: "#fafafa",
+                        border: "1px solid #e4e4e7",
+                        boxShadow: "none",
+                      },
+                      ".Input:focus": {
+                        borderColor: "#a1a1aa",
+                        boxShadow: "none",
+                      },
+                      ".Label": {
+                        fontSize: "11px",
+                        fontWeight: "500",
+                        textTransform: "uppercase",
+                        letterSpacing: "0.05em",
+                        color: "#71717a",
+                      },
+                    },
+                  },
+                }}
+              >
+                <CheckoutForm
+                  displayColor={displayColor}
+                  isSingleCredit={!!isSingleCredit}
+                  price={price}
+                  onSuccess={() => setDone(true)}
+                />
+              </Elements>
+            ) : (
+              <div className="px-5 sm:px-8 py-8 text-center">
+                <p
+                  className="text-[13px] text-[#71717a]"
+                  style={{ fontFamily: "var(--font-body)" }}
+                >
+                  Unable to load payment form. Please try again.
+                </p>
+              </div>
+            )}
           </>
         )}
       </motion.div>

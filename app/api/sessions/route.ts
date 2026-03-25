@@ -59,6 +59,7 @@ export async function POST(request: NextRequest) {
       script: body.script || null,
       category: body.category || null,
       intent: body.intent || null,
+      sound_volume: body.sound_volume ?? 70,
     })
     .select()
     .single();
