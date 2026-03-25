@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "motion/react";
 import { loadStripe } from "@stripe/stripe-js";
-import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
+import { EmbeddedCheckoutProvider, EmbeddedCheckout } from "@stripe/react-stripe-js";
 import {
   Check,
   Sparkles,
@@ -23,6 +23,7 @@ import {
   Plus,
   Minus,
 } from "lucide-react";
+import type { Profile } from "@/lib/types/database";
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
 import svgPaths from "@/lib/svg-paths";
@@ -186,129 +187,26 @@ function getPriceId(
   return null;
 }
 
-/* Inner form that has access to Stripe hooks */
-function CheckoutForm({
-  displayColor,
-  isSingleCredit,
-  price,
-  onSuccess,
-}: {
-  displayColor: string;
-  isSingleCredit: boolean;
-  price: string | number;
-  onSuccess: () => void;
-}) {
-  const stripe = useStripe();
-  const elements = useElements();
-  const [processing, setProcessing] = useState(false);
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!stripe || !elements) return;
-
-    setProcessing(true);
-    setErrorMsg(null);
-
-    const { error } = await stripe.confirmPayment({
-      elements,
-      confirmParams: {
-        return_url: `${window.location.origin}/studio?checkout=success`,
-      },
-    });
-
-    // If error, it means the payment didn't redirect (card error, etc.)
-    if (error) {
-      setErrorMsg(error.message || "Something went wrong.");
-      setProcessing(false);
-    }
-  };
-
-  return (
-    <form onSubmit={handleSubmit} className="px-5 sm:px-8 py-6 space-y-4">
-      <PaymentElement
-        options={{
-          layout: "tabs",
-          fields: {
-            billingDetails: {
-              address: {
-                postalCode: "auto",
-                country: "auto",
-              },
-            },
-          },
-        }}
-      />
-
-      {errorMsg && (
-        <p
-          className="text-[12px] text-red-500 text-center"
-          style={{ fontFamily: "var(--font-body)" }}
-        >
-          {errorMsg}
-        </p>
-      )}
-
-      <button
-        type="submit"
-        disabled={!stripe || processing}
-        className="w-full py-3 rounded-xl text-white text-[13px] transition-all cursor-pointer shadow-md hover:shadow-lg disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-        style={{
-          fontFamily: "var(--font-body)",
-          fontWeight: 600,
-          background: displayColor,
-        }}
-      >
-        {processing ? (
-          <>
-            <motion.div
-              animate={{ rotate: 360 }}
-              transition={{
-                duration: 1,
-                repeat: Infinity,
-                ease: "linear",
-              }}
-            >
-              <Sparkles className="w-4 h-4" />
-            </motion.div>
-            Processing...
-          </>
-        ) : (
-          <>
-            <Lock className="w-3.5 h-3.5" />
-            {isSingleCredit ? `Pay $${price}` : `Subscribe for $${price}/mo`}
-          </>
-        )}
-      </button>
-
-      <div className="flex items-center justify-center gap-1.5 pt-1">
-        <Shield className="w-3 h-3 text-[#d4d4d8]" />
-        <span
-          className="text-[10px] text-[#a1a1aa]"
-          style={{ fontFamily: "var(--font-body)" }}
-        >
-          Secured by Stripe. {isSingleCredit ? "One-time charge." : "Cancel anytime."}
-        </span>
-      </div>
-    </form>
-  );
-}
 
 function CheckoutModal({
   plan,
   billing,
   creditCount,
   onClose,
+  onSuccess,
 }: {
   plan: (typeof plans)[number] | null;
   billing: "monthly" | "yearly" | "single";
   creditCount?: number;
   onClose: () => void;
+  onSuccess?: () => void;
 }) {
+  const router = useRouter();
   const [done, setDone] = useState(false);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [redirecting, setRedirecting] = useState(false);
+  const [needsAuth, setNeedsAuth] = useState(false);
 
   const isSingleCredit = !plan && creditCount;
   const displayName = plan ? plan.name : `${creditCount} Credit${creditCount !== 1 ? "s" : ""}`;
@@ -333,10 +231,18 @@ function CheckoutModal({
     fetch("/api/create-payment-intent", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ priceId, mode }),
+      body: JSON.stringify({ priceId, mode, ...(isSingleCredit && creditCount ? { quantity: creditCount } : {}) }),
     })
-      .then((res) => {
-        if (!res.ok) throw new Error("Failed");
+      .then(async (res) => {
+        if (res.status === 401) {
+          setNeedsAuth(true);
+          throw new Error("Unauthorized");
+        }
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          console.error("Payment intent error:", errData);
+          throw new Error(errData.error || "Failed");
+        }
         return res.json();
       })
       .then((data) => {
@@ -344,8 +250,8 @@ function CheckoutModal({
           setClientSecret(data.clientSecret);
         }
       })
-      .catch(() => {
-        // Embedded form failed — will fall back to Stripe Checkout redirect
+      .catch((err) => {
+        console.error("Checkout form load error:", err);
       })
       .finally(() => setLoading(false));
   }, [plan, billing, creditCount, isSingleCredit]);
@@ -359,7 +265,7 @@ function CheckoutModal({
       const res = await fetch("/api/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ priceId, mode }),
+        body: JSON.stringify({ priceId, mode, ...(isSingleCredit && creditCount ? { quantity: creditCount } : {}) }),
       });
       if (!res.ok) { setRedirecting(false); return; }
       const data = await res.json();
@@ -397,6 +303,7 @@ function CheckoutModal({
           <X className="w-4 h-4 text-[#71717a]" />
         </button>
 
+        <div className="overflow-y-auto" style={{ maxHeight: "calc(100vh - 2rem)" }}>
         {done ? (
           <div className="p-6 sm:p-8 text-center">
             <motion.div
@@ -434,69 +341,6 @@ function CheckoutModal({
           </div>
         ) : (
           <>
-            {/* Header */}
-            <div
-              className="px-5 sm:px-8 pt-6 sm:pt-8 pb-5"
-              style={{
-                background: `linear-gradient(135deg, ${displayColorLight}, white)`,
-              }}
-            >
-              <div className="flex items-center gap-3 mb-4">
-                <div
-                  className="w-10 h-10 rounded-xl flex items-center justify-center"
-                  style={{ background: displayColor + "18" }}
-                >
-                  {isSingleCredit ? (
-                    <Zap className="w-5 h-5" style={{ color: displayColor }} />
-                  ) : plan?.id === "personal" ? (
-                    <Sparkles className="w-5 h-5" style={{ color: displayColor }} />
-                  ) : (
-                    <Crown className="w-5 h-5" style={{ color: displayColor }} />
-                  )}
-                </div>
-                <div>
-                  <h3
-                    className="text-lg text-[#18181b]"
-                    style={{ fontFamily: "var(--font-display)" }}
-                  >
-                    {displayName}
-                  </h3>
-                  <p
-                    className="text-[11px] text-[#a1a1aa]"
-                    style={{ fontFamily: "var(--font-body)" }}
-                  >
-                    {isSingleCredit ? `${credits} one-time credit${credits !== 1 ? "s" : ""}` : `${credits} credits/month`}
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-baseline gap-1">
-                <span
-                  className="text-3xl text-[#18181b]"
-                  style={{
-                    fontFamily: "var(--font-display)",
-                    fontWeight: 400,
-                  }}
-                >
-                  ${price}
-                </span>
-                <span
-                  className="text-[13px] text-[#a1a1aa]"
-                  style={{ fontFamily: "var(--font-body)" }}
-                >
-                  {isSingleCredit ? (
-                    " one-time"
-                  ) : (
-                    <>
-                      /month
-                      {billing === "yearly" && (
-                        <span className="ml-1 text-[11px]">(billed annually)</span>
-                      )}
-                    </>
-                  )}
-                </span>
-              </div>
-            </div>
-
             {/* Stripe Payment Form */}
             {loading ? (
               <div className="px-5 sm:px-8 py-12 flex items-center justify-center">
@@ -514,94 +358,61 @@ function CheckoutModal({
                 </span>
               </div>
             ) : clientSecret ? (
-              <Elements
-                stripe={stripePromise}
-                options={{
-                  clientSecret,
-                  appearance: {
-                    theme: "stripe",
-                    variables: {
-                      colorPrimary: displayColor,
-                      fontFamily: '"DM Sans", system-ui, sans-serif',
-                      borderRadius: "8px",
-                      fontSizeBase: "13px",
-                    },
-                    rules: {
-                      ".Input": {
-                        backgroundColor: "#fafafa",
-                        border: "1px solid #e4e4e7",
-                        boxShadow: "none",
-                      },
-                      ".Input:focus": {
-                        borderColor: "#a1a1aa",
-                        boxShadow: "none",
-                      },
-                      ".Label": {
-                        fontSize: "11px",
-                        fontWeight: "500",
-                        textTransform: "uppercase",
-                        letterSpacing: "0.05em",
-                        color: "#71717a",
-                      },
-                    },
-                  },
-                }}
-              >
-                <CheckoutForm
-                  displayColor={displayColor}
-                  isSingleCredit={!!isSingleCredit}
-                  price={price}
-                  onSuccess={() => setDone(true)}
-                />
-              </Elements>
-            ) : (
-              <div className="px-5 sm:px-8 py-6 space-y-4">
-                <p
-                  className="text-[13px] text-[#71717a] text-center"
-                  style={{ fontFamily: "var(--font-body)" }}
+              <div className="px-1 py-4">
+                <EmbeddedCheckoutProvider
+                  stripe={stripePromise}
+                  options={{ clientSecret }}
                 >
-                  You&apos;ll be redirected to Stripe&apos;s secure checkout to complete payment.
-                </p>
+                  <EmbeddedCheckout />
+                </EmbeddedCheckoutProvider>
+              </div>
+            ) : needsAuth ? (
+              <div className="px-5 sm:px-8 py-8 text-center space-y-4">
+                <div
+                  className="w-12 h-12 rounded-xl mx-auto flex items-center justify-center"
+                  style={{ background: displayColor + "18" }}
+                >
+                  <Lock className="w-5 h-5" style={{ color: displayColor }} />
+                </div>
+                <div>
+                  <h4
+                    className="text-[15px] text-[#18181b] mb-1"
+                    style={{ fontFamily: "var(--font-display)" }}
+                  >
+                    Sign in to continue
+                  </h4>
+                  <p
+                    className="text-[12px] text-[#a1a1aa]"
+                    style={{ fontFamily: "var(--font-body)" }}
+                  >
+                    You need to be signed in so we can add credits to your account.
+                  </p>
+                </div>
                 <button
-                  onClick={handleCheckoutRedirect}
-                  disabled={redirecting}
-                  className="w-full py-3 rounded-xl text-white text-[13px] transition-all cursor-pointer shadow-md hover:shadow-lg disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  onClick={() => router.push("/login?redirect=/upgrade")}
+                  className="w-full py-3 rounded-xl text-white text-[13px] transition-all cursor-pointer shadow-md hover:shadow-lg flex items-center justify-center gap-2"
                   style={{
                     fontFamily: "var(--font-body)",
                     fontWeight: 600,
                     background: displayColor,
                   }}
                 >
-                  {redirecting ? (
-                    <>
-                      <motion.div
-                        animate={{ rotate: 360 }}
-                        transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                      >
-                        <Sparkles className="w-4 h-4" />
-                      </motion.div>
-                      Redirecting to Stripe...
-                    </>
-                  ) : (
-                    <>
-                      <Lock className="w-3.5 h-3.5" />
-                      {isSingleCredit ? `Pay $${price}` : `Subscribe for $${price}/mo`}
-                    </>
-                  )}
+                  Sign in
                 </button>
-                <div className="flex items-center justify-center gap-1.5 pt-1">
-                  <Shield className="w-3 h-3 text-[#d4d4d8]" />
-                  <span
-                    className="text-[10px] text-[#a1a1aa]"
-                    style={{ fontFamily: "var(--font-body)" }}
-                  >
-                    Secured by Stripe. {isSingleCredit ? "One-time charge." : "Cancel anytime."}
-                  </span>
-                </div>
+              </div>
+            ) : (
+              <div className="px-5 sm:px-8 py-8 text-center">
+                <p
+                  className="text-[13px] text-[#71717a]"
+                  style={{ fontFamily: "var(--font-body)" }}
+                >
+                  Unable to load payment form. Please try again.
+                </p>
               </div>
             )}
           </>
         )}
+        </div>
       </motion.div>
     </motion.div>
   );
@@ -618,11 +429,31 @@ export default function UpgradePage() {
   const [singleCreditQty, setSingleCreditQty] = useState(5);
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
 
-  // Mock user data
-  const creditsUsed = 2;
-  const creditsTotal = 3;
-  const creditsRemaining = creditsTotal - creditsUsed;
-  const currentPlan = "Free";
+  // Real user profile data
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [profileLoading, setProfileLoading] = useState(true);
+
+  const fetchProfile = useCallback(async () => {
+    try {
+      const res = await fetch("/api/user");
+      if (res.ok) {
+        const data = await res.json();
+        setProfile(data);
+      }
+    } catch {
+      // silently fail — show free plan defaults
+    } finally {
+      setProfileLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchProfile();
+  }, [fetchProfile]);
+
+  const currentPlan = profile?.plan === "personal" ? "Personal" : profile?.plan === "creator" ? "Creator" : "Free";
+  const creditsTotal = profile?.plan === "creator" ? 200 : profile?.plan === "personal" ? 50 : 10;
+  const creditsRemaining = profile?.credits_remaining ?? 0;
 
   const openPlanCheckout = async (plan: (typeof plans)[number]) => {
     setLoadingPlan(plan.id);
@@ -749,12 +580,16 @@ export default function UpgradePage() {
               >
                 Current plan
               </p>
-              <p
-                className="text-[14px] text-[#18181b] leading-none"
-                style={{ fontFamily: "var(--font-display)" }}
-              >
-                {currentPlan}
-              </p>
+              {profileLoading ? (
+                <div className="h-[14px] w-16 rounded bg-[#f0f0f3] animate-pulse" />
+              ) : (
+                <p
+                  className="text-[14px] text-[#18181b] leading-none"
+                  style={{ fontFamily: "var(--font-display)" }}
+                >
+                  {currentPlan}
+                </p>
+              )}
             </div>
           </div>
 
@@ -776,23 +611,27 @@ export default function UpgradePage() {
               >
                 Credits remaining
               </p>
-              <div className="flex items-baseline gap-1">
-                <p
-                  className="text-[14px] leading-none"
-                  style={{
-                    fontFamily: "var(--font-display)",
-                    color: creditsRemaining > 0 ? "#7a9e7e" : "#c4876c",
-                  }}
-                >
-                  {creditsRemaining}
-                </p>
-                <span
-                  className="text-[11px] text-[#a1a1aa]"
-                  style={{ fontFamily: "var(--font-body)" }}
-                >
-                  / {creditsTotal}
-                </span>
-              </div>
+              {profileLoading ? (
+                <div className="h-[14px] w-12 rounded bg-[#f0f0f3] animate-pulse" />
+              ) : (
+                <div className="flex items-baseline gap-1">
+                  <p
+                    className="text-[14px] leading-none"
+                    style={{
+                      fontFamily: "var(--font-display)",
+                      color: creditsRemaining > 0 ? "#7a9e7e" : "#c4876c",
+                    }}
+                  >
+                    {creditsRemaining}
+                  </p>
+                  <span
+                    className="text-[11px] text-[#a1a1aa]"
+                    style={{ fontFamily: "var(--font-body)" }}
+                  >
+                    / {creditsTotal}
+                  </span>
+                </div>
+              )}
             </div>
           </div>
         </motion.div>
@@ -1092,33 +931,49 @@ export default function UpgradePage() {
                     </div>
 
                     {/* CTA */}
-                    <button
-                      onClick={() => openPlanCheckout(plan)}
-                      disabled={loadingPlan === plan.id}
-                      className="w-full py-3 rounded-xl text-[13px] transition-all cursor-pointer flex items-center justify-center gap-2 shadow-sm hover:shadow-md disabled:opacity-60 disabled:cursor-not-allowed"
-                      style={{
-                        fontFamily: "var(--font-body)",
-                        fontWeight: 600,
-                        background: plan.recommended
-                          ? plan.colorHex
-                          : "#18181b",
-                        color: "#fff",
-                      }}
-                    >
-                      {loadingPlan === plan.id ? (
-                        <>
-                          <motion.div
-                            animate={{ rotate: 360 }}
-                            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                          >
-                            <Sparkles className="w-4 h-4" />
-                          </motion.div>
-                          Processing...
-                        </>
-                      ) : (
-                        <>Get {plan.name} Plan</>
-                      )}
-                    </button>
+                    {profile?.plan === plan.id ? (
+                      <div
+                        className="w-full py-3 rounded-xl text-[13px] flex items-center justify-center gap-2 border-2"
+                        style={{
+                          fontFamily: "var(--font-body)",
+                          fontWeight: 600,
+                          borderColor: plan.colorHex + "40",
+                          color: plan.colorHex,
+                          background: plan.colorLightHex,
+                        }}
+                      >
+                        <Check className="w-4 h-4" />
+                        Current Plan
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => openPlanCheckout(plan)}
+                        disabled={loadingPlan === plan.id}
+                        className="w-full py-3 rounded-xl text-[13px] transition-all cursor-pointer flex items-center justify-center gap-2 shadow-sm hover:shadow-md disabled:opacity-60 disabled:cursor-not-allowed"
+                        style={{
+                          fontFamily: "var(--font-body)",
+                          fontWeight: 600,
+                          background: plan.recommended
+                            ? plan.colorHex
+                            : "#18181b",
+                          color: "#fff",
+                        }}
+                      >
+                        {loadingPlan === plan.id ? (
+                          <>
+                            <motion.div
+                              animate={{ rotate: 360 }}
+                              transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                            >
+                              <Sparkles className="w-4 h-4" />
+                            </motion.div>
+                            Processing...
+                          </>
+                        ) : (
+                          <>Get {plan.name} Plan</>
+                        )}
+                      </button>
+                    )}
 
                     {/* Features */}
                     <div className="mt-6 space-y-2.5">
@@ -1504,7 +1359,9 @@ export default function UpgradePage() {
               setShowCheckout(false);
               setCheckoutPlan(null);
               setCheckoutCredits(undefined);
+              fetchProfile();
             }}
+            onSuccess={fetchProfile}
           />
         )}
       </AnimatePresence>

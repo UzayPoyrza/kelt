@@ -49,6 +49,7 @@ import {
   Type,
   Clock3,
   Menu,
+  Pencil,
 } from "lucide-react";
 import svgPaths from "@/lib/svg-paths";
 import { suggestions, voices as sharedVoices, durations as sharedDurations, detectIntent, rotatingPhrases, protocols } from "@/lib/shared";
@@ -406,7 +407,7 @@ function PlayerBar({ session, isPlaying, onTogglePlay, onClose, inline, sound, v
       animate={{ y: 0, opacity: 1 }}
       exit={{ y: 40, opacity: 0 }}
       transition={{ type: "spring", stiffness: 400, damping: 30, mass: 0.8 }}
-      className={inline ? "border-t border-[#e4e4e7] bg-white/95 backdrop-blur-xl" : "fixed bottom-0 left-56 right-0 z-50 border-t border-[#e4e4e7] bg-white/95 backdrop-blur-xl"}
+      className={inline ? "border-t border-[#e4e4e7] bg-white/95 backdrop-blur-xl" : "fixed bottom-0 left-0 lg:left-56 right-0 z-50 border-t border-[#e4e4e7] bg-white/95 backdrop-blur-xl"}
     >
       {/* Progress bar */}
       <div className="h-[2px] bg-[#f0f0f3]">
@@ -417,9 +418,9 @@ function PlayerBar({ session, isPlaying, onTogglePlay, onClose, inline, sound, v
         />
       </div>
 
-      <div className="flex items-center gap-5 px-6 py-3">
-        {/* Session info */}
-        <div className="flex items-center gap-3 min-w-0 flex-1">
+      <div className="flex items-center gap-2 sm:gap-3 md:gap-5 px-3 sm:px-4 md:px-6 py-3">
+        {/* Session info — hidden on very small, icon-only on small, full on md+ */}
+        <div className="hidden md:flex items-center gap-3 min-w-0 flex-1">
           <div className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0" style={{ background: colors.bg }}>
             <Icon className="w-5 h-5" style={{ color: colors.accent }} />
           </div>
@@ -428,85 +429,91 @@ function PlayerBar({ session, isPlaying, onTogglePlay, onClose, inline, sound, v
             <p className="text-[11px] text-[#a1a1aa] truncate" style={{ fontFamily: "var(--font-body)" }}>{session.voice} · {session.duration} · {session.protocol}</p>
           </div>
         </div>
+        {/* Icon-only session info on small screens */}
+        <div className="flex md:hidden items-center shrink-0">
+          <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg flex items-center justify-center" style={{ background: colors.bg }}>
+            <Icon className="w-4 h-4 sm:w-5 sm:h-5" style={{ color: colors.accent }} />
+          </div>
+        </div>
 
         {/* Controls */}
-        <div className="flex items-center gap-2">
-          <button className="relative w-9 h-9 rounded-lg hover:bg-[#f4f4f5] flex items-center justify-center text-[#71717a] hover:text-[#18181b] transition-colors cursor-pointer" title="Back 10s">
-            <RotateCcw className="w-5 h-5" />
-            <span className="absolute text-[7px] font-bold" style={{ fontFamily: "var(--font-body)" }}>10</span>
+        <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+          <button className="relative w-8 h-8 sm:w-9 sm:h-9 rounded-lg hover:bg-[#f4f4f5] flex items-center justify-center text-[#71717a] hover:text-[#18181b] transition-colors cursor-pointer" title="Back 10s">
+            <RotateCcw className="w-4 h-4 sm:w-5 sm:h-5" />
+            <span className="absolute text-[6px] sm:text-[7px] font-bold" style={{ fontFamily: "var(--font-body)" }}>10</span>
           </button>
           <button
             onClick={onTogglePlay}
-            className="w-10 h-10 rounded-xl flex items-center justify-center transition-all cursor-pointer shadow-sm"
+            className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center transition-all cursor-pointer shadow-sm"
             style={{ background: isPlaying ? colors.accent : "#18181b", color: "#fff" }}
           >
             {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4 ml-0.5" />}
           </button>
-          <button className="relative w-9 h-9 rounded-lg hover:bg-[#f4f4f5] flex items-center justify-center text-[#71717a] hover:text-[#18181b] transition-colors cursor-pointer" title="Skip 10s">
-            <RotateCw className="w-5 h-5" />
-            <span className="absolute text-[7px] font-bold" style={{ fontFamily: "var(--font-body)" }}>10</span>
+          <button className="relative w-8 h-8 sm:w-9 sm:h-9 rounded-lg hover:bg-[#f4f4f5] flex items-center justify-center text-[#71717a] hover:text-[#18181b] transition-colors cursor-pointer" title="Skip 10s">
+            <RotateCw className="w-4 h-4 sm:w-5 sm:h-5" />
+            <span className="absolute text-[6px] sm:text-[7px] font-bold" style={{ fontFamily: "var(--font-body)" }}>10</span>
           </button>
         </div>
 
         {/* Right side — background sound + actions */}
-        <div className="flex items-center gap-3 flex-1 justify-end">
-        <div className="relative flex items-center gap-2.5 px-3 py-1.5 rounded-full bg-[#f4f4f5] border border-[#e8e8ec]">
-          <button
-            onClick={(e) => { e.stopPropagation(); setShowBgSound(!showBgSound); }}
-            className={`flex items-center gap-2 px-2.5 py-1 rounded-md text-[12px] transition-all cursor-pointer ${showBgSound ? "bg-[#18181b] text-white" : "text-[#3f3f46] hover:bg-[#e8e8ec]"}`}
-            style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}
-          >
-            <Music className={`w-3.5 h-3.5 ${showBgSound ? "text-white/70" : "text-[#71717a]"}`} />
-            <span>{bgSound}</span>
-            <ChevronDown className={`w-4 h-4 transition-transform ${showBgSound ? "rotate-180 text-white/70" : "text-[#71717a]"}`} />
-          </button>
-
-          <div className="w-[1px] h-3.5 bg-[#d4d4d8]" />
-
-          <div className="flex items-center gap-1">
-            <button onClick={() => setBgVol(bgVol > 0 ? 0 : 70)} className="text-[#71717a] hover:text-[#18181b] transition-colors cursor-pointer">
-              {bgVol === 0 ? <VolumeX className="w-3 h-3" /> : <Volume2 className="w-3 h-3" />}
+        <div className="flex items-center gap-1.5 sm:gap-2 md:gap-3 flex-1 justify-end min-w-0">
+          <div className="relative flex items-center gap-1.5 sm:gap-2.5 px-2 sm:px-3 py-1.5 rounded-full bg-[#f4f4f5] border border-[#e8e8ec] min-w-0">
+            <button
+              onClick={(e) => { e.stopPropagation(); setShowBgSound(!showBgSound); }}
+              className={`flex items-center gap-1.5 sm:gap-2 px-2 sm:px-2.5 py-1 rounded-md text-[12px] transition-all cursor-pointer min-w-0 ${showBgSound ? "bg-[#18181b] text-white" : "text-[#3f3f46] hover:bg-[#e8e8ec]"}`}
+              style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}
+            >
+              <Music className={`w-3.5 h-3.5 shrink-0 ${showBgSound ? "text-white/70" : "text-[#71717a]"}`} />
+              <span className="truncate max-w-[60px] sm:max-w-[80px] md:max-w-none">{bgSound}</span>
+              <ChevronDown className={`w-4 h-4 shrink-0 transition-transform ${showBgSound ? "rotate-180 text-white/70" : "text-[#71717a]"}`} />
             </button>
-            <input
-              type="range" min={0} max={100} value={bgVol}
-              onChange={(e) => setBgVol(Number(e.target.value))}
-              className="w-24 h-[3px] rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-2.5 [&::-webkit-slider-thumb]:h-2.5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-[#3f3f46] [&::-webkit-slider-thumb]:cursor-pointer"
-              style={{ background: `linear-gradient(to right, #3f3f46 ${bgVol}%, #d4d4d8 ${bgVol}%)` }}
-            />
+
+            <div className="w-[1px] h-3.5 bg-[#d4d4d8] hidden sm:block" />
+
+            <div className="hidden sm:flex items-center gap-1">
+              <button onClick={() => setBgVol(bgVol > 0 ? 0 : 70)} className="text-[#71717a] hover:text-[#18181b] transition-colors cursor-pointer">
+                {bgVol === 0 ? <VolumeX className="w-3 h-3" /> : <Volume2 className="w-3 h-3" />}
+              </button>
+              <input
+                type="range" min={0} max={100} value={bgVol}
+                onChange={(e) => setBgVol(Number(e.target.value))}
+                className="w-16 md:w-24 h-[3px] rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-2.5 [&::-webkit-slider-thumb]:h-2.5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-[#3f3f46] [&::-webkit-slider-thumb]:cursor-pointer"
+                style={{ background: `linear-gradient(to right, #3f3f46 ${bgVol}%, #d4d4d8 ${bgVol}%)` }}
+              />
+            </div>
+
+            {/* Dropdown */}
+            {showBgSound && (
+              <>
+                <div className="fixed inset-0 z-[60]" onClick={() => setShowBgSound(false)} />
+                <div className="absolute bottom-full right-0 sm:right-auto sm:left-0 mb-2 w-52 bg-white rounded-lg border border-[#e4e4e7] shadow-lg z-[70] max-h-64 overflow-y-auto">
+                  {Object.entries(soundCategories).map(([key, cat], catIdx) => (
+                    <div key={key}>
+                      <div className={`px-3 py-1.5 bg-[#f7f7f8] ${catIdx > 0 ? "border-t border-[#e4e4e7]" : ""}`}>
+                        <span className="text-[9px] uppercase tracking-wider text-[#a1a1aa] font-medium" style={{ fontFamily: "var(--font-body)" }}>
+                          {cat.label}{key === "recommended" ? " — Default" : ""}
+                        </span>
+                      </div>
+                      {cat.items.map((s, i) => (
+                        <button key={s} onClick={() => { setBgSound(s); setShowBgSound(false); }}
+                          className={`w-full flex items-center justify-between px-3 py-2 hover:bg-[#f4f4f5] transition-colors cursor-pointer text-left ${i > 0 ? "border-t border-[#f0f0f3]" : ""}`}>
+                          <span className="text-[12px] text-[#18181b]" style={{ fontFamily: "var(--font-body)" }}>{s}</span>
+                          {s === bgSound && <Check className="w-3 h-3 text-[#6b9a70]" />}
+                        </button>
+                      ))}
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
           </div>
 
-          {/* Dropdown */}
-          {showBgSound && (
-            <>
-              <div className="fixed inset-0 z-[60]" onClick={() => setShowBgSound(false)} />
-              <div className="absolute bottom-full left-0 mb-2 w-52 bg-white rounded-lg border border-[#e4e4e7] shadow-lg z-[70] max-h-64 overflow-y-auto">
-                {Object.entries(soundCategories).map(([key, cat], catIdx) => (
-                  <div key={key}>
-                    <div className={`px-3 py-1.5 bg-[#f7f7f8] ${catIdx > 0 ? "border-t border-[#e4e4e7]" : ""}`}>
-                      <span className="text-[9px] uppercase tracking-wider text-[#a1a1aa] font-medium" style={{ fontFamily: "var(--font-body)" }}>
-                        {cat.label}{key === "recommended" ? " — Default" : ""}
-                      </span>
-                    </div>
-                    {cat.items.map((s, i) => (
-                      <button key={s} onClick={() => { setBgSound(s); setShowBgSound(false); }}
-                        className={`w-full flex items-center justify-between px-3 py-2 hover:bg-[#f4f4f5] transition-colors cursor-pointer text-left ${i > 0 ? "border-t border-[#f0f0f3]" : ""}`}>
-                        <span className="text-[12px] text-[#18181b]" style={{ fontFamily: "var(--font-body)" }}>{s}</span>
-                        {s === bgSound && <Check className="w-3 h-3 text-[#6b9a70]" />}
-                      </button>
-                    ))}
-                  </div>
-                ))}
-              </div>
-            </>
-          )}
-        </div>
-
-          <button className="w-8 h-8 rounded-lg hover:bg-[#f4f4f5] flex items-center justify-center text-[#71717a] hover:text-[#18181b] transition-colors cursor-pointer">
+          <button className="hidden sm:flex w-8 h-8 rounded-lg hover:bg-[#f4f4f5] items-center justify-center text-[#71717a] hover:text-[#18181b] transition-colors cursor-pointer shrink-0">
             <Download className="w-4 h-4" />
           </button>
           <button
             onClick={onClose}
-            className="w-8 h-8 rounded-lg hover:bg-[#f4f4f5] flex items-center justify-center text-[#a1a1aa] hover:text-[#18181b] transition-colors cursor-pointer"
+            className="w-8 h-8 rounded-lg hover:bg-[#f4f4f5] flex items-center justify-center text-[#a1a1aa] hover:text-[#18181b] transition-colors cursor-pointer shrink-0"
           >
             <X className="w-4 h-4" />
           </button>
@@ -1878,7 +1885,7 @@ function StudioPageContent() {
   const [sessions, setSessions] = useState<SessionItem[]>([]);
   const [generations, setGenerations] = useState<GenerationItem[]>([]);
   const [sessionsLoading, setSessionsLoading] = useState(true);
-  const { profile, refetch: refetchProfile } = useProfile();
+  const { profile, loading: profileLoading, refetch: refetchProfile } = useProfile();
   const [voicePlaying, setVoicePlaying] = useState<string | null>(null);
 
   // Bottom player state
@@ -1964,12 +1971,25 @@ function StudioPageContent() {
     return () => document.removeEventListener("visibilitychange", onVisible);
   }, [refetchProfile, fetchSessions, fetchGenerations]);
 
-  // Handle checkout return
+  // Handle checkout return — verify session with backend before refreshing profile
   useEffect(() => {
     if (searchParams.get("checkout") === "success") {
-      refetchProfile();
-      // Clean URL
-      window.history.replaceState({}, "", "/studio");
+      const sessionId = searchParams.get("session_id");
+      if (sessionId) {
+        fetch("/api/verify-checkout", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ sessionId }),
+        })
+          .catch(() => {}) // webhook is the safety net
+          .finally(() => {
+            refetchProfile();
+            window.history.replaceState({}, "", "/studio");
+          });
+      } else {
+        refetchProfile();
+        window.history.replaceState({}, "", "/studio");
+      }
     }
   }, [searchParams, refetchProfile]);
 
@@ -2132,6 +2152,22 @@ function StudioPageContent() {
           </nav>
           <div className="mt-auto px-0 pb-0">
             <div className="px-4 py-4 border-t border-[#e4e4e7]" style={{ background: "#fdf8f7" }}>
+              {profileLoading ? (
+                <div className="animate-pulse space-y-3">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-full bg-[var(--color-sand-200)]" />
+                    <div className="flex-1 space-y-1.5">
+                      <div className="h-3 w-20 rounded bg-[var(--color-sand-200)]" />
+                      <div className="h-2.5 w-14 rounded bg-[var(--color-sand-100)]" />
+                    </div>
+                  </div>
+                  <div className="px-2 space-y-1.5">
+                    <div className="h-2.5 w-full rounded bg-[var(--color-sand-100)]" />
+                    <div className="h-2.5 w-full rounded bg-[var(--color-sand-100)]" />
+                  </div>
+                </div>
+              ) : (
+              <>
               <div className="flex items-center gap-2.5 mb-3 flex-wrap">
                 {profile?.avatar_url ? (
                   <img src={profile.avatar_url} alt="" className="w-8 h-8 rounded-full shrink-0 object-cover" />
@@ -2144,9 +2180,11 @@ function StudioPageContent() {
                   <p className="text-xs text-[var(--color-sand-900)]" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>{profile?.display_name || "User"}</p>
                   <p className="text-[10px] text-[var(--color-sand-500)]" style={{ fontFamily: "var(--font-body)" }}>{profile?.plan === "free" ? "Free plan" : `${profile?.plan?.charAt(0).toUpperCase()}${profile?.plan?.slice(1)} plan`}</p>
                 </div>
+                {profile?.plan === "free" && (
                 <a href="/upgrade" className="text-[11px] px-3.5 py-1.5 rounded-lg text-white bg-clip-padding bg-[length:300%_300%] animate-[border-glow_4s_ease_infinite] hover:opacity-90 transition-opacity cursor-pointer shadow-sm shrink-0" style={{ fontFamily: "var(--font-body)", fontWeight: 600, backgroundImage: "linear-gradient(135deg, var(--color-sage), var(--color-ocean), var(--color-dusk), var(--color-ember), var(--color-sage))", backgroundSize: "300% 300%" }}>
                   Upgrade
                 </a>
+                )}
               </div>
               <div className="px-2 mb-2 space-y-1">
                 <div className="flex items-center justify-between">
@@ -2161,6 +2199,8 @@ function StudioPageContent() {
               <button onClick={async () => { await fetch("/api/auth/signout", { method: "POST" }); router.push("/"); }} className="flex items-center gap-1.5 px-2 py-1 rounded-md text-red-600 hover:text-red-700 transition-all text-[11px] cursor-pointer" style={{ fontFamily: "var(--font-body)" }}>
                 <LogOut className="w-3.5 h-3.5" /> Sign out
               </button>
+              </>
+              )}
             </div>
           </div>
         </aside>
@@ -2254,6 +2294,22 @@ function StudioPageContent() {
 
         <div className="mt-auto px-0 pb-0">
           <div className="px-4 py-4 border-t border-[#e4e4e7]" style={{ background: "#fdf8f7" }}>
+            {profileLoading ? (
+              <div className="animate-pulse space-y-3">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-full bg-[var(--color-sand-200)]" />
+                  <div className="flex-1 space-y-1.5">
+                    <div className="h-3 w-20 rounded bg-[var(--color-sand-200)]" />
+                    <div className="h-2.5 w-14 rounded bg-[var(--color-sand-100)]" />
+                  </div>
+                </div>
+                <div className="px-2 space-y-1.5">
+                  <div className="h-2.5 w-full rounded bg-[var(--color-sand-100)]" />
+                  <div className="h-2.5 w-full rounded bg-[var(--color-sand-100)]" />
+                </div>
+              </div>
+            ) : (
+            <>
             <div className="flex items-center gap-2.5 mb-3 flex-wrap">
               {profile?.avatar_url ? (
                 <img src={profile.avatar_url} alt="" className="w-8 h-8 rounded-full shrink-0 object-cover" />
@@ -2266,9 +2322,11 @@ function StudioPageContent() {
                 <p className="text-xs text-[var(--color-sand-900)]" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>{profile?.display_name || "User"}</p>
                 <p className="text-[10px] text-[var(--color-sand-500)]" style={{ fontFamily: "var(--font-body)" }}>{profile?.plan === "free" ? "Free plan" : `${profile?.plan?.charAt(0).toUpperCase()}${profile?.plan?.slice(1)} plan`}</p>
               </div>
+              {profile?.plan === "free" && (
               <a href="/upgrade" className="text-[11px] px-3.5 py-1.5 rounded-lg text-white bg-clip-padding bg-[length:300%_300%] animate-[border-glow_4s_ease_infinite] hover:opacity-90 transition-opacity cursor-pointer shadow-sm shrink-0" style={{ fontFamily: "var(--font-body)", fontWeight: 600, backgroundImage: "linear-gradient(135deg, var(--color-sage), var(--color-ocean), var(--color-dusk), var(--color-ember), var(--color-sage))", backgroundSize: "300% 300%" }}>
                 Upgrade
               </a>
+              )}
             </div>
             <div className="px-2 mb-2 space-y-1">
               <div className="flex items-center justify-between">
@@ -2283,6 +2341,8 @@ function StudioPageContent() {
             <button onClick={async () => { await fetch("/api/auth/signout", { method: "POST" }); router.push("/"); }} className="flex items-center gap-1.5 px-2 py-1 rounded-md text-red-600 hover:text-red-700 transition-all text-[11px] cursor-pointer" style={{ fontFamily: "var(--font-body)" }}>
               <LogOut className="w-3.5 h-3.5" /> Sign out
             </button>
+            </>
+            )}
           </div>
         </div>
       </motion.aside>
@@ -2662,6 +2722,16 @@ function StudioPageContent() {
                     </span>
                   </motion.span>
                 </h1>
+                {/* Step hint */}
+                <p className="text-[11px] text-[var(--color-sand-400)] mb-6 flex items-center justify-center gap-1.5" style={{ fontFamily: "var(--font-body)" }}>
+                  <span className="inline-flex items-center justify-center w-4 h-4 rounded-full leading-none pt-px bg-[var(--color-sand-900)] text-[var(--color-sand-50)] text-[9px] font-medium">1</span>
+                  <span>Prompt</span>
+                  <span className="text-[var(--color-sand-300)]">→</span>
+                  <span className="text-[var(--color-sand-300)]">Customize</span>
+                  <span className="text-[var(--color-sand-300)]">→</span>
+                  <span className="text-[var(--color-sand-300)]">Generate</span>
+                </p>
+
                 <div className="w-full mb-8 relative rounded-xl group">
                   <div className="absolute -inset-[2px] rounded-xl bg-[length:300%_300%] animate-[border-glow_4s_ease_infinite] opacity-80 group-focus-within:opacity-100 transition-opacity duration-300 blur-[0.5px]"
                     style={{ background: "linear-gradient(135deg, var(--color-sage), var(--color-ocean), var(--color-dusk), var(--color-ember), var(--color-sage))", backgroundSize: "300% 300%" }} />
@@ -2705,9 +2775,38 @@ function StudioPageContent() {
                   <ChevronLeft className="w-4 h-4" />Back
                 </motion.button>
 
-                {/* Prompt display */}
-                <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="mb-10 text-center">
-                  <p className="text-2xl text-[var(--color-sand-900)] max-w-md mx-auto leading-snug" style={{ fontFamily: "var(--font-display)" }}>&ldquo;{genConfig.prompt}&rdquo;</p>
+                {/* Step indicator */}
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.05 }} className="flex items-center justify-center gap-1.5 mb-6 sm:mb-8 text-[11px]" style={{ fontFamily: "var(--font-body)" }}>
+                  <span className="text-[var(--color-sand-400)] flex items-center gap-1">
+                    <span className="inline-flex items-center justify-center w-4 h-4 rounded-full leading-none pt-px border border-[var(--color-sand-300)] text-[var(--color-sand-400)] text-[9px] font-medium">1</span>
+                    Prompt
+                  </span>
+                  <span className="text-[var(--color-sand-300)]">→</span>
+                  <span className="text-[var(--color-sand-900)] flex items-center gap-1 font-medium">
+                    <span className="inline-flex items-center justify-center w-4 h-4 rounded-full leading-none pt-px bg-[var(--color-sand-900)] text-[var(--color-sand-50)] text-[9px] font-medium">2</span>
+                    Customize
+                  </span>
+                  <span className="text-[var(--color-sand-300)]">→</span>
+                  <span className="text-[var(--color-sand-300)] flex items-center gap-1">
+                    <span className="inline-flex items-center justify-center w-4 h-4 rounded-full leading-none pt-px border border-[var(--color-sand-300)] text-[var(--color-sand-300)] text-[9px] font-medium">3</span>
+                    Generate
+                  </span>
+                </motion.div>
+
+                {/* Editable prompt */}
+                <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="mb-10 text-center max-w-md mx-auto">
+                  <p className="text-2xl text-[var(--color-sand-900)] leading-snug inline" style={{ fontFamily: "var(--font-display)" }}>
+                    <span className="text-[var(--color-sand-400)] select-none">&ldquo;</span>
+                    <span
+                      contentEditable
+                      suppressContentEditableWarning
+                      onBlur={(e) => setGenConfig(prev => ({ ...prev, prompt: e.currentTarget.textContent || "" }))}
+                      onKeyDown={(e) => { if (e.key === "Enter") e.preventDefault(); }}
+                      className="outline-none border-b border-transparent focus:border-[var(--color-sand-300)] transition-colors"
+                    >{genConfig.prompt}</span>
+                    <span className="text-[var(--color-sand-400)] select-none">&rdquo;</span>
+                    <Pencil className="w-3 h-3 text-[var(--color-sand-400)] inline-block ml-1.5 mb-1" />
+                  </p>
                 </motion.div>
 
                 {/* Duration */}
@@ -2880,6 +2979,20 @@ function StudioPageContent() {
                       <h3 className="text-[11px] uppercase tracking-wide text-[var(--color-sand-900)]" style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}>Account</h3>
                     </div>
                     <div className="p-4 sm:p-6">
+                      {profileLoading ? (
+                      <div className="animate-pulse">
+                        <div className="flex items-center gap-3.5 mb-5">
+                          <div className="w-10 h-10 rounded-full bg-[var(--color-sand-200)]" />
+                          <div className="flex-1 space-y-2">
+                            <div className="h-3.5 w-40 rounded bg-[var(--color-sand-200)]" />
+                            <div className="flex items-center gap-2">
+                              <div className="h-4 w-14 rounded-full bg-[var(--color-sand-100)]" />
+                              <div className="h-3 w-24 rounded bg-[var(--color-sand-100)]" />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      ) : (
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
                         <div className="flex items-center gap-3.5 min-w-0">
                           <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0" style={{ background: "linear-gradient(135deg, var(--color-sage), var(--color-ocean))" }}>
@@ -2893,13 +3006,23 @@ function StudioPageContent() {
                             </div>
                           </div>
                         </div>
+                        {profile?.plan === "free" ? (
                         <button
                           onClick={() => router.push("/upgrade")}
                           className="px-4 py-2 rounded-full text-[12px] text-white cursor-pointer transition-all hover:scale-[1.02] active:scale-[0.97] shadow-sm shrink-0 self-start sm:self-center"
                           style={{ fontFamily: "var(--font-body)", fontWeight: 600, background: "linear-gradient(135deg, #5a9a62, #6bb070)" }}>
-                          Upgrade to Pro
+                          Upgrade
                         </button>
+                        ) : (
+                        <button
+                          onClick={() => router.push("/upgrade")}
+                          className="px-4 py-2 rounded-full text-[12px] text-[var(--color-sand-600)] border border-[var(--color-sand-200)] hover:bg-[var(--color-sand-50)] cursor-pointer transition-all shrink-0 self-start sm:self-center"
+                          style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>
+                          Manage Plan
+                        </button>
+                        )}
                       </div>
+                      )}
                       <div className="pt-4 border-t border-[var(--color-sand-100)]">
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                           <div>
