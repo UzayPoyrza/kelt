@@ -199,7 +199,7 @@ export function Header({ showNavLinks = false, onScrollToInfo, onScrollToHow, on
   return (
     <>
       {/* Default header */}
-      <header className="relative z-50 px-8 py-5">
+      <header className="relative z-50 px-4 sm:px-8 py-4 sm:py-5">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <a href="/" className="flex items-center gap-2 text-[var(--color-sand-900)] cursor-pointer">
             <Logo />
@@ -207,9 +207,9 @@ export function Header({ showNavLinks = false, onScrollToInfo, onScrollToHow, on
               MindFlow
             </span>
           </a>
-          <div className="flex items-center gap-5">
+          <div className="flex items-center gap-3 sm:gap-5">
             {showNavLinks && (
-              <>
+              <div className="hidden sm:flex items-center gap-5">
                 <button
                   onClick={onScrollToInfo}
                   className="text-sm text-[var(--color-sand-500)] hover:text-[var(--color-sand-900)] transition-colors cursor-pointer"
@@ -224,11 +224,11 @@ export function Header({ showNavLinks = false, onScrollToInfo, onScrollToHow, on
                 >
                   How it works
                 </button>
-              </>
+              </div>
             )}
             <a
               href="/login"
-              className="px-4 py-2 rounded-xl bg-[var(--color-sand-900)] hover:bg-[var(--color-sand-800)] transition-colors text-sm cursor-pointer"
+              className="px-3 sm:px-4 py-2 rounded-xl bg-[var(--color-sand-900)] hover:bg-[var(--color-sand-800)] transition-colors text-xs sm:text-sm cursor-pointer whitespace-nowrap"
               style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}
             >
               <span className="text-[var(--color-sand-50)]">Sign in / </span>
@@ -236,7 +236,7 @@ export function Header({ showNavLinks = false, onScrollToInfo, onScrollToHow, on
                 className="bg-clip-text text-transparent bg-[length:300%_300%] animate-[border-glow_4s_ease_infinite]"
                 style={{ backgroundImage: "linear-gradient(135deg, var(--color-sage), var(--color-ocean), var(--color-dusk), var(--color-ember), var(--color-sage))", backgroundSize: "300% 300%" }}
               >
-                Kilt Studio
+                Kelt Studio
               </span>
             </a>
           </div>
@@ -253,10 +253,10 @@ export function Header({ showNavLinks = false, onScrollToInfo, onScrollToHow, on
             transition={{ type: "spring", stiffness: 400, damping: 28, mass: 0.8 }}
             className="fixed top-4 left-1/2 -translate-x-1/2 z-[100]"
           >
-            <div className="flex items-center gap-3 px-3 py-2 rounded-full bg-[var(--color-sand-900)]/95 backdrop-blur-md shadow-lg border border-white/[0.08]">
+            <div className="flex items-center gap-2 sm:gap-3 px-2.5 sm:px-3 py-2 rounded-full bg-[var(--color-sand-900)]/95 backdrop-blur-md shadow-lg border border-white/[0.08]">
               <a href="/" className="flex items-center gap-2 text-[var(--color-sand-50)] pl-1 cursor-pointer">
                 <Logo />
-                <span className="text-sm tracking-tight" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>
+                <span className="text-sm tracking-tight hidden sm:inline" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>
                   MindFlow
                 </span>
               </a>
@@ -265,7 +265,7 @@ export function Header({ showNavLinks = false, onScrollToInfo, onScrollToHow, on
 
               <button
                 onClick={onGenerate || (() => window.scrollTo({ top: 0, behavior: "smooth" }))}
-                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white/10 hover:bg-white/15 text-[var(--color-sand-50)] text-sm transition-colors cursor-pointer"
+                className="flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 rounded-full bg-white/10 hover:bg-white/15 text-[var(--color-sand-50)] text-xs sm:text-sm transition-colors cursor-pointer"
                 style={{ fontFamily: "var(--font-body)" }}
               >
                 <Sparkles className="w-3.5 h-3.5" />
@@ -274,16 +274,10 @@ export function Header({ showNavLinks = false, onScrollToInfo, onScrollToHow, on
 
               <a
                 href="/login"
-                className="flex items-center gap-0 px-3.5 py-1.5 rounded-full bg-white/10 hover:bg-white/15 text-sm transition-colors cursor-pointer"
+                className="flex items-center gap-0 px-3 sm:px-3.5 py-1.5 rounded-full bg-white/10 hover:bg-white/15 text-xs sm:text-sm transition-colors cursor-pointer text-[var(--color-sand-50)]"
                 style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}
               >
-                <span className="text-[var(--color-sand-50)]">Sign in /&nbsp;</span>
-                <span
-                  className="bg-clip-text text-transparent bg-[length:300%_300%] animate-[border-glow_4s_ease_infinite]"
-                  style={{ backgroundImage: "linear-gradient(135deg, var(--color-sage), var(--color-ocean), var(--color-dusk), var(--color-ember), var(--color-sage))", backgroundSize: "300% 300%" }}
-                >
-                  Kilt Studio
-                </span>
+                Sign in
               </a>
             </div>
           </motion.div>

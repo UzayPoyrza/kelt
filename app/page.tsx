@@ -49,7 +49,7 @@ function CinematicTransition() {
   return (
     <div
       ref={ref}
-      className="relative py-32 px-6 overflow-hidden"
+      className="relative py-16 sm:py-24 md:py-32 px-4 sm:px-6 overflow-hidden"
       style={{ background: "var(--color-sand-800)" }}
     >
       {/* Giant ghost text — slow drift */}
@@ -74,7 +74,7 @@ function CinematicTransition() {
       </div>
 
       {/* Heading */}
-      <div className="relative z-10 max-w-3xl mx-auto text-center mb-20">
+      <div className="relative z-10 max-w-3xl mx-auto text-center mb-10 sm:mb-16 md:mb-20">
         <motion.p
           className="text-xs uppercase tracking-[0.3em] text-white/30 mb-4"
           style={{ fontFamily: "var(--font-body)" }}
@@ -88,7 +88,7 @@ function CinematicTransition() {
         {["Why our AI sessions", "sound different"].map((line, lineIdx) => (
           <div key={lineIdx} className="overflow-hidden">
             <motion.p
-              className="text-[2.5rem] md:text-[3.5rem] text-white leading-tight tracking-tight"
+              className="text-[1.75rem] sm:text-[2.5rem] md:text-[3.5rem] text-white leading-tight tracking-tight"
               style={{ fontFamily: "var(--font-display)" }}
               initial={{ y: "100%" }}
               animate={inView ? { y: "0%" } : {}}
@@ -113,7 +113,7 @@ function CinematicTransition() {
       </div>
 
       {/* Testimonials — integrated, minimal */}
-      <div className="relative z-10 max-w-4xl mx-auto grid md:grid-cols-3 gap-x-12 gap-y-10">
+      <div className="relative z-10 max-w-4xl mx-auto grid md:grid-cols-3 gap-x-12 gap-y-8 sm:gap-y-10">
         {testimonials.map((t, i) => (
           <motion.div
             key={t.name}
@@ -269,7 +269,7 @@ export default function HomePage() {
         />
 
         {/* Generator */}
-        <div className="relative z-10 flex-1 flex items-center justify-center px-6 pb-20">
+        <div className="relative z-10 flex-1 flex items-center justify-center px-4 sm:px-6 pb-20">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -279,14 +279,14 @@ export default function HomePage() {
             {/* Hidden measurer */}
             <span
               ref={measureRef}
-              className="absolute opacity-0 pointer-events-none text-[2rem] md:text-[2.75rem] italic font-bold whitespace-nowrap"
+              className="absolute opacity-0 pointer-events-none text-[1.5rem] sm:text-[2rem] md:text-[2.75rem] italic font-bold whitespace-nowrap"
               style={{ fontFamily: "var(--font-display)" }}
               aria-hidden="true"
             >
               {rotatingPhrases[phraseIndex]}
             </span>
 
-            <h1 className="text-[2rem] md:text-[2.75rem] text-[var(--color-sand-900)] text-center mb-8 leading-[1.2] whitespace-nowrap flex items-baseline justify-center">
+            <h1 className="text-[1.5rem] sm:text-[2rem] md:text-[2.75rem] text-[var(--color-sand-900)] text-center mb-8 leading-[1.2] sm:whitespace-nowrap flex items-baseline justify-center flex-wrap sm:flex-nowrap">
               <span>Generate&nbsp;</span>
               <motion.span
                 className="relative inline-block overflow-hidden pl-[0.05em]"
@@ -378,11 +378,11 @@ export default function HomePage() {
           <span className="relative rounded-full">
             <span className="absolute -inset-[2px] rounded-full bg-[length:300%_300%] animate-[border-glow_4s_ease_infinite] opacity-80 group-hover:opacity-100 transition-opacity duration-300 blur-[0.5px]" style={{ background: "linear-gradient(135deg, var(--color-sage), var(--color-ocean), var(--color-dusk), var(--color-ember), var(--color-sage))", backgroundSize: "300% 300%" }} />
             <span
-              className="relative flex items-center gap-3 px-10 py-5 rounded-full bg-[var(--color-sand-900)] text-[var(--color-sand-50)] shadow-lg group-hover:bg-[var(--color-sand-800)] group-hover:shadow-xl transition-all"
+              className="relative flex items-center gap-2 sm:gap-3 px-6 py-3 sm:px-10 sm:py-5 rounded-full bg-[var(--color-sand-900)] text-[var(--color-sand-50)] shadow-lg group-hover:bg-[var(--color-sand-800)] group-hover:shadow-xl transition-all"
               style={{ fontFamily: "var(--font-body)" }}
             >
               <Headphones className="w-5 h-5" />
-              <span className="text-base font-medium">Listen to examples</span>
+              <span className="text-sm sm:text-base font-medium">Listen to examples</span>
             </span>
           </span>
           <motion.div animate={{ y: [0, 5, 0] }} transition={{ duration: 1.5, repeat: Infinity }}>
@@ -394,10 +394,10 @@ export default function HomePage() {
       {/* ════════════════════════════════════════════
           SECTION 0 — AUDIO SAMPLES
          ════════════════════════════════════════════ */}
-      <section ref={infoRef} className="relative min-h-screen pb-24 px-6 scroll-mt-0" style={{ background: "var(--color-sand-900)" }}>
-        <div className="max-w-6xl mx-auto w-full pt-32">
+      <section ref={infoRef} className="relative min-h-screen pb-24 sm:pb-24 px-4 sm:px-6 scroll-mt-0" style={{ background: "var(--color-sand-900)" }}>
+        <div className="max-w-6xl mx-auto w-full pt-12 sm:pt-24 md:pt-32">
           <FadeIn className="text-center mb-10">
-            <h2 className="text-[2.5rem] md:text-[3.5rem] text-[var(--color-sand-50)] leading-tight mb-4">
+            <h2 className="text-[1.75rem] sm:text-[2.5rem] md:text-[3.5rem] text-[var(--color-sand-50)] leading-tight mb-4">
               Don&apos;t take our word for it.<br /><span className="bg-clip-text text-transparent bg-[length:300%_300%] animate-[border-glow_4s_ease_infinite]" style={{ backgroundImage: "linear-gradient(135deg, var(--color-sage), var(--color-ocean), var(--color-dusk), var(--color-ember), var(--color-sage))", backgroundSize: "300% 300%" }}>Listen.</span>
             </h2>
             <p className="text-base text-white/50 max-w-xl mx-auto leading-relaxed" style={{ fontFamily: "var(--font-body)" }}>
@@ -429,16 +429,16 @@ export default function HomePage() {
                       </div>
 
                       <div className="space-y-2 mb-3" style={{ fontFamily: "var(--font-body)" }}>
-                        <div className="flex items-baseline gap-3">
-                          <span className="text-[10px] uppercase tracking-wider text-white/25 w-16 shrink-0">Prompt</span>
+                        <div className="flex items-baseline gap-2 sm:gap-3">
+                          <span className="text-[10px] uppercase tracking-wider text-white/25 w-14 sm:w-16 shrink-0">Prompt</span>
                           <span className="text-xs text-white/50 italic">&ldquo;{s.prompt}&rdquo;</span>
                         </div>
-                        <div className="flex items-baseline gap-3">
-                          <span className="text-[10px] uppercase tracking-wider text-white/25 w-16 shrink-0">Voice</span>
+                        <div className="flex items-baseline gap-2 sm:gap-3">
+                          <span className="text-[10px] uppercase tracking-wider text-white/25 w-14 sm:w-16 shrink-0">Voice</span>
                           <span className="text-xs text-white/50">{s.voice}</span>
                         </div>
-                        <div className="flex items-center gap-3">
-                          <span className="text-[10px] uppercase tracking-wider text-white/25 w-16 shrink-0">Sound</span>
+                        <div className="flex items-center gap-2 sm:gap-3">
+                          <span className="text-[10px] uppercase tracking-wider text-white/25 w-14 sm:w-16 shrink-0">Sound</span>
                           <div className="flex flex-wrap gap-1">
                             {(soundscapePresets[s.id] || soundscapePresets.default).map((preset) => {
                               const isSelected = sampleSound[s.id] === preset.label;
@@ -454,8 +454,8 @@ export default function HomePage() {
                             })}
                           </div>
                         </div>
-                        <div className="flex items-baseline gap-3">
-                          <span className="text-[10px] uppercase tracking-wider text-white/25 w-16 shrink-0">Protocol</span>
+                        <div className="flex items-baseline gap-2 sm:gap-3">
+                          <span className="text-[10px] uppercase tracking-wider text-white/25 w-14 sm:w-16 shrink-0">Protocol</span>
                           <span className="text-xs text-white/50">{s.protocol}</span>
                         </div>
                       </div>
@@ -468,7 +468,7 @@ export default function HomePage() {
           </div>
         </div>
 
-        <motion.div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1 }}>
+        <motion.div className="absolute bottom-4 sm:bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1 }}>
           <span className="text-[10px] uppercase tracking-[0.2em] text-white/25" style={{ fontFamily: "var(--font-body)" }}>Scroll</span>
           <motion.div animate={{ y: [0, 6, 0] }} transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}>
             <ChevronDown className="w-5 h-5 text-white/30" />
@@ -484,13 +484,13 @@ export default function HomePage() {
       {/* ════════════════════════════════════════════
           SECTION 1 — PAUSE INTELLIGENCE
          ════════════════════════════════════════════ */}
-      <section ref={howRef} className="relative py-20 px-6 overflow-hidden" style={{ background: "var(--color-sand-50)" }}>
+      <section ref={howRef} className="relative py-12 sm:py-16 md:py-20 px-4 sm:px-6 overflow-hidden" style={{ background: "var(--color-sand-50)" }}>
         <div className="max-w-4xl mx-auto">
           <FadeIn className="text-center mb-14">
             <p className="text-xs uppercase tracking-[0.2em] text-[var(--color-sand-500)] mb-4 font-medium" style={{ fontFamily: "var(--font-body)" }}>
               Pause Intelligence
             </p>
-            <h2 className="text-[2.5rem] md:text-[3.5rem] text-[var(--color-sand-900)] leading-tight mb-5">
+            <h2 className="text-[1.75rem] sm:text-[2.5rem] md:text-[3.5rem] text-[var(--color-sand-900)] leading-tight mb-5">
               Most AI reads text.<br />Ours <span className="bg-clip-text text-transparent bg-[length:300%_300%] animate-[border-glow_4s_ease_infinite]" style={{ backgroundImage: "linear-gradient(135deg, var(--color-sage), var(--color-ocean), var(--color-dusk), var(--color-ember), var(--color-sage))", backgroundSize: "300% 300%" }}>understands silence.</span>
             </h2>
             <p className="text-base text-[var(--color-sand-600)] max-w-lg mx-auto leading-relaxed" style={{ fontFamily: "var(--font-body)" }}>
@@ -565,7 +565,7 @@ export default function HomePage() {
       {/* ════════════════════════════════════════════
           SECTION 2 — STUDIO AUDIO
          ════════════════════════════════════════════ */}
-      <section className="relative py-24 px-6 overflow-hidden" style={{ background: "var(--color-sand-900)" }}>
+      <section className="relative py-14 sm:py-20 md:py-24 px-4 sm:px-6 overflow-hidden" style={{ background: "var(--color-sand-900)" }}>
         <div className="absolute inset-0 pointer-events-none">
           <div className="absolute w-[500px] h-[500px] rounded-full blur-[200px] opacity-[0.07]" style={{ top: "10%", left: "15%", background: "var(--color-sage)" }} />
           <div className="absolute w-[400px] h-[400px] rounded-full blur-[180px] opacity-[0.05]" style={{ bottom: "5%", right: "10%", background: "var(--color-dusk)" }} />
@@ -576,7 +576,7 @@ export default function HomePage() {
             <p className="text-xs uppercase tracking-[0.25em] text-white/30 mb-5" style={{ fontFamily: "var(--font-body)" }}>
               Engineered with professional sound designers
             </p>
-            <h2 className="text-[2.5rem] md:text-[3.5rem] text-[var(--color-sand-50)] leading-tight mb-5">
+            <h2 className="text-[1.75rem] sm:text-[2.5rem] md:text-[3.5rem] text-[var(--color-sand-50)] leading-tight mb-5">
               Every session is <span className="bg-clip-text text-transparent bg-[length:300%_300%] animate-[border-glow_4s_ease_infinite]" style={{ backgroundImage: "linear-gradient(135deg, var(--color-sage), var(--color-ocean), var(--color-dusk), var(--color-ember), var(--color-sage))", backgroundSize: "300% 300%" }}>mixed</span><br />like a professional album.
             </h2>
             <p className="text-base text-white/40 max-w-md mx-auto leading-relaxed" style={{ fontFamily: "var(--font-body)" }}>
@@ -626,7 +626,7 @@ export default function HomePage() {
             </div>
           </FadeIn>
 
-          <div className="grid md:grid-cols-3 gap-6">
+          <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-6">
             {[
               {
                 icon: Mic,
@@ -663,13 +663,13 @@ export default function HomePage() {
       {/* ════════════════════════════════════════════
           SECTION 3 — SCIENTIFIC PROTOCOLS
          ════════════════════════════════════════════ */}
-      <section className="relative py-24 px-6" style={{ background: "var(--color-sand-50)" }}>
+      <section className="relative py-14 sm:py-20 md:py-24 px-4 sm:px-6" style={{ background: "var(--color-sand-50)" }}>
         <div className="max-w-4xl mx-auto">
-          <FadeIn className="text-center mb-16">
+          <FadeIn className="text-center mb-10 sm:mb-16">
             <p className="text-xs uppercase tracking-[0.25em] text-[var(--color-sand-500)] mb-5" style={{ fontFamily: "var(--font-body)" }}>
               Built on clinical research
             </p>
-            <h2 className="text-[2.5rem] md:text-[3.5rem] text-[var(--color-sand-900)] leading-tight mb-5">
+            <h2 className="text-[1.75rem] sm:text-[2.5rem] md:text-[3.5rem] text-[var(--color-sand-900)] leading-tight mb-5">
               Not vibes. <span className="bg-clip-text text-transparent bg-[length:300%_300%] animate-[border-glow_4s_ease_infinite]" style={{ backgroundImage: "linear-gradient(135deg, var(--color-sage), var(--color-ocean), var(--color-dusk), var(--color-ember), var(--color-sage))", backgroundSize: "300% 300%" }}>Science.</span>
             </h2>
             <p className="text-base text-[var(--color-sand-600)] max-w-md mx-auto leading-relaxed" style={{ fontFamily: "var(--font-body)" }}>
@@ -759,7 +759,7 @@ export default function HomePage() {
             </div>
           </FadeIn>
 
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
             {protocols.map((p, i) => (
               <FadeIn key={p.abbr} delay={i * 0.05}>
                 <div className="group flex items-center gap-3 py-3 px-4 rounded-lg bg-[var(--color-sand-100)]/60 hover:bg-[var(--color-sand-100)] transition-colors">
@@ -780,10 +780,10 @@ export default function HomePage() {
       {/* ════════════════════════════════════════════
           CTA
          ════════════════════════════════════════════ */}
-      <section className="relative py-24 px-6" style={{ background: "var(--color-sand-900)" }}>
+      <section className="relative py-14 sm:py-20 md:py-24 px-4 sm:px-6" style={{ background: "var(--color-sand-900)" }}>
         <div className="max-w-5xl mx-auto">
           <FadeIn className="text-center">
-            <h2 className="text-[2rem] md:text-[2.75rem] text-[var(--color-sand-50)] leading-tight mb-4">
+            <h2 className="text-[1.5rem] sm:text-[2rem] md:text-[2.75rem] text-[var(--color-sand-50)] leading-tight mb-4">
               Try it now. No sign up required.
             </h2>
             <p className="text-base text-white/50 mb-8 max-w-lg mx-auto" style={{ fontFamily: "var(--font-body)" }}>
@@ -791,7 +791,7 @@ export default function HomePage() {
             </p>
             <motion.button
               onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-              className="inline-flex items-center gap-2 px-7 py-3 rounded-xl bg-[var(--color-sand-50)] text-[var(--color-sand-900)] hover:bg-white transition-all text-sm shadow-sm cursor-pointer"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-7 py-3 rounded-xl bg-[var(--color-sand-50)] text-[var(--color-sand-900)] hover:bg-white transition-all text-sm shadow-sm cursor-pointer"
               style={{ fontFamily: "var(--font-body)" }}
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
@@ -804,8 +804,8 @@ export default function HomePage() {
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-white/10 py-10 px-6" style={{ background: "var(--color-sand-900)" }}>
-        <div className="max-w-5xl mx-auto flex items-center justify-between">
+      <footer className="border-t border-white/10 py-8 sm:py-10 px-4 sm:px-6" style={{ background: "var(--color-sand-900)" }}>
+        <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
           <div className="flex items-center gap-2 text-[var(--color-sand-50)]">
             <Logo />
             <span className="text-sm" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>MindFlow</span>

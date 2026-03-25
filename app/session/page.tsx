@@ -79,7 +79,7 @@ function SessionContent() {
 
         <Header />
 
-        <div className="relative z-10 flex-1 flex items-start justify-center px-6 pt-8 pb-6">
+        <div className="relative z-10 flex-1 flex items-start justify-center px-4 sm:px-6 pt-6 sm:pt-8 pb-6">
           <AnimatePresence mode="wait">
 
             {/* ─── Generating ─── */}
@@ -93,7 +93,7 @@ function SessionContent() {
                     <Sparkles className="w-6 h-6 text-[var(--color-sand-50)]" />
                   </motion.div>
                 </div>
-                <h2 className="text-3xl text-[var(--color-sand-900)] mb-3 text-center">Crafting your meditation</h2>
+                <h2 className="text-2xl sm:text-3xl text-[var(--color-sand-900)] mb-3 text-center">Crafting your meditation</h2>
                 <p className="text-[var(--color-sand-500)] text-center" style={{ fontFamily: "var(--font-body)" }}>Composing guidance, timing pauses, mixing audio...</p>
               </motion.div>
             )}
@@ -127,8 +127,8 @@ function SessionContent() {
                 {/* Header */}
                 <div className="text-center mb-3">
                   <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }} className="text-xs text-[var(--color-sand-500)] mb-1" style={{ fontFamily: "var(--font-body)" }}>Your meditation is ready</motion.p>
-                  <motion.h1 initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="text-xl text-[var(--color-sand-900)] mb-2" style={{ fontFamily: "var(--font-display)" }}>&ldquo;{prompt}&rdquo;</motion.h1>
-                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }} className="flex items-center justify-center gap-2">
+                  <motion.h1 initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="text-lg sm:text-xl text-[var(--color-sand-900)] mb-2 px-2 sm:px-0" style={{ fontFamily: "var(--font-display)" }}>&ldquo;{prompt}&rdquo;</motion.h1>
+                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }} className="flex items-center justify-center gap-2 flex-wrap">
                     <span className="px-2.5 py-1 rounded-full bg-[var(--color-sand-100)] text-[var(--color-sand-700)] text-xs" style={{ fontFamily: "var(--font-body)" }}>{duration} min</span>
                     <span className="px-2.5 py-1 rounded-full bg-[var(--color-sand-100)] text-[var(--color-sand-700)] text-xs" style={{ fontFamily: "var(--font-body)" }}>{voices.find((v) => v.id === voice)?.label}</span>
                     <span className="px-2.5 py-1 rounded-full bg-[var(--color-sage-light)] text-[var(--color-sage)] text-xs font-medium" style={{ fontFamily: "var(--font-body)" }}>
@@ -140,9 +140,9 @@ function SessionContent() {
 
                 {/* Player card */}
                 <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} className="bg-white rounded-2xl shadow-sm border border-[var(--color-sand-200)] overflow-hidden">
-                  <div className="px-5 py-4">
+                  <div className="px-3 sm:px-5 py-4">
                     {/* Waveform */}
-                    <div className="flex items-end justify-center gap-[2px] h-14 mb-3">
+                    <div className="flex items-end justify-center gap-[2px] h-12 sm:h-14 mb-3 overflow-hidden">
                       {Array.from({ length: 50 }).map((_, i) => {
                         const h = 15 + Math.sin(i * 0.35) * 20 + Math.cos(i * 0.7) * 15 + Math.sin(i * 0.15) * 10;
                         return (
@@ -189,21 +189,22 @@ function SessionContent() {
                     </div>
 
                     {/* Actions row */}
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between flex-wrap gap-2">
                       <button
                         onClick={() => setShowBgPicker(!showBgPicker)}
-                        className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs transition-colors cursor-pointer ${showBgPicker ? "bg-[var(--color-sand-900)] text-[var(--color-sand-50)]" : "text-[var(--color-sand-600)] hover:bg-[var(--color-sand-100)] border border-[var(--color-sand-200)]"}`}
+                        className={`flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-2 rounded-lg text-xs transition-colors cursor-pointer ${showBgPicker ? "bg-[var(--color-sand-900)] text-[var(--color-sand-50)]" : "text-[var(--color-sand-600)] hover:bg-[var(--color-sand-100)] border border-[var(--color-sand-200)]"}`}
                         style={{ fontFamily: "var(--font-body)" }}
                       >
                         <Music className="w-3.5 h-3.5" />
-                        Background sound
+                        <span className="hidden sm:inline">Background sound</span>
+                        <span className="sm:hidden">Sound</span>
                         <ChevronDown className={`w-3.5 h-3.5 transition-transform ${showBgPicker ? "rotate-180" : ""}`} />
                       </button>
                       <div className="flex items-center gap-1">
-                        <button className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-[var(--color-sand-600)] hover:bg-[var(--color-sand-100)] transition-colors text-xs cursor-pointer" style={{ fontFamily: "var(--font-body)" }}>
-                          <Download className="w-3.5 h-3.5" />Download
+                        <button className="flex items-center gap-1.5 px-2.5 sm:px-3 py-2 rounded-lg text-[var(--color-sand-600)] hover:bg-[var(--color-sand-100)] transition-colors text-xs cursor-pointer" style={{ fontFamily: "var(--font-body)" }}>
+                          <Download className="w-3.5 h-3.5" /><span className="hidden sm:inline">Download</span>
                         </button>
-                        <button onClick={() => router.push("/")} className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-[var(--color-sand-600)] hover:bg-[var(--color-sand-100)] transition-colors text-xs cursor-pointer" style={{ fontFamily: "var(--font-body)" }}>
+                        <button onClick={() => router.push("/")} className="flex items-center gap-1.5 px-2.5 sm:px-3 py-2 rounded-lg text-[var(--color-sand-600)] hover:bg-[var(--color-sand-100)] transition-colors text-xs cursor-pointer" style={{ fontFamily: "var(--font-body)" }}>
                           <RotateCcw className="w-3.5 h-3.5" />New
                         </button>
                       </div>
@@ -220,7 +221,7 @@ function SessionContent() {
                         transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
                         className="overflow-hidden"
                       >
-                        <div className="border-t border-[var(--color-sand-200)] px-5 py-3 space-y-3">
+                        <div className="border-t border-[var(--color-sand-200)] px-3 sm:px-5 py-3 space-y-3">
                           {/* Background sound volume */}
                           <div className="flex items-center gap-3">
                             <div className="flex items-center gap-1.5 shrink-0">
@@ -299,16 +300,16 @@ function SessionContent() {
                       <div className="absolute -inset-[1.5px] rounded-xl bg-[length:300%_300%] animate-[border-glow_4s_ease_infinite] opacity-70 group-hover:opacity-100 transition-opacity duration-300" style={{ background: "linear-gradient(135deg, var(--color-sage), var(--color-ocean), var(--color-dusk), var(--color-ember), var(--color-sage))", backgroundSize: "300% 300%" }} />
                       <div className="relative bg-[var(--color-sand-900)] rounded-xl overflow-hidden cursor-pointer">
                         {/* Main bar */}
-                        <div className="px-5 py-3.5 flex items-center justify-between">
-                          <div className="flex items-center gap-4">
-                            <div className="flex items-center gap-2">
+                        <div className="px-3.5 sm:px-5 py-3 sm:py-3.5 flex items-center justify-between">
+                          <div className="flex items-center gap-2 sm:gap-4 min-w-0">
+                            <div className="flex items-center gap-2 shrink-0">
                               <PenLine className="w-4 h-4 text-[var(--color-sand-50)]" />
-                              <span className="text-[var(--color-sand-50)] text-sm" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>
+                              <span className="text-[var(--color-sand-50)] text-xs sm:text-sm" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>
                                 Edit in Kilt Studio
                               </span>
                             </div>
-                            <div className="w-[1px] h-4 bg-white/10" />
-                            <div className="flex items-center gap-3">
+                            <div className="w-[1px] h-4 bg-white/10 hidden sm:block" />
+                            <div className="hidden sm:flex items-center gap-3">
                               {[
                                 { icon: Sliders, text: "Edit script" },
                                 { icon: Clock, text: "Timing" },
@@ -321,15 +322,15 @@ function SessionContent() {
                               ))}
                             </div>
                           </div>
-                          <div className="flex items-center gap-3">
-                            <span className="text-[10px] uppercase tracking-wider text-white/80 font-medium px-2.5 py-0.5 rounded-full border-[1.5px] border-white/45" style={{ fontFamily: "var(--font-body)" }}>Free</span>
+                          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+                            <span className="text-[10px] uppercase tracking-wider text-white/80 font-medium px-2 sm:px-2.5 py-0.5 rounded-full border-[1.5px] border-white/45" style={{ fontFamily: "var(--font-body)" }}>Free</span>
                             <ArrowRight className="w-4 h-4 text-white/40 group-hover:text-white/70 group-hover:translate-x-0.5 transition-all" />
                           </div>
                         </div>
 
                         {/* Demo — reveals on hover */}
                         <div className="max-h-0 group-hover:max-h-[200px] transition-[max-height] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] overflow-hidden">
-                          <div className="mx-4 mb-3 rounded-lg overflow-hidden border border-white/[0.08]" style={{ background: "rgba(255,255,255,0.02)" }}>
+                          <div className="mx-2.5 sm:mx-4 mb-3 rounded-lg overflow-hidden border border-white/[0.08]" style={{ background: "rgba(255,255,255,0.02)" }}>
                             <div className="px-3 py-2 space-y-[4px]">
                               <div className="flex items-center gap-2 px-2 py-1.5 rounded" style={{ background: "rgba(255,255,255,0.03)" }}>
                                 <div className="w-3 h-3 rounded-full flex items-center justify-center shrink-0" style={{ background: "rgba(122,158,126,0.2)" }}>
@@ -366,7 +367,7 @@ function SessionContent() {
                             </div>
                           </div>
 
-                          <div className="px-5 pb-3 flex justify-end">
+                          <div className="px-3.5 sm:px-5 pb-3 flex justify-end">
                             <span className="flex items-center gap-1.5 text-sm" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>
                               <span
                                 className="bg-clip-text text-transparent bg-[length:300%_300%] animate-[border-glow_4s_ease_infinite]"

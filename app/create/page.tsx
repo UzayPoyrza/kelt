@@ -61,7 +61,7 @@ function CreateContent() {
 
         <Header />
 
-        <div className="relative z-10 flex-1 flex items-start justify-center px-6 pt-8 pb-10">
+        <div className="relative z-10 flex-1 flex items-start justify-center px-4 sm:px-6 pt-6 sm:pt-8 pb-8 sm:pb-10">
           <motion.div
             key="options"
             initial={{ opacity: 0, x: 30 }}
@@ -75,21 +75,21 @@ function CreateContent() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               onClick={() => router.push("/")}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm text-[var(--color-sand-600)] hover:text-[var(--color-sand-900)] hover:bg-white/60 border border-[var(--color-sand-200)] hover:border-[var(--color-sand-300)] transition-all cursor-pointer mb-8"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm text-[var(--color-sand-600)] hover:text-[var(--color-sand-900)] hover:bg-white/60 border border-[var(--color-sand-200)] hover:border-[var(--color-sand-300)] transition-all cursor-pointer mb-6 sm:mb-8"
               style={{ fontFamily: "var(--font-body)" }}
             >
               <ChevronLeft className="w-4 h-4" />Back
             </motion.button>
 
             {/* Prompt display */}
-            <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="mb-10 text-center">
-              <p className="text-2xl text-[var(--color-sand-900)] max-w-md mx-auto leading-snug" style={{ fontFamily: "var(--font-display)" }}>&ldquo;{prompt}&rdquo;</p>
+            <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="mb-8 sm:mb-10 text-center">
+              <p className="text-xl sm:text-2xl text-[var(--color-sand-900)] max-w-md mx-auto leading-snug" style={{ fontFamily: "var(--font-display)" }}>&ldquo;{prompt}&rdquo;</p>
             </motion.div>
 
             {/* Duration */}
             <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="mb-8">
               <p className="text-xs uppercase tracking-widest text-[var(--color-sand-400)] mb-3" style={{ fontFamily: "var(--font-body)" }}>Duration</p>
-              <div className="flex gap-2 items-end">
+              <div className="flex gap-1.5 sm:gap-2 items-end">
                 {durations.map((d) => (
                   <div key={d} className="flex-1 flex flex-col items-center">
                     <span className={`text-[8px] tracking-wide uppercase mb-1 h-3 ${d === 10 && duration !== 10 ? "text-[var(--color-sand-400)]" : "text-transparent select-none"}`} style={{ fontFamily: "var(--font-body)" }}>{d === 10 ? "Popular" : "\u00A0"}</span>
@@ -102,7 +102,7 @@ function CreateContent() {
             {/* Voice */}
             <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }} className="mb-8">
               <p className="text-xs uppercase tracking-widest text-[var(--color-sand-400)] mb-3" style={{ fontFamily: "var(--font-body)" }}>Voice</p>
-              <div className="grid grid-cols-2 gap-2.5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                 {voices.map((v) => {
                   const isActive = voice === v.id;
                   const isVoicePlaying = voicePlaying === v.id;
@@ -172,7 +172,7 @@ function CreateContent() {
                       {showProtocolInfo && (
                         <>
                           <div className="fixed inset-0 z-10" onClick={() => setShowProtocolInfo(false)} />
-                          <div className="absolute left-1/2 -translate-x-1/2 top-full mt-2 w-72 p-4 rounded-xl bg-[var(--color-sand-900)] text-[var(--color-sand-50)] shadow-xl z-20">
+                          <div className="absolute left-0 sm:left-1/2 sm:-translate-x-1/2 top-full mt-2 w-64 sm:w-72 p-4 rounded-xl bg-[var(--color-sand-900)] text-[var(--color-sand-50)] shadow-xl z-20">
                             <p className="text-xs font-medium mb-1.5" style={{ fontFamily: "var(--font-body)" }}>How protocols work</p>
                             <p className="text-[11px] leading-relaxed opacity-70" style={{ fontFamily: "var(--font-body)" }}>
                               Each session is structured around a clinical protocol. Our AI was trained on peer-reviewed techniques — it controls pacing, language patterns, and pause timing to match how each method is practiced by trained therapists.
@@ -180,7 +180,7 @@ function CreateContent() {
                             <p className="text-[11px] leading-relaxed opacity-70 mt-2" style={{ fontFamily: "var(--font-body)" }}>
                               We auto-select the best fit from your prompt, but you can override it here.
                             </p>
-                            <div className="w-2.5 h-2.5 bg-[var(--color-sand-900)] rotate-45 absolute -top-1 left-1/2 -translate-x-1/2" />
+                            <div className="w-2.5 h-2.5 bg-[var(--color-sand-900)] rotate-45 absolute -top-1 left-3 sm:left-1/2 sm:-translate-x-1/2" />
                           </div>
                         </>
                       )}
@@ -191,7 +191,7 @@ function CreateContent() {
                     Auto-chosen during generation. For therapists and advanced users — override below.
                   </p>
 
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     {protocols.map((p) => {
                       const isRecommended = p.abbr === recommendedProtocol;
                       const isSelected = selectedProtocol === p.abbr;
@@ -221,11 +221,11 @@ function CreateContent() {
 
             {/* Generate button */}
             <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }} className="flex justify-center">
-              <div className="relative rounded-2xl group">
+              <div className="relative rounded-2xl group w-full sm:w-auto">
                 <div className="absolute -inset-[2.5px] rounded-2xl bg-[length:300%_300%] animate-[border-glow_4s_ease_infinite] opacity-90 group-hover:opacity-100 transition-opacity duration-300" style={{ background: "linear-gradient(135deg, var(--color-sage), var(--color-ocean), var(--color-dusk), var(--color-ember), var(--color-sage))", backgroundSize: "300% 300%" }} />
                 <motion.button
                   onClick={handleGenerate}
-                  className="relative flex items-center justify-center gap-3 px-16 py-5 rounded-2xl bg-[var(--color-sand-900)] text-[var(--color-sand-50)] hover:bg-[var(--color-sand-800)] transition-all text-lg shadow-xl cursor-pointer"
+                  className="relative flex items-center justify-center gap-3 px-10 sm:px-16 py-4 sm:py-5 rounded-2xl bg-[var(--color-sand-900)] text-[var(--color-sand-50)] hover:bg-[var(--color-sand-800)] transition-all text-base sm:text-lg shadow-xl cursor-pointer w-full sm:w-auto"
                   style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.97 }}

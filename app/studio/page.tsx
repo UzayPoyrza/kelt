@@ -48,6 +48,7 @@ import {
   GripVertical,
   Type,
   Clock3,
+  Menu,
 } from "lucide-react";
 import svgPaths from "@/lib/svg-paths";
 import { suggestions, voices as sharedVoices, durations as sharedDurations, detectIntent, rotatingPhrases, protocols } from "@/lib/shared";
@@ -590,8 +591,8 @@ function EmptyState({ label }: { label: string }) {
 
 /* ─── Studio Session View ─── */
 
-function StudioSession({ prompt, voice, duration, sound, sessionId, onBack }: {
-  prompt: string; voice: string; duration: number; sound: string; sessionId: string | null; onBack: () => void;
+function StudioSession({ prompt, voice, duration, sound, sessionId, onBack, onToggleSidebar }: {
+  prompt: string; voice: string; duration: number; sound: string; sessionId: string | null; onBack: () => void; onToggleSidebar?: () => void;
 }) {
   const [script, setScript] = useState<ScriptBlock[]>(() => generateScript(prompt));
   const [selectedBlock, setSelectedBlock] = useState<string | null>(null);
@@ -909,62 +910,70 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, onBack }: {
   }, [markEdited]);
 
   return (
-    <div className="flex flex-1 min-h-0" style={{ background: "#ffffff" }}>
+    <div className="flex flex-col lg:flex-row flex-1 min-h-0" style={{ background: "#ffffff" }}>
       {/* ─── Script Editor (left) ─── */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Script toolbar */}
-        <div className="relative flex items-center justify-between px-6 py-3 border-b border-[#e4e4e7]" style={{ background: "#fafafa" }}>
-          <button onClick={onBack} className="flex items-center gap-1.5 text-xs text-[#71717a] hover:text-[#18181b] transition-colors cursor-pointer" style={{ fontFamily: "var(--font-body)" }}>
-            <ArrowLeft className="w-3.5 h-3.5" />
-            Back
-          </button>
-          {isRenamingSession ? (
-            <input
-              ref={renameInputRef}
-              type="text"
-              value={sessionName}
-              onChange={(e) => setSessionName(e.target.value)}
-              onBlur={() => setIsRenamingSession(false)}
-              onKeyDown={(e) => { if (e.key === "Enter") setIsRenamingSession(false); if (e.key === "Escape") setIsRenamingSession(false); }}
-              className="text-sm text-[#18181b] absolute left-1/2 -translate-x-1/2 bg-white border border-[#e4e4e7] rounded-md px-2 py-0.5 outline-none focus:border-[#a1a1aa] text-center w-56"
-              style={{ fontFamily: "var(--font-display)", fontWeight: 500 }}
-              autoFocus
-            />
-          ) : (
-            <h2
-              className="text-sm text-[#18181b] absolute left-1/2 -translate-x-1/2 cursor-text px-2 py-0.5 rounded-md studio-title-hover"
-              style={{ fontFamily: "var(--font-display)", fontWeight: 500, border: "1px solid transparent" }}
-              onClick={() => { setIsRenamingSession(true); setTimeout(() => renameInputRef.current?.select(), 0); }}
-              title="Click to rename"
+        <div className="flex items-center gap-2 sm:gap-3 px-3 sm:px-6 py-3 border-b border-[#e4e4e7]" style={{ background: "#fafafa" }}>
+          {/* Left: Hamburger (mobile) + Back + Undo/Redo */}
+          <div className="flex items-center gap-1 shrink-0">
+            {onToggleSidebar && (
+              <button onClick={onToggleSidebar} className="lg:hidden w-7 h-7 rounded-md flex items-center justify-center text-[#52525b] hover:text-[#18181b] hover:bg-[#f4f4f5] transition-colors cursor-pointer mr-1">
+                <Menu className="w-4 h-4" />
+              </button>
+            )}
+            <button onClick={onBack} className="flex items-center gap-1.5 text-xs text-[#71717a] hover:text-[#18181b] transition-colors cursor-pointer" style={{ fontFamily: "var(--font-body)" }}>
+              <ArrowLeft className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Back</span>
+            </button>
+            <div className="w-px h-4 bg-[#e4e4e7] mx-1.5" />
+            <button
+              onClick={undo}
+              disabled={!canUndo}
+              className="w-7 h-7 rounded-md flex items-center justify-center transition-colors cursor-pointer disabled:cursor-default disabled:opacity-30 text-[#71717a] hover:text-[#18181b] hover:bg-[#f4f4f5]"
+              title="Undo (⌘Z)"
             >
-              {sessionName}
-            </h2>
-          )}
-          <div className="flex items-center gap-2">
-            {/* Undo / Redo */}
-            <div className="flex items-center gap-0.5 mr-1">
-              <button
-                onClick={undo}
-                disabled={!canUndo}
-                className="w-7 h-7 rounded-md flex items-center justify-center transition-colors cursor-pointer disabled:cursor-default disabled:opacity-30 text-[#71717a] hover:text-[#18181b] hover:bg-[#f4f4f5]"
-                title="Undo (⌘Z)"
-              >
-                <RotateCcw className="w-3.5 h-3.5" />
-              </button>
-              <button
-                onClick={redo}
-                disabled={!canRedo}
-                className="w-7 h-7 rounded-md flex items-center justify-center transition-colors cursor-pointer disabled:cursor-default disabled:opacity-30 text-[#71717a] hover:text-[#18181b] hover:bg-[#f4f4f5]"
-                title="Redo (⇧⌘Z)"
-              >
-                <RotateCw className="w-3.5 h-3.5" />
-              </button>
-            </div>
+              <RotateCcw className="w-3.5 h-3.5" />
+            </button>
+            <button
+              onClick={redo}
+              disabled={!canRedo}
+              className="w-7 h-7 rounded-md flex items-center justify-center transition-colors cursor-pointer disabled:cursor-default disabled:opacity-30 text-[#71717a] hover:text-[#18181b] hover:bg-[#f4f4f5]"
+              title="Redo (⇧⌘Z)"
+            >
+              <RotateCw className="w-3.5 h-3.5" />
+            </button>
+          </div>
 
-            <div className="w-px h-4 bg-[#e4e4e7]" />
+          {/* Center: Session title — fills remaining space, truncates */}
+          <div className="flex-1 min-w-0 flex justify-center">
+            {isRenamingSession ? (
+              <input
+                ref={renameInputRef}
+                type="text"
+                value={sessionName}
+                onChange={(e) => setSessionName(e.target.value)}
+                onBlur={() => setIsRenamingSession(false)}
+                onKeyDown={(e) => { if (e.key === "Enter") setIsRenamingSession(false); if (e.key === "Escape") setIsRenamingSession(false); }}
+                className="text-sm text-[#18181b] bg-white border border-[#e4e4e7] rounded-md px-2 py-0.5 outline-none focus:border-[#a1a1aa] text-center w-56 max-w-full"
+                style={{ fontFamily: "var(--font-display)", fontWeight: 500 }}
+                autoFocus
+              />
+            ) : (
+              <h2
+                className="text-sm text-[#18181b] cursor-text px-2 py-0.5 rounded-md studio-title-hover truncate"
+                style={{ fontFamily: "var(--font-display)", fontWeight: 500, border: "1px solid transparent" }}
+                onClick={() => { setIsRenamingSession(true); setTimeout(() => renameInputRef.current?.select(), 0); }}
+                title="Click to rename"
+              >
+                {sessionName}
+              </h2>
+            )}
+          </div>
 
-            {/* Autosave status */}
-            <div className="flex items-center gap-1.5 ml-1">
+          {/* Right: Autosave status + stats */}
+          <div className="flex items-center gap-2 shrink-0">
+            <div className="flex items-center gap-1.5">
               <AnimatePresence mode="wait">
                 {saveStatus === "saving" ? (
                   <motion.span
@@ -1007,10 +1016,10 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, onBack }: {
               </AnimatePresence>
             </div>
 
-            <div className="w-px h-4 bg-[#e4e4e7]" />
+            <div className="hidden md:block w-px h-4 bg-[#e4e4e7]" />
 
-            <span className="text-[10px] text-[#a1a1aa] tabular-nums ml-1" style={{ fontFamily: "var(--font-body)" }}>
-              {script.filter(b => b.type === "voice").length} segments · {script.filter(b => b.type === "pause").length} pauses · ~{estimated.minutes}m {estimated.seconds > 0 ? `${estimated.seconds}s` : ""}
+            <span className="hidden md:inline text-[10px] text-[#a1a1aa] tabular-nums whitespace-nowrap" style={{ fontFamily: "var(--font-body)" }}>
+              {script.filter(b => b.type === "voice").length} seg · {script.filter(b => b.type === "pause").length} pau · ~{estimated.minutes}m{estimated.seconds > 0 ? ` ${estimated.seconds}s` : ""}
             </span>
           </div>
         </div>
@@ -1423,7 +1432,7 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, onBack }: {
       </div>
 
       {/* ─── Right Panel (Settings / History) ─── */}
-      <div className="w-72 shrink-0 border-l border-[#e4e4e7] flex flex-col overflow-y-auto studio-scroll" style={{ background: "#fafafa" }}>
+      <div className="w-full lg:w-72 shrink-0 border-t lg:border-t-0 lg:border-l border-[#e4e4e7] flex flex-col overflow-y-auto studio-scroll" style={{ background: "#fafafa" }}>
         <div className="px-4 pt-1 border-b border-[#e4e4e7] flex items-center gap-0">
           <button
             onClick={() => setRightTab("settings")}
@@ -1710,7 +1719,10 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, onBack }: {
                         {!isFailed && (
                           <div className="flex items-center gap-1 mt-2.5 pt-2 border-t border-[#f4f4f5]">
                             <div className="relative group/tip">
-                              <button className="h-7 px-2 rounded-md hover:bg-[#f0f0f3] flex items-center justify-center text-[#a1a1aa] hover:text-[#18181b] transition-colors cursor-pointer">
+                              <button
+                                onClick={() => { setShowStudioPlayer(true); setStudioPlaying(true); setHasGenerated(true); }}
+                                className="h-7 px-2 rounded-md hover:bg-[#f0f0f3] flex items-center justify-center text-[#a1a1aa] hover:text-[#18181b] transition-colors cursor-pointer"
+                              >
                                 <Play className="w-3 h-3" />
                               </button>
                               <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-0.5 rounded bg-[#18181b] text-white text-[9px] whitespace-nowrap opacity-0 group-hover/tip:opacity-100 transition-opacity pointer-events-none z-10" style={{ fontFamily: "var(--font-body)" }}>Play</span>
@@ -1810,6 +1822,7 @@ export default function StudioPage() {
   const [settingsAutoDownload, setSettingsAutoDownload] = useState(false);
   const [settingsAmbientPreview, setSettingsAmbientPreview] = useState(true);
   const [settingsOpenDropdown, setSettingsOpenDropdown] = useState<string | null>(null);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const handleQuickGenerate = useCallback(() => {
     const intent = detectIntent(genConfig.prompt);
@@ -1842,21 +1855,26 @@ export default function StudioPage() {
   if (activeNav === "generate" && genStep === "studio") {
     return (
       <div className="h-screen flex" style={{ background: "#ffffff" }}>
+        {/* Mobile sidebar overlay */}
+        {sidebarOpen && <div className="fixed inset-0 bg-black/40 z-40 lg:hidden" onClick={() => setSidebarOpen(false)} />}
         {/* Sidebar */}
-        <aside className="w-56 shrink-0 border-r border-[#e4e4e7] flex flex-col" style={{ background: "#f4f4f5" }}>
-          <div className="px-5 pt-6 pb-5">
-            <button onClick={() => navigateTo("sessions" as NavId)} className="flex items-center gap-2 text-[var(--color-sand-900)] cursor-pointer">
+        <aside className={`fixed lg:relative z-50 lg:z-auto w-56 shrink-0 border-r border-[#e4e4e7] flex flex-col h-screen transition-transform duration-200 ${sidebarOpen ? "translate-x-0" : "-translate-x-full"} lg:translate-x-0`} style={{ background: "#f4f4f5" }}>
+          <div className="px-5 pt-6 pb-5 flex items-center justify-between">
+            <button onClick={() => { navigateTo("sessions" as NavId); setSidebarOpen(false); }} className="flex items-center gap-2 text-[var(--color-sand-900)] cursor-pointer">
               <Logo />
               <div className="text-left">
                 <span className="text-sm tracking-tight block" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>Kilt Studio</span>
                 <span className="text-[10px] text-[var(--color-sand-400)] block -mt-0.5" style={{ fontFamily: "var(--font-body)" }}>by MindFlow</span>
               </div>
             </button>
+            <button onClick={() => setSidebarOpen(false)} className="lg:hidden w-7 h-7 rounded-md flex items-center justify-center text-[var(--color-sand-500)] hover:text-[var(--color-sand-900)] hover:bg-[var(--color-sand-100)] transition-colors cursor-pointer">
+              <X className="w-4 h-4" />
+            </button>
           </div>
           {/* Generate button hidden in studio session — use bottom bar Generate Audio instead */}
           <nav className="flex-1 px-3 space-y-0.5">
             {navItems.map((item) => (
-              <button key={item.id} onClick={() => navigateTo(item.id)}
+              <button key={item.id} onClick={() => { navigateTo(item.id); setSidebarOpen(false); }}
                 className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm transition-all cursor-pointer text-[var(--color-sand-600)] hover:bg-[var(--color-sand-100)] hover:text-[var(--color-sand-900)]"
                 style={{ fontFamily: "var(--font-body)" }}>
                 <item.icon className="w-4 h-4" />
@@ -1866,15 +1884,15 @@ export default function StudioPage() {
           </nav>
           <div className="mt-auto px-0 pb-0">
             <div className="px-4 py-4 border-t border-[#e4e4e7]" style={{ background: "#fdf8f7" }}>
-              <div className="flex items-center gap-2.5 mb-3">
-                <div className="w-8 h-8 rounded-full bg-[var(--color-sand-300)] flex items-center justify-center">
+              <div className="flex items-center gap-2.5 mb-3 flex-wrap">
+                <div className="w-8 h-8 rounded-full bg-[var(--color-sand-300)] flex items-center justify-center shrink-0">
                   <span className="text-xs text-[var(--color-sand-700)]" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>U</span>
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-xs text-[var(--color-sand-900)]" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>User</p>
                   <p className="text-[10px] text-[var(--color-sand-500)]" style={{ fontFamily: "var(--font-body)" }}>Free plan</p>
                 </div>
-                <a href="/upgrade" className="text-[11px] px-3.5 py-1.5 rounded-lg text-white bg-clip-padding bg-[length:300%_300%] animate-[border-glow_4s_ease_infinite] hover:opacity-90 transition-opacity cursor-pointer shadow-sm" style={{ fontFamily: "var(--font-body)", fontWeight: 600, backgroundImage: "linear-gradient(135deg, var(--color-sage), var(--color-ocean), var(--color-dusk), var(--color-ember), var(--color-sage))", backgroundSize: "300% 300%" }}>
+                <a href="/upgrade" className="text-[11px] px-3.5 py-1.5 rounded-lg text-white bg-clip-padding bg-[length:300%_300%] animate-[border-glow_4s_ease_infinite] hover:opacity-90 transition-opacity cursor-pointer shadow-sm shrink-0" style={{ fontFamily: "var(--font-body)", fontWeight: 600, backgroundImage: "linear-gradient(135deg, var(--color-sage), var(--color-ocean), var(--color-dusk), var(--color-ember), var(--color-sage))", backgroundSize: "300% 300%" }}>
                   Upgrade
                 </a>
               </div>
@@ -1896,7 +1914,7 @@ export default function StudioPage() {
         </aside>
 
         {/* Studio content — no top header */}
-        <div className="flex-1 flex flex-col min-h-0">
+        <div className="flex-1 flex flex-col min-h-0 min-w-0">
           <StudioSession
             prompt={genConfig.prompt}
             voice={genConfig.voice}
@@ -1904,6 +1922,7 @@ export default function StudioPage() {
             sound={genConfig.sound}
             sessionId={genConfig.sessionId}
             onBack={() => { setActiveNav("sessions"); setGenStep("input"); }}
+            onToggleSidebar={() => setSidebarOpen(true)}
           />
         </div>
       </div>
@@ -1912,16 +1931,21 @@ export default function StudioPage() {
 
   return (
     <div className="min-h-screen flex" style={{ background: "var(--color-sand-50)" }}>
+      {/* ─── Mobile sidebar overlay ─── */}
+      {sidebarOpen && <div className="fixed inset-0 bg-black/40 z-40 lg:hidden" onClick={() => setSidebarOpen(false)} />}
       {/* ─── Sidebar ─── */}
       <motion.aside initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.35 }}
-        className="w-56 shrink-0 border-r border-[var(--color-sand-200)] bg-white flex flex-col fixed top-0 left-0 h-screen z-30">
-        <div className="px-5 pt-6 pb-5">
-          <button onClick={() => setActiveNav("sessions" as NavId)} className="flex items-center gap-2 text-[var(--color-sand-900)] cursor-pointer">
+        className={`w-56 shrink-0 border-r border-[var(--color-sand-200)] bg-white flex flex-col fixed top-0 left-0 h-screen z-50 transition-transform duration-200 ${sidebarOpen ? "translate-x-0" : "-translate-x-full"} lg:translate-x-0`}>
+        <div className="px-5 pt-6 pb-5 flex items-center justify-between">
+          <button onClick={() => { setActiveNav("sessions" as NavId); setSidebarOpen(false); }} className="flex items-center gap-2 text-[var(--color-sand-900)] cursor-pointer">
             <Logo />
             <div className="text-left">
               <span className="text-sm tracking-tight block" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>Kilt Studio</span>
               <span className="text-[10px] text-[var(--color-sand-400)] block -mt-0.5" style={{ fontFamily: "var(--font-body)" }}>by MindFlow</span>
             </div>
+          </button>
+          <button onClick={() => setSidebarOpen(false)} className="lg:hidden w-7 h-7 rounded-md flex items-center justify-center text-[var(--color-sand-500)] hover:text-[var(--color-sand-900)] hover:bg-[var(--color-sand-100)] transition-colors cursor-pointer">
+            <X className="w-4 h-4" />
           </button>
         </div>
 
@@ -1934,7 +1958,7 @@ export default function StudioPage() {
               }`}
               style={{ background: "linear-gradient(135deg, var(--color-sage), var(--color-ocean), var(--color-dusk), var(--color-ember), var(--color-sage))", backgroundSize: "300% 300%" }}
             />
-            <button onClick={() => { navigateTo("generate" as NavId); setActiveNav("generate" as NavId); setGenStep("input"); }}
+            <button onClick={() => { navigateTo("generate" as NavId); setActiveNav("generate" as NavId); setGenStep("input"); setSidebarOpen(false); }}
               className={`relative w-full flex items-center justify-center gap-2 px-3 py-3 rounded-xl text-sm transition-all cursor-pointer ${
                 activeNav === ("generate" as NavId)
                   ? "shadow-[inset_0_2px_4px_rgba(0,0,0,0.15),0_1px_2px_rgba(107,154,112,0.2)]"
@@ -1959,7 +1983,7 @@ export default function StudioPage() {
             const isActive = activeNav === item.id;
             return (
               <motion.button key={item.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.1 + i * 0.05, duration: 0.3 }}
-                onClick={() => navigateTo(item.id)}
+                onClick={() => { navigateTo(item.id); setSidebarOpen(false); }}
                 className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm transition-all cursor-pointer ${
                   isActive ? "bg-[var(--color-sand-900)] text-[var(--color-sand-50)] shadow-sm" : "text-[var(--color-sand-600)] hover:bg-[var(--color-sand-100)] hover:text-[var(--color-sand-900)]"
                 }`}
@@ -1973,15 +1997,15 @@ export default function StudioPage() {
 
         <div className="mt-auto px-0 pb-0">
           <div className="px-4 py-4 border-t border-[#e4e4e7]" style={{ background: "#fdf8f7" }}>
-            <div className="flex items-center gap-2.5 mb-3">
-              <div className="w-8 h-8 rounded-full bg-[var(--color-sand-300)] flex items-center justify-center">
+            <div className="flex items-center gap-2.5 mb-3 flex-wrap">
+              <div className="w-8 h-8 rounded-full bg-[var(--color-sand-300)] flex items-center justify-center shrink-0">
                 <span className="text-xs text-[var(--color-sand-700)]" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>U</span>
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-xs text-[var(--color-sand-900)]" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>User</p>
                 <p className="text-[10px] text-[var(--color-sand-500)]" style={{ fontFamily: "var(--font-body)" }}>Free plan</p>
               </div>
-              <a href="/upgrade" className="text-[11px] px-3.5 py-1.5 rounded-lg text-white bg-clip-padding bg-[length:300%_300%] animate-[border-glow_4s_ease_infinite] hover:opacity-90 transition-opacity cursor-pointer shadow-sm" style={{ fontFamily: "var(--font-body)", fontWeight: 600, backgroundImage: "linear-gradient(135deg, var(--color-sage), var(--color-ocean), var(--color-dusk), var(--color-ember), var(--color-sage))", backgroundSize: "300% 300%" }}>
+              <a href="/upgrade" className="text-[11px] px-3.5 py-1.5 rounded-lg text-white bg-clip-padding bg-[length:300%_300%] animate-[border-glow_4s_ease_infinite] hover:opacity-90 transition-opacity cursor-pointer shadow-sm shrink-0" style={{ fontFamily: "var(--font-body)", fontWeight: 600, backgroundImage: "linear-gradient(135deg, var(--color-sage), var(--color-ocean), var(--color-dusk), var(--color-ember), var(--color-sage))", backgroundSize: "300% 300%" }}>
                 Upgrade
               </a>
             </div>
@@ -2003,11 +2027,14 @@ export default function StudioPage() {
       </motion.aside>
 
       {/* ─── Main Content ─── */}
-      <main className="flex-1 min-h-screen ml-56 overflow-y-scroll">
+      <main className="flex-1 min-h-screen ml-0 lg:ml-56 overflow-y-scroll">
         <motion.header initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.15, duration: 0.3 }}
           className="sticky top-0 z-10 backdrop-blur-xl border-b border-[#e8e8ec] py-4" style={{ background: "rgba(250,249,247,0.85)" }}>
-          <div className="px-8 flex items-center justify-between">
+          <div className="px-4 sm:px-8 flex items-center justify-between">
             <div className="flex items-center gap-3">
+              <button onClick={() => setSidebarOpen(true)} className="lg:hidden w-8 h-8 rounded-lg flex items-center justify-center text-[#52525b] hover:text-[#18181b] hover:bg-[#f4f4f5] transition-colors cursor-pointer mr-1">
+                <Menu className="w-5 h-5" />
+              </button>
               <h1 className="text-[15px] text-[#18181b]" style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}>
                 {activeNav === "sessions" && "All Sessions"}
                 {activeNav === "history" && "History"}
@@ -2023,19 +2050,19 @@ export default function StudioPage() {
             <div className={`relative transition-all ${activeNav === "sessions" ? "opacity-100" : "opacity-0 pointer-events-none"}`}>
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#a1a1aa]" />
               <input type="text" placeholder="Search sessions..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-56 pl-9 pr-3 py-2 rounded-lg bg-white border border-[#e4e4e7] text-[13px] text-[#18181b] placeholder:text-[#a1a1aa] focus:outline-none focus:border-[#a1a1aa] focus:shadow-[0_0_0_3px_rgba(0,0,0,0.04)] transition-all"
+                className="w-40 sm:w-56 pl-9 pr-3 py-2 rounded-lg bg-white border border-[#e4e4e7] text-[13px] text-[#18181b] placeholder:text-[#a1a1aa] focus:outline-none focus:border-[#a1a1aa] focus:shadow-[0_0_0_3px_rgba(0,0,0,0.04)] transition-all"
                 style={{ fontFamily: "var(--font-body)" }} />
             </div>
           </div>
         </motion.header>
 
-        <div className={`max-w-7xl mx-auto px-8 pt-6 ${nowPlayingSession ? "pb-28" : "pb-8"}`}>
+        <div className={`max-w-7xl mx-auto px-4 sm:px-8 pt-6 ${nowPlayingSession ? "pb-28" : "pb-8"}`}>
           <AnimatePresence mode="wait">
             {/* All Sessions */}
             {activeNav === "sessions" && (
               <motion.div key="sessions" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
                 {filteredSessions.length > 0 ? (
-                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
                     {filteredSessions.map((session, i) => (
                       <SessionCard
                         key={session.id}
@@ -2094,8 +2121,8 @@ export default function StudioPage() {
                         Generations
                       </h3>
                     )}
-                    <div className="bg-white rounded-xl border border-[#e7e5e4] overflow-hidden shadow-sm">
-                      <div className="grid grid-cols-[1fr_80px_70px_90px_70px_130px] gap-4 px-5 py-3 border-b border-[#e7e5e4] bg-[#f5f3f0]">
+                    <div className="bg-white rounded-xl border border-[#e7e5e4] overflow-hidden shadow-sm overflow-x-auto">
+                      <div className="grid grid-cols-[1fr_80px_70px_90px_70px_130px] gap-4 px-5 py-3 border-b border-[#e7e5e4] bg-[#f5f3f0] min-w-[640px]">
                         {["Prompt", "Voice", "Duration", "Protocol", "Credit", ""].map((h) => (
                           <span key={h} className="text-[11px] uppercase tracking-wide text-[var(--color-sand-900)]" style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}>{h}</span>
                         ))}
@@ -2110,7 +2137,7 @@ export default function StudioPage() {
                           initial={{ opacity: 0 }}
                           animate={{ opacity: 1 }}
                           transition={{ delay: i * 0.04, duration: 0.25 }}
-                          className="group grid grid-cols-[1fr_80px_70px_90px_70px_130px] gap-4 items-center px-5 py-3.5 border-b border-[#f4f4f5] last:border-b-0 hover:bg-[#fafafa] transition-colors"
+                          className="group grid grid-cols-[1fr_80px_70px_90px_70px_130px] gap-4 items-center px-5 py-3.5 border-b border-[#f4f4f5] last:border-b-0 hover:bg-[#fafafa] transition-colors min-w-[640px]"
                         >
                           <div className="flex items-center gap-3 min-w-0">
                             {gen.status === "failed" ? (
@@ -2120,7 +2147,7 @@ export default function StudioPage() {
                             )}
                             <div className="min-w-0">
                               <span className={`text-[13px] truncate block ${gen.status === "failed" ? "text-[#ef4444]" : "text-[#18181b]"}`} style={{ fontFamily: "var(--font-body)", fontWeight: 450 }}>{gen.prompt}</span>
-                              <span className="text-[11px] text-[#52525b] block mt-0.5" style={{ fontFamily: "var(--font-body)", fontWeight: 450 }}>{gen.timestamp}</span>
+                              <span className="text-[11px] text-[#52525b] block mt-0.5 whitespace-nowrap" style={{ fontFamily: "var(--font-body)", fontWeight: 450 }}>{gen.timestamp}</span>
                             </div>
                           </div>
                           <span className="text-[11px] text-[#71717a] flex items-center gap-1.5" style={{ fontFamily: "var(--font-body)" }}>
@@ -2201,8 +2228,8 @@ export default function StudioPage() {
                         Sessions Created
                       </h3>
                     )}
-                    <div className="bg-white rounded-xl border border-[#e7e5e4] overflow-hidden shadow-sm">
-                      <div className="grid grid-cols-[1fr_100px_80px_80px_140px_130px] gap-4 px-5 py-3 border-b border-[#e7e5e4] bg-[#f5f3f0]">
+                    <div className="bg-white rounded-xl border border-[#e7e5e4] overflow-hidden shadow-sm overflow-x-auto">
+                      <div className="grid grid-cols-[1fr_100px_80px_80px_140px_130px] gap-4 px-5 py-3 border-b border-[#e7e5e4] bg-[#f5f3f0] min-w-[700px]">
                         {["Session", "Protocol", "Duration", "Voice", "Created", ""].map((h) => (
                           <span key={h} className="text-[11px] uppercase tracking-wide text-[var(--color-sand-900)]" style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}>{h}</span>
                         ))}
@@ -2221,7 +2248,7 @@ export default function StudioPage() {
                               setActiveNav("generate" as NavId);
                               setGenStep("studio");
                             }}
-                            className="group grid grid-cols-[1fr_100px_80px_80px_140px_130px] gap-4 items-center px-5 py-3.5 border-b border-[#f4f4f5] last:border-b-0 hover:bg-[#fafafa] transition-colors cursor-pointer"
+                            className="group grid grid-cols-[1fr_100px_80px_80px_140px_130px] gap-4 items-center px-5 py-3.5 border-b border-[#f4f4f5] last:border-b-0 hover:bg-[#fafafa] transition-colors cursor-pointer min-w-[700px]"
                           >
                             <div className="flex items-center gap-3 min-w-0">
                               <div className="w-2 h-2 rounded-full shrink-0" style={{ background: isRowPlaying ? accent : "#d4d4d8" }} />
@@ -2233,7 +2260,7 @@ export default function StudioPage() {
                               <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: voices.find(v => v.name === session.voice)?.color || "#a1a1aa" }} />
                               {session.voice}
                             </span>
-                            <span className="text-[11px] text-[#52525b]" style={{ fontFamily: "var(--font-body)", fontWeight: 450 }}>{session.createdAt}</span>
+                            <span className="text-[11px] text-[#52525b] whitespace-nowrap" style={{ fontFamily: "var(--font-body)", fontWeight: 450 }}>{session.createdAt}</span>
                             <div className="flex items-center justify-end gap-1">
                               <div className="relative group/tip">
                                 <button
@@ -2547,18 +2574,18 @@ export default function StudioPage() {
                 <div className="space-y-6">
                   {/* Account */}
                   <div className="bg-white rounded-2xl border border-[#e7e5e4] shadow-sm">
-                    <div className="px-6 py-4 border-b border-[#e7e5e4] bg-[#f5f3f0]">
+                    <div className="px-4 sm:px-6 py-4 border-b border-[#e7e5e4] bg-[#f5f3f0]">
                       <h3 className="text-[11px] uppercase tracking-wide text-[var(--color-sand-900)]" style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}>Account</h3>
                     </div>
-                    <div className="p-6">
-                      <div className="flex items-center justify-between mb-5">
-                        <div className="flex items-center gap-3.5">
-                          <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ background: "linear-gradient(135deg, var(--color-sage), var(--color-ocean))" }}>
+                    <div className="p-4 sm:p-6">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
+                        <div className="flex items-center gap-3.5 min-w-0">
+                          <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0" style={{ background: "linear-gradient(135deg, var(--color-sage), var(--color-ocean))" }}>
                             <span className="text-sm text-white" style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}>U</span>
                           </div>
-                          <div>
-                            <p className="text-[13px] text-[var(--color-sand-900)]" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>user@example.com</p>
-                            <div className="flex items-center gap-2 mt-0.5">
+                          <div className="min-w-0">
+                            <p className="text-[13px] text-[var(--color-sand-900)] truncate" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>user@example.com</p>
+                            <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                               <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] bg-[var(--color-sand-100)] text-[var(--color-sand-600)] border border-[var(--color-sand-200)]" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>Free</span>
                               <span className="text-[11px] text-[var(--color-sand-400)]" style={{ fontFamily: "var(--font-body)" }}>3 credits remaining</span>
                             </div>
@@ -2566,20 +2593,20 @@ export default function StudioPage() {
                         </div>
                         <button
                           onClick={() => router.push("/upgrade")}
-                          className="px-4 py-2 rounded-full text-[12px] text-white cursor-pointer transition-all hover:scale-[1.02] active:scale-[0.97] shadow-sm"
+                          className="px-4 py-2 rounded-full text-[12px] text-white cursor-pointer transition-all hover:scale-[1.02] active:scale-[0.97] shadow-sm shrink-0 self-start sm:self-center"
                           style={{ fontFamily: "var(--font-body)", fontWeight: 600, background: "linear-gradient(135deg, #5a9a62, #6bb070)" }}>
                           Upgrade to Pro
                         </button>
                       </div>
                       <div className="pt-4 border-t border-[var(--color-sand-100)]">
-                        <div className="flex items-center justify-between">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                           <div>
                             <span className="text-[12px] text-[var(--color-sand-700)] block" style={{ fontFamily: "var(--font-body)", fontWeight: 450 }}>Subscription</span>
                             <span className="text-[11px] text-[var(--color-sand-400)]" style={{ fontFamily: "var(--font-body)" }}>Manage billing, invoices, and plan changes</span>
                           </div>
                           <button
                             onClick={() => router.push("/upgrade")}
-                            className="px-4 py-2 rounded-full border border-[var(--color-sand-200)] text-[12px] text-[var(--color-sand-600)] hover:bg-[var(--color-sand-50)] hover:border-[var(--color-sand-300)] transition-all cursor-pointer"
+                            className="px-4 py-2 rounded-full border border-[var(--color-sand-200)] text-[12px] text-[var(--color-sand-600)] hover:bg-[var(--color-sand-50)] hover:border-[var(--color-sand-300)] transition-all cursor-pointer shrink-0 self-start sm:self-center"
                             style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>
                             Manage
                           </button>
@@ -2590,13 +2617,13 @@ export default function StudioPage() {
 
                   {/* Defaults */}
                   <div className="bg-white rounded-2xl border border-[#e7e5e4] shadow-sm relative">
-                    <div className="px-6 py-4 border-b border-[#e7e5e4] bg-[#f5f3f0]">
+                    <div className="px-4 sm:px-6 py-4 border-b border-[#e7e5e4] bg-[#f5f3f0]">
                       <h3 className="text-[11px] uppercase tracking-wide text-[var(--color-sand-900)]" style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}>Defaults</h3>
                       <p className="text-[11px] text-[var(--color-sand-400)] mt-0.5" style={{ fontFamily: "var(--font-body)" }}>Set your preferred starting point for new sessions</p>
                     </div>
                     <div className="divide-y divide-[var(--color-sand-100)]">
                       {/* Voice */}
-                      <div className="flex items-center justify-between px-6 py-4 group hover:bg-[var(--color-sand-50)]/50 transition-colors">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 px-4 sm:px-6 py-4 group hover:bg-[var(--color-sand-50)]/50 transition-colors">
                         <div className="flex items-center gap-3">
                           <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: voices.find(v => v.id === settingsVoice)?.color || "#a1a1aa" }} />
                           <div>
@@ -2636,12 +2663,12 @@ export default function StudioPage() {
                       </div>
 
                       {/* Duration */}
-                      <div className="flex items-center justify-between px-6 py-4 group hover:bg-[var(--color-sand-50)]/50 transition-colors">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 px-4 sm:px-6 py-4 group hover:bg-[var(--color-sand-50)]/50 transition-colors">
                         <div>
                           <span className="text-[13px] text-[var(--color-sand-900)] block leading-none" style={{ fontFamily: "var(--font-body)", fontWeight: 450 }}>Duration</span>
                           <span className="text-[11px] text-[var(--color-sand-400)]" style={{ fontFamily: "var(--font-body)" }}>Default session length</span>
                         </div>
-                        <div className="flex items-center gap-1 bg-[var(--color-sand-50)] border border-[var(--color-sand-200)] rounded-lg p-0.5">
+                        <div className="flex items-center gap-1 bg-[var(--color-sand-50)] border border-[var(--color-sand-200)] rounded-lg p-0.5 flex-wrap">
                           {[5, 10, 15, 20].map((d) => (
                             <button key={d} onClick={(e) => { e.stopPropagation(); setSettingsDuration(d); }}
                               className={`px-3 py-1.5 rounded-md text-[12px] transition-all cursor-pointer ${settingsDuration === d ? "bg-[var(--color-sand-900)] text-white shadow-sm" : "text-[var(--color-sand-500)] hover:text-[var(--color-sand-900)]"}`}
@@ -2657,13 +2684,13 @@ export default function StudioPage() {
 
                   {/* Behavior */}
                   <div className="bg-white rounded-2xl border border-[#e7e5e4] shadow-sm">
-                    <div className="px-6 py-4 border-b border-[#e7e5e4] bg-[#f5f3f0]">
+                    <div className="px-4 sm:px-6 py-4 border-b border-[#e7e5e4] bg-[#f5f3f0]">
                       <h3 className="text-[11px] uppercase tracking-wide text-[var(--color-sand-900)]" style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}>Behavior</h3>
                       <p className="text-[11px] text-[var(--color-sand-400)] mt-0.5" style={{ fontFamily: "var(--font-body)" }}>Automate common actions</p>
                     </div>
                     <div className="divide-y divide-[var(--color-sand-100)]">
-                      <div className="flex items-center justify-between px-6 py-4">
-                        <div>
+                      <div className="flex items-center justify-between px-4 sm:px-6 py-4 gap-3">
+                        <div className="min-w-0">
                           <span className="text-[13px] text-[var(--color-sand-900)] block leading-none" style={{ fontFamily: "var(--font-body)", fontWeight: 450 }}>Auto-download after generation</span>
                           <span className="text-[11px] text-[var(--color-sand-400)]" style={{ fontFamily: "var(--font-body)" }}>Save audio files automatically</span>
                         </div>
@@ -2677,8 +2704,8 @@ export default function StudioPage() {
                           />
                         </button>
                       </div>
-                      <div className="flex items-center justify-between px-6 py-4">
-                        <div>
+                      <div className="flex items-center justify-between px-4 sm:px-6 py-4 gap-3">
+                        <div className="min-w-0">
                           <span className="text-[13px] text-[var(--color-sand-900)] block leading-none" style={{ fontFamily: "var(--font-body)", fontWeight: 450 }}>Ambient sound preview</span>
                           <span className="text-[11px] text-[var(--color-sand-400)]" style={{ fontFamily: "var(--font-body)" }}>Play soundscape preview on select</span>
                         </div>
@@ -2721,10 +2748,10 @@ export default function StudioPage() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.15 }}
-            className="fixed inset-0 left-56 z-[500] flex items-center justify-center"
+            className="fixed inset-0 lg:left-56 z-[500] flex items-center justify-center"
           >
             {/* Backdrop */}
-            <div className="absolute inset-0 -left-56 bg-black/40 backdrop-blur-[2px]" onClick={() => setConfirmDialog(null)} />
+            <div className="absolute inset-0 lg:-left-56 bg-black/40 backdrop-blur-[2px]" onClick={() => setConfirmDialog(null)} />
             {/* Dialog */}
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 8 }}

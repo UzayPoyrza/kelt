@@ -76,7 +76,7 @@ function TimelineTrack({
       transition={{ delay, duration: 0.4 }}
       className="flex items-center gap-3"
     >
-      <div className="w-24 flex items-center gap-2 shrink-0">
+      <div className="w-16 sm:w-24 flex items-center gap-2 shrink-0">
         <Icon className="w-3.5 h-3.5 text-[var(--color-sand-500)]" />
         <span className="text-xs text-[var(--color-sand-600)] truncate" style={{ fontFamily: "var(--font-body)" }}>
           {label}
@@ -121,7 +121,7 @@ function StudioPreview() {
       >
         <div>
           <h3 className="text-lg text-[var(--color-sand-900)]" style={{ fontFamily: "var(--font-display)" }}>
-            Kilt Studio
+            Kelt Studio
           </h3>
           <p className="text-xs text-[var(--color-sand-500)]" style={{ fontFamily: "var(--font-body)" }}>
             Edit, remix, and perfect your meditations
@@ -179,7 +179,7 @@ function StudioPreview() {
               transition={{ delay: 0.5 }}
               className="flex items-center gap-3 mb-3"
             >
-              <div className="w-24 shrink-0" />
+              <div className="w-16 sm:w-24 shrink-0" />
               <div className="flex-1 flex justify-between px-1">
                 {["0:00", "2:30", "5:00", "7:30", "10:00"].map((t) => (
                   <span key={t} className="text-[10px] text-[var(--color-sand-400)]" style={{ fontFamily: "var(--font-body)" }}>
@@ -281,7 +281,7 @@ function StudioPreview() {
                 transition={{ delay: 0.1 + i * 0.06 }}
                 className="flex items-center gap-3"
               >
-                <span className="w-28 text-xs text-[var(--color-sand-600)] shrink-0" style={{ fontFamily: "var(--font-body)" }}>
+                <span className="w-20 sm:w-28 text-xs text-[var(--color-sand-600)] shrink-0" style={{ fontFamily: "var(--font-body)" }}>
                   {slider.label}
                 </span>
                 <div className="flex-1 h-2 rounded-full bg-[var(--color-sand-100)] relative overflow-hidden">
@@ -393,7 +393,7 @@ export default function LoginPage() {
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.3, duration: 0.5 }}
             className="w-full bg-white rounded-3xl p-7 lg:p-9 shadow-sm border border-[var(--color-sand-200)]"
-            style={{ minHeight: 420 }}
+
           >
             <StudioPreview />
           </motion.div>
@@ -403,7 +403,7 @@ export default function LoginPage() {
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.7, duration: 0.5 }}
-            className="grid grid-cols-2 lg:grid-cols-3 gap-3"
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3"
           >
             {[
               { icon: PenLine, title: "Edit scripts", desc: "Refine every word, pause, and breath cue", color: "#7a9e7e" },
@@ -438,7 +438,7 @@ export default function LoginPage() {
       </div>
 
       {/* ─── Right: Sign In ─── */}
-      <div className="relative z-10 w-full md:w-[45%] lg:w-[40%] min-h-screen flex flex-col items-center justify-center px-8 md:px-12 lg:px-16">
+      <div className="relative z-10 w-full md:w-[45%] lg:w-[40%] min-h-screen flex flex-col items-center justify-center px-5 sm:px-8 md:px-12 lg:px-16">
         {/* Logo on mobile only */}
         <motion.a
           href="/"
@@ -466,10 +466,10 @@ export default function LoginPage() {
             transition={{ delay: 0.1, duration: 0.5 }}
             className="mb-10"
           >
-            <h1 className="text-[2.25rem] md:text-[2.75rem] text-[var(--color-sand-900)] leading-tight mb-3">
+            <h1 className="text-[1.75rem] sm:text-[2.25rem] md:text-[2.75rem] text-[var(--color-sand-900)] leading-tight mb-3">
               Welcome to
               <br />
-              <span className="italic bg-clip-text text-transparent bg-[length:300%_300%] animate-[border-glow_4s_ease_infinite]" style={{ backgroundImage: "linear-gradient(135deg, var(--color-sage), var(--color-ocean), var(--color-dusk), var(--color-ember), var(--color-sage))", backgroundSize: "300% 300%" }}>Kilt Studio</span>
+              <span className="italic bg-clip-text text-transparent bg-[length:300%_300%] animate-[border-glow_4s_ease_infinite]" style={{ backgroundImage: "linear-gradient(135deg, var(--color-sage), var(--color-ocean), var(--color-dusk), var(--color-ember), var(--color-sage))", backgroundSize: "300% 300%" }}>Kelt Studio</span>
             </h1>
             <p className="text-[var(--color-sand-500)] text-sm leading-relaxed" style={{ fontFamily: "var(--font-body)" }}>
               Sign in to edit, remix, and perfect your AI-generated meditations.
