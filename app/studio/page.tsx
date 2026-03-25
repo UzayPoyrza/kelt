@@ -254,7 +254,7 @@ function SessionCard({ session, delay, isNowPlaying, onPlay, onOpenStudio, onDel
       onClick={onOpenStudio}
     >
       {/* Preview area — like a document thumbnail */}
-      <div className="relative h-[160px] bg-[#f8f8fa] border-b border-[#ececf0] overflow-hidden rounded-t-xl px-5 pt-4">
+      <div className="relative h-[160px] bg-[#f0eee9] border-b border-[#e4e0d8] overflow-hidden rounded-t-xl px-5 pt-4">
         {/* Category accent stripe at top */}
         <div className="absolute top-0 left-0 w-full h-[2px]" style={{ background: colors.accent }} />
 
@@ -657,31 +657,33 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, onBack }: {
     setEditOriginalText(null);
   }, []);
 
-  // ─── Save state ───
+  // ─── Autosave (triggers on completed actions, not keystrokes) ───
+  const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
-  const [isSaving, setIsSaving] = useState(false);
-  const savedScriptRef = useRef<string | null>(null);
-  const isDirty = savedScriptRef.current !== JSON.stringify(script);
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const savedFadeRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const handleSave = useCallback(() => {
-    setIsSaving(true);
-    setTimeout(() => {
-      savedScriptRef.current = JSON.stringify(script);
+  const triggerAutosave = useCallback(() => {
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    if (savedFadeRef.current) clearTimeout(savedFadeRef.current);
+    setSaveStatus("saving");
+    saveTimerRef.current = setTimeout(() => {
       setLastSavedAt(new Date());
-      setIsSaving(false);
-    }, 500);
-  }, [script]);
+      setSaveStatus("saved");
+      savedFadeRef.current = setTimeout(() => setSaveStatus("idle"), 1500);
+    }, 600);
+  }, []);
 
-  // Keyboard shortcuts for undo/redo/save
+  // Keyboard shortcuts for undo/redo
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === "z" && !e.shiftKey) { e.preventDefault(); undo(); }
       if ((e.metaKey || e.ctrlKey) && e.key === "z" && e.shiftKey) { e.preventDefault(); redo(); }
-      if ((e.metaKey || e.ctrlKey) && e.key === "s") { e.preventDefault(); handleSave(); }
+      if ((e.metaKey || e.ctrlKey) && e.key === "s") { e.preventDefault(); } // Prevent browser save dialog
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [undo, redo, handleSave]);
+  }, [undo, redo]);
 
   const estimated = estimateDuration(script);
 
@@ -723,7 +725,7 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, onBack }: {
 
   const selectedVoice = voices.find(v => v.id === sessionVoice) || voices[0];
 
-  const markEdited = useCallback(() => setHasGenerated(false), []);
+  const markEdited = useCallback(() => { setHasGenerated(false); triggerAutosave(); }, [triggerAutosave]);
 
   const startEditing = useCallback((blockId: string) => {
     const block = script.find(b => b.id === blockId);
@@ -791,6 +793,21 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, onBack }: {
     setEditOriginalText(null);
     setSelectedBlock(null);
   }, [selectedBlock, editOriginalText, script, deleteBlock]);
+
+  const handleBackgroundClick = useCallback(() => {
+    if (!selectedBlock) return;
+    const block = script.find(b => b.id === selectedBlock);
+    if (block && block.type === "voice") {
+      if (block.text === "New text segment..." || block.text.trim() === "") {
+        deleteBlock(selectedBlock);
+      } else {
+        saveEdit();
+      }
+    } else {
+      // Pause block — just deselect
+      setSelectedBlock(null);
+    }
+  }, [selectedBlock, script, deleteBlock, saveEdit]);
 
   const markNewBlocks = useCallback((ids: string[]) => {
     setNewBlockIds(new Set(ids));
@@ -946,38 +963,48 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, onBack }: {
 
             <div className="w-px h-4 bg-[#e4e4e7]" />
 
-            {/* Save + last saved */}
-            <div className="flex items-center gap-2 ml-1">
-              <button
-                onClick={handleSave}
-                disabled={isSaving || !isDirty}
-                className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] transition-all cursor-pointer disabled:cursor-default"
-                style={{
-                  fontFamily: "var(--font-body)",
-                  fontWeight: 500,
-                  background: isDirty && !isSaving ? "#18181b" : "#f4f4f5",
-                  color: isDirty && !isSaving ? "#fff" : "#a1a1aa",
-                }}
-              >
-                {isSaving ? (
-                  <motion.div animate={{ rotate: 360 }} transition={{ duration: 0.6, repeat: Infinity, ease: "linear" }}>
-                    <RotateCw className="w-3 h-3" />
-                  </motion.div>
-                ) : (
-                  <Check className="w-3 h-3" />
-                )}
-                {isSaving ? "Saving…" : "Save"}
-              </button>
-              {lastSavedAt && !isDirty && (
-                <span className="text-[10px] text-[#a1a1aa] whitespace-nowrap" style={{ fontFamily: "var(--font-body)" }}>
-                  Saved {lastSavedAt.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }).toLowerCase()}
-                </span>
-              )}
-              {lastSavedAt && isDirty && (
-                <span className="text-[10px] text-[#c4876c] whitespace-nowrap" style={{ fontFamily: "var(--font-body)" }}>
-                  Unsaved changes
-                </span>
-              )}
+            {/* Autosave status */}
+            <div className="flex items-center gap-1.5 ml-1">
+              <AnimatePresence mode="wait">
+                {saveStatus === "saving" ? (
+                  <motion.span
+                    key="saving"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="flex items-center gap-1.5 text-[10px] text-[#a1a1aa] whitespace-nowrap"
+                    style={{ fontFamily: "var(--font-body)" }}
+                  >
+                    <motion.div animate={{ rotate: 360 }} transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }}>
+                      <RotateCw className="w-3 h-3" />
+                    </motion.div>
+                    Saving…
+                  </motion.span>
+                ) : saveStatus === "saved" ? (
+                  <motion.span
+                    key="saved"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="flex items-center gap-1 text-[10px] text-[var(--color-sage)] whitespace-nowrap"
+                    style={{ fontFamily: "var(--font-body)" }}
+                  >
+                    <Check className="w-3 h-3" />
+                    Saved
+                  </motion.span>
+                ) : lastSavedAt ? (
+                  <motion.span
+                    key="timestamp"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="text-[10px] text-[#a1a1aa] whitespace-nowrap"
+                    style={{ fontFamily: "var(--font-body)" }}
+                  >
+                    Last saved {lastSavedAt.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }).toLowerCase()}
+                  </motion.span>
+                ) : null}
+              </AnimatePresence>
             </div>
 
             <div className="w-px h-4 bg-[#e4e4e7]" />
@@ -989,14 +1016,14 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, onBack }: {
         </div>
 
         {/* Script blocks — Timeline Editor */}
-        <div className="flex-1 overflow-y-auto studio-scroll" style={{ background: "#fafaf9" }}>
+        <div className="flex-1 overflow-y-auto studio-scroll" style={{ background: "#fafaf9" }} onClick={handleBackgroundClick}>
           <div className="max-w-[680px] mx-auto px-8 py-6">
             {/* Add segment at top */}
             {script.length > 0 && (
               <div className="relative flex items-center justify-center group/addtop" style={{ height: "32px", marginLeft: "51px" }}>
                 <div className="absolute inset-x-0 top-1/2 border-t border-dashed border-transparent group-hover/addtop:border-[rgba(122,158,126,0.35)] transition-colors" />
                 <button
-                  onClick={() => addBlockBefore(script[0].id)}
+                  onClick={(e) => { e.stopPropagation(); addBlockBefore(script[0].id); }}
                   className="relative opacity-0 group-hover/addtop:opacity-100 w-5 h-5 rounded-full bg-white border border-[#e4e4e7] hover:border-[var(--color-sage)] hover:bg-[var(--color-sage-light)] flex items-center justify-center text-[#a1a1aa] hover:text-[var(--color-sage)] shadow-sm transition-all cursor-pointer z-10"
                   title="Add segment above"
                 >
@@ -1046,7 +1073,7 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, onBack }: {
 
                       {/* Pause content row */}
                       <div
-                        onClick={() => setSelectedBlock(isSelected ? null : block.id)}
+                        onClick={(e) => { e.stopPropagation(); setSelectedBlock(isSelected ? null : block.id); }}
                         className={`flex items-center flex-1 ml-3 rounded-lg px-3 cursor-pointer transition-all ${
                           hasError
                             ? "bg-red-50/80 border border-red-200"
@@ -1133,7 +1160,7 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, onBack }: {
                     <div className="relative flex items-center justify-center group/addpause" style={{ height: "32px", marginLeft: "51px" }}>
                       <div className="absolute inset-x-0 top-1/2 border-t border-dashed border-transparent group-hover/addpause:border-[rgba(122,158,126,0.35)] transition-colors" />
                       <button
-                        onClick={() => addBlockAfter(block.id, "voice")}
+                        onClick={(e) => { e.stopPropagation(); addBlockAfter(block.id, "voice"); }}
                         className="relative opacity-0 group-hover/addpause:opacity-100 w-5 h-5 rounded-full bg-white border border-[#e4e4e7] hover:border-[var(--color-sage)] hover:bg-[var(--color-sage-light)] flex items-center justify-center text-[#a1a1aa] hover:text-[var(--color-sage)] shadow-sm transition-all cursor-pointer z-10"
                         title="Add segment"
                       >
@@ -1188,7 +1215,7 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, onBack }: {
                     {/* Card */}
                     <div className="flex-1 min-w-0 ml-3 mb-0">
                       <div
-                        onClick={() => { if (isSelected) { saveEdit(); } else { startEditing(block.id); } }}
+                        onClick={(e) => { e.stopPropagation(); if (isSelected) { saveEdit(); } else { startEditing(block.id); } }}
                         className={`relative rounded-lg cursor-pointer transition-all ${
                           isSelected
                             ? "bg-white shadow-[0_1px_8px_rgba(0,0,0,0.08),0_0_0_1px_rgba(122,158,126,0.3)]"
@@ -1287,7 +1314,7 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, onBack }: {
                       <div className="relative flex items-center justify-center group/add" style={{ height: "32px" }}>
                         <div className="absolute inset-x-0 top-1/2 border-t border-dashed border-transparent group-hover/add:border-[rgba(122,158,126,0.35)] transition-colors" />
                         <button
-                          onClick={() => addBlockAfter(block.id, "voice")}
+                          onClick={(e) => { e.stopPropagation(); addBlockAfter(block.id, "voice"); }}
                           className="relative opacity-0 group-hover/add:opacity-100 w-5 h-5 rounded-full bg-white border border-[#e4e4e7] hover:border-[var(--color-sage)] hover:bg-[var(--color-sage-light)] flex items-center justify-center text-[#a1a1aa] hover:text-[var(--color-sage)] shadow-sm transition-all cursor-pointer z-10"
                           title="Add segment below"
                         >
@@ -1309,7 +1336,7 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, onBack }: {
                 </div>
                 <div className="ml-3 pt-2 pb-4">
                   <button
-                    onClick={() => addBlockAfter(script[script.length - 1].id, "voice")}
+                    onClick={(e) => { e.stopPropagation(); addBlockAfter(script[script.length - 1].id, "voice"); }}
                     className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-md text-[11px] text-[#71717a] hover:text-[var(--color-sage)] bg-white hover:bg-[var(--color-sage-light)] border border-dashed border-[#d4d4d8] hover:border-[var(--color-sage)] transition-all cursor-pointer shadow-sm"
                     style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}
                   >
@@ -1585,6 +1612,22 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, onBack }: {
                   <span className="text-[10px] bg-[var(--color-dusk-light)] px-1.5 py-0.5 rounded" style={{ fontFamily: "var(--font-body)", color: "var(--color-dusk)" }}>3s or more</span>
                 </div>
                 <p className="text-[11.5px] text-[#71717a] leading-relaxed pl-5" style={{ fontFamily: "var(--font-body)" }}>Creates a distinct break, voice re-entry is slightly more deliberate</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Adding segments */}
+          <div>
+            <label className="text-[11px] uppercase tracking-wider text-[#52525b] mb-2.5 block" style={{ fontFamily: "var(--font-body)", fontWeight: 600, letterSpacing: "0.08em" }}>Adding Segments</label>
+            <div className="p-4 rounded-xl bg-white border border-[#e4e4e7] shadow-sm space-y-3">
+              <div className="flex items-start gap-2.5">
+                <div className="w-5 h-5 rounded-full bg-[#f4f4f5] border border-[#e4e4e7] flex items-center justify-center shrink-0 mt-0.5">
+                  <Plus className="w-2.5 h-2.5 text-[#71717a]" />
+                </div>
+                <div>
+                  <p className="text-[12px] text-[#3f3f46] mb-0.5" style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}>Hover between blocks</p>
+                  <p className="text-[11.5px] text-[#71717a] leading-relaxed" style={{ fontFamily: "var(--font-body)" }}>A <span className="inline-flex items-center justify-center w-3.5 h-3.5 rounded-full border border-[#d4d4d8] text-[8px] text-[#71717a] align-text-bottom">+</span> button appears between any two blocks. Click it to insert a new text segment with an auto-paired pause.</p>
+                </div>
               </div>
             </div>
           </div>
