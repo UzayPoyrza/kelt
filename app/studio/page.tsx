@@ -2024,7 +2024,7 @@ function StudioPageContent() {
   const [genStep, setGenStep] = useState<"input" | "choose" | "studio">("input");
   const [genConfig, setGenConfig] = useState({ prompt: "", voice: "aria", duration: 10, sound: "Sanctuary", sessionId: null as string | null, script: null as ScriptBlock[] | null, title: null as string | null, soundVolume: 70 });
   const [showGenAdvanced, setShowGenAdvanced] = useState(false);
-  const genAdvancedRef = useRef<HTMLDivElement>(null);
+  const genGenerateRef = useRef<HTMLDivElement>(null);
   const [selectedGenProtocol, setSelectedGenProtocol] = useState<string | null>(null);
   const [showGenProtocolInfo, setShowGenProtocolInfo] = useState(false);
   const [genPromptError, setGenPromptError] = useState(false);
@@ -2895,9 +2895,9 @@ function StudioPageContent() {
                 </motion.div>
 
                 {/* Advanced — Protocol selection */}
-                <motion.div ref={genAdvancedRef} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="mb-10">
+                <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="mb-10">
                   <button
-                    onClick={() => { setShowGenAdvanced(!showGenAdvanced); setTimeout(() => genAdvancedRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 100); }}
+                    onClick={() => { setShowGenAdvanced(!showGenAdvanced); setTimeout(() => genGenerateRef.current?.scrollIntoView({ behavior: "smooth", block: "end" }), 300); }}
                     className="flex items-center gap-3 w-full px-4 py-3 rounded-xl bg-white/60 border border-[var(--color-sand-200)] hover:border-[var(--color-sand-300)] hover:bg-white transition-all cursor-pointer"
                     style={{ fontFamily: "var(--font-body)" }}
                   >
@@ -2972,7 +2972,7 @@ function StudioPageContent() {
                 </motion.div>
 
                 {/* Action buttons */}
-                <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }} className="flex flex-col gap-3 items-center">
+                <motion.div ref={genGenerateRef} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }} className="flex flex-col gap-3 items-center">
                   {/* Open in Studio — primary CTA with border glow */}
                   <div className="relative rounded-full group w-full">
                     <div className="absolute -inset-[2.5px] rounded-full bg-[length:300%_300%] animate-[border-glow_4s_ease_infinite] opacity-90 group-hover:opacity-100 transition-opacity duration-300" style={{ background: "linear-gradient(135deg, var(--color-sage), var(--color-ocean), var(--color-dusk), var(--color-ember), var(--color-sage))", backgroundSize: "300% 300%" }} />

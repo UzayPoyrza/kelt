@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { motion } from "motion/react";
 import {
   Sparkles,
@@ -233,8 +234,19 @@ function StudioPreview() {
 /* ─── Login Page ─── */
 
 export default function LoginPage() {
+  const router = useRouter();
   const [isHovered, setIsHovered] = useState(false);
   const [loadingProvider, setLoadingProvider] = useState<"google" | "apple" | null>(null);
+
+  // Redirect to studio if already signed in
+  useEffect(() => {
+    const checkAuth = async () => {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) router.replace("/studio");
+    };
+    checkAuth();
+  }, [router]);
 
   const handleOAuthLogin = async (provider: "google" | "apple") => {
     setLoadingProvider(provider);

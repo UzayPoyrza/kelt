@@ -37,5 +37,12 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
+  // Auto login — redirect authenticated users away from /login
+  if (user && request.nextUrl.pathname === "/login") {
+    const url = request.nextUrl.clone();
+    url.pathname = "/studio";
+    return NextResponse.redirect(url);
+  }
+
   return supabaseResponse;
 }
