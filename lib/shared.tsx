@@ -23,37 +23,77 @@ export const voices = [
   { id: "kai", label: "Kai", description: "Deep, spacious" },
 ];
 
+const AUDIO_BASE = "https://audio.neurotypeapp.com/faded";
+
 export const ambients = [
-  { id: "none", label: "Silence", icon: Volume2 },
-  { id: "rain", label: "Rain", icon: CloudRain },
-  { id: "ocean", label: "Ocean", icon: Waves },
-  { id: "forest", label: "Forest", icon: TreePine },
-  { id: "wind", label: "Wind", icon: Wind },
+  { id: "none", label: "Silence", icon: Volume2, src: null },
+  { id: "rain", label: "Rain", icon: CloudRain, src: `${AUDIO_BASE}/rain.mp3` },
+  { id: "ocean", label: "Ocean", icon: Waves, src: `${AUDIO_BASE}/waves.mp3` },
+  { id: "forest", label: "Forest", icon: TreePine, src: `${AUDIO_BASE}/rainforest_wildlife.mp3` },
+  { id: "wind", label: "Wind", icon: Wind, src: `${AUDIO_BASE}/distant_wind_chimes.mp3` },
 ];
 
 /* Protocol-aware soundscape suggestions — auto-selected based on session intent */
-export const soundscapePresets: Record<string, { label: string; description: string; layers: string[]; protocol: string; color: string }[]> = {
+export const soundscapePresets: Record<string, { label: string; description: string; layers: string[]; protocol: string; color: string; src: string }[]> = {
   sleep: [
-    { label: "Deep Night", description: "Engineered for CBT-I sleep onset", layers: ["Low drone", "Distant rain", "Delta wave undertone"], protocol: "CBT-I", color: "var(--color-dusk)" },
-    { label: "Soft Drift", description: "NSDR-optimized descent into rest", layers: ["White noise fade", "Heartbeat sync", "Ocean bed"], protocol: "NSDR", color: "var(--color-ocean)" },
-    { label: "Moonlit Forest", description: "PMR tension release atmosphere", layers: ["Night crickets", "Gentle stream", "Warm pad"], protocol: "PMR", color: "var(--color-sage)" },
+    { label: "Deep Night", description: "Engineered for CBT-I sleep onset", layers: ["Low drone", "Distant rain", "Delta wave undertone"], protocol: "CBT-I", color: "var(--color-dusk)", src: `${AUDIO_BASE}/sleep_train.mp3` },
+    { label: "Soft Drift", description: "NSDR-optimized descent into rest", layers: ["White noise fade", "Heartbeat sync", "Ocean bed"], protocol: "NSDR", color: "var(--color-ocean)", src: `${AUDIO_BASE}/white_noise.mp3` },
+    { label: "Moonlit Forest", description: "PMR tension release atmosphere", layers: ["Night crickets", "Gentle stream", "Warm pad"], protocol: "PMR", color: "var(--color-sage)", src: `${AUDIO_BASE}/summer_night.mp3` },
   ],
   focus: [
-    { label: "Flow State", description: "MBSR sustained attention scaffold", layers: ["Brown noise", "Minimal piano", "Room tone"], protocol: "MBSR", color: "var(--color-sage)" },
-    { label: "Deep Work", description: "HRV-BF coherence at 0.1Hz", layers: ["Binaural 40Hz", "Soft static", "Clock pulse"], protocol: "HRV-BF", color: "var(--color-ocean)" },
-    { label: "Morning Clear", description: "ACT present-moment grounding", layers: ["Bird dawn chorus", "Wind through leaves", "Singing bowl"], protocol: "ACT", color: "var(--color-ember)" },
+    { label: "Flow State", description: "MBSR sustained attention scaffold", layers: ["Brown noise", "Minimal piano", "Room tone"], protocol: "MBSR", color: "var(--color-sage)", src: `${AUDIO_BASE}/brown_noise.mp3` },
+    { label: "Deep Work", description: "HRV-BF coherence at 0.1Hz", layers: ["Binaural 40Hz", "Soft static", "Clock pulse"], protocol: "HRV-BF", color: "var(--color-ocean)", src: `${AUDIO_BASE}/40hz_binurual.mp3` },
+    { label: "Morning Clear", description: "ACT present-moment grounding", layers: ["Bird dawn chorus", "Wind through leaves", "Singing bowl"], protocol: "ACT", color: "var(--color-ember)", src: `${AUDIO_BASE}/spring_field.mp3` },
   ],
   stress: [
-    { label: "Safe Harbor", description: "PMR progressive release sequence", layers: ["Ocean waves", "Warm sub-bass", "Breath guide tone"], protocol: "PMR", color: "var(--color-ocean)" },
-    { label: "Forest Floor", description: "MBSR body scan environment", layers: ["Rain on canopy", "Earth resonance", "Distant thunder"], protocol: "MBSR", color: "var(--color-sage)" },
-    { label: "Letting Go", description: "ACT defusion through sound", layers: ["Tibetan bowls", "Wind", "Resonant hum"], protocol: "ACT", color: "var(--color-dusk)" },
+    { label: "Safe Harbor", description: "PMR progressive release sequence", layers: ["Ocean waves", "Warm sub-bass", "Breath guide tone"], protocol: "PMR", color: "var(--color-ocean)", src: `${AUDIO_BASE}/waves.mp3` },
+    { label: "Forest Floor", description: "MBSR body scan environment", layers: ["Rain on canopy", "Earth resonance", "Distant thunder"], protocol: "MBSR", color: "var(--color-sage)", src: `${AUDIO_BASE}/rain.mp3` },
+    { label: "Letting Go", description: "ACT defusion through sound", layers: ["Tibetan bowls", "Wind", "Resonant hum"], protocol: "ACT", color: "var(--color-dusk)", src: `${AUDIO_BASE}/soundbowl_soundbath.mp3` },
   ],
   default: [
-    { label: "Sanctuary", description: "Adaptive all-purpose soundscape", layers: ["Ambient pad", "Nature blend", "Breath sync"], protocol: "MBSR", color: "var(--color-sage)" },
-    { label: "Still Water", description: "Minimal, spacious atmosphere", layers: ["Water droplets", "Room reverb", "Soft drone"], protocol: "PMR", color: "var(--color-ocean)" },
-    { label: "Open Sky", description: "Expansive, grounding presence", layers: ["Wind layers", "Distant chimes", "Earth tone"], protocol: "ACT", color: "var(--color-ember)" },
+    { label: "Sanctuary", description: "Adaptive all-purpose soundscape", layers: ["Ambient pad", "Nature blend", "Breath sync"], protocol: "MBSR", color: "var(--color-sage)", src: `${AUDIO_BASE}/peaceful_moment.mp3` },
+    { label: "Still Water", description: "Minimal, spacious atmosphere", layers: ["Water droplets", "Room reverb", "Soft drone"], protocol: "PMR", color: "var(--color-ocean)", src: `${AUDIO_BASE}/river.mp3` },
+    { label: "Open Sky", description: "Expansive, grounding presence", layers: ["Wind layers", "Distant chimes", "Earth tone"], protocol: "ACT", color: "var(--color-ember)", src: `${AUDIO_BASE}/distant_wind_chimes.mp3` },
   ],
 };
+
+/* Full audio catalog — all available background sounds from R2 */
+export const audioCatalog = [
+  { id: "10hz_alpha_wave_binurual", label: "10Hz Alpha Binaural", category: "binaural", src: `${AUDIO_BASE}/10hz_alpha_wave_binurual.mp3` },
+  { id: "110_hz", label: "110 Hz Tone", category: "frequency", src: `${AUDIO_BASE}/110_hz.mp3` },
+  { id: "220_hz", label: "220 Hz Tone", category: "frequency", src: `${AUDIO_BASE}/220_hz.mp3` },
+  { id: "40hz_binurual", label: "40Hz Binaural", category: "binaural", src: `${AUDIO_BASE}/40hz_binurual.mp3` },
+  { id: "4_6_pacer", label: "4-6 Breath Pacer", category: "guide", src: `${AUDIO_BASE}/4_6_pacer.mp3` },
+  { id: "60_bpm_wood_metronome", label: "Wood Metronome 60 BPM", category: "guide", src: `${AUDIO_BASE}/60_bpm_wood_metronome.mp3` },
+  { id: "anchor_bell", label: "Anchor Bell", category: "guide", src: `${AUDIO_BASE}/anchor_bell_single_source.mp3` },
+  { id: "athens_street_cafe", label: "Athens Street Café", category: "environment", src: `${AUDIO_BASE}/athens_street_cafe.mp3` },
+  { id: "brown_noise", label: "Brown Noise", category: "noise", src: `${AUDIO_BASE}/brown_noise.mp3` },
+  { id: "chimes_and_tones", label: "Chimes & Tones", category: "ambient", src: `${AUDIO_BASE}/chimes_and_tones.mp3` },
+  { id: "deep_space", label: "Deep Space", category: "ambient", src: `${AUDIO_BASE}/deep_space.mp3` },
+  { id: "distant_wind_chimes", label: "Distant Wind Chimes", category: "ambient", src: `${AUDIO_BASE}/distant_wind_chimes.mp3` },
+  { id: "fireplace", label: "Fireplace", category: "environment", src: `${AUDIO_BASE}/fireplace.mp3` },
+  { id: "peaceful_moment", label: "Peaceful Moment", category: "ambient", src: `${AUDIO_BASE}/peaceful_moment.mp3` },
+  { id: "pink_noise", label: "Pink Noise", category: "noise", src: `${AUDIO_BASE}/pink_noise.mp3` },
+  { id: "calm_drone", label: "Calm Drone", category: "ambient", src: `${AUDIO_BASE}/plain_stereo_calm_drone.mp3` },
+  { id: "focus_drone", label: "Focus Drone", category: "ambient", src: `${AUDIO_BASE}/plain_stereo_focus_drone.mp3` },
+  { id: "rain", label: "Rain", category: "nature", src: `${AUDIO_BASE}/rain.mp3` },
+  { id: "rainforest_wildlife", label: "Rainforest Wildlife", category: "nature", src: `${AUDIO_BASE}/rainforest_wildlife.mp3` },
+  { id: "river", label: "River", category: "nature", src: `${AUDIO_BASE}/river.mp3` },
+  { id: "room_tone", label: "Room Tone", category: "ambient", src: `${AUDIO_BASE}/room_tone.mp3` },
+  { id: "safe_haven", label: "Safe Haven", category: "ambient", src: `${AUDIO_BASE}/safe_haven.mp3` },
+  { id: "shamanic_drums", label: "Shamanic Drums", category: "ambient", src: `${AUDIO_BASE}/shamanic_drums.mp3` },
+  { id: "shower", label: "Shower", category: "environment", src: `${AUDIO_BASE}/shower.mp3` },
+  { id: "sleep_train", label: "Sleep Train", category: "ambient", src: `${AUDIO_BASE}/sleep_train.mp3` },
+  { id: "snowfall", label: "Snowfall", category: "nature", src: `${AUDIO_BASE}/snowfall.mp3` },
+  { id: "soft_metronome", label: "Soft Metronome 60 BPM", category: "guide", src: `${AUDIO_BASE}/soft_metronome_60_bpm.mp3` },
+  { id: "soft_piano", label: "Soft Piano", category: "ambient", src: `${AUDIO_BASE}/soft_piano.mp3` },
+  { id: "soundbowl_soundbath", label: "Sound Bowl Bath", category: "ambient", src: `${AUDIO_BASE}/soundbowl_soundbath.mp3` },
+  { id: "spring_field", label: "Spring Field", category: "nature", src: `${AUDIO_BASE}/spring_field.mp3` },
+  { id: "summer_night", label: "Summer Night", category: "nature", src: `${AUDIO_BASE}/summer_night.mp3` },
+  { id: "underwater", label: "Underwater", category: "nature", src: `${AUDIO_BASE}/underwater.mp3` },
+  { id: "waves", label: "Waves", category: "nature", src: `${AUDIO_BASE}/waves.mp3` },
+  { id: "white_noise", label: "White Noise", category: "noise", src: `${AUDIO_BASE}/white_noise.mp3` },
+];
 
 export const rotatingPhrases = [
   "a guided meditation",

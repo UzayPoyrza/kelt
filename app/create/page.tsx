@@ -21,6 +21,7 @@ import {
   detectIntent,
   protocols,
 } from "@/lib/shared";
+import { createClient } from "@/lib/supabase/client";
 
 function CreateContent() {
   const router = useRouter();
@@ -38,7 +39,40 @@ function CreateContent() {
   // Auto-detect a recommended protocol based on intent
   const recommendedProtocol = detectedIntent === "sleep" ? "CBT-I" : detectedIntent === "focus" ? "MBSR" : detectedIntent === "stress" ? "PMR" : "MBSR";
 
-  const handleGenerate = useCallback(() => {
+  const [isGenerating, setIsGenerating] = useState(false);
+
+  const handleGenerate = useCallback(async () => {
+    // Check if user is authenticated
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (user) {
+      // Authenticated: persist via API
+      setIsGenerating(true);
+      try {
+        const res = await fetch("/api/generate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            prompt,
+            voice,
+            duration,
+            protocol: selectedProtocol || recommendedProtocol,
+          }),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          router.push(`/session?id=${data.session.id}`);
+          return;
+        }
+      } catch {
+        // Fall through to unauthenticated flow
+      } finally {
+        setIsGenerating(false);
+      }
+    }
+
+    // Unauthenticated: use URL params
     const params = new URLSearchParams({
       prompt,
       voice,

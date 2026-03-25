@@ -30,10 +30,16 @@ import {
 function SessionContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const prompt = searchParams.get("prompt") || "";
-  const voice = searchParams.get("voice") || "aria";
-  const duration = parseInt(searchParams.get("duration") || "10");
-  const detectedIntent = searchParams.get("intent") || "default";
+  const sessionId = searchParams.get("id");
+  const [paramPrompt, setParamPrompt] = useState(searchParams.get("prompt") || "");
+  const [paramVoice, setParamVoice] = useState(searchParams.get("voice") || "aria");
+  const [paramDuration, setParamDuration] = useState(parseInt(searchParams.get("duration") || "10"));
+  const [paramIntent, setParamIntent] = useState(searchParams.get("intent") || "default");
+
+  const prompt = paramPrompt;
+  const voice = paramVoice;
+  const duration = paramDuration;
+  const detectedIntent = paramIntent;
 
   const [stage, setStage] = useState<"generating" | "ready">("generating");
   const [isPlaying, setIsPlaying] = useState(false);
@@ -43,21 +49,44 @@ function SessionContent() {
   const [showBgPicker, setShowBgPicker] = useState(false);
   const [bgVolume, setBgVolume] = useState(50);
 
+  // Load persisted session by ID
+  useEffect(() => {
+    if (!sessionId) return;
+    (async () => {
+      try {
+        const res = await fetch(`/api/sessions/${sessionId}`);
+        if (res.ok) {
+          const session = await res.json();
+          setParamPrompt(session.prompt || "");
+          setParamVoice(session.voice || "aria");
+          setParamDuration(session.duration || 10);
+          setParamIntent(session.intent || session.category || "default");
+          if (session.soundscape) setSoundscape(session.soundscape);
+          setStage("ready");
+        }
+      } catch {
+        // Fall through to URL params behavior
+      }
+    })();
+  }, [sessionId]);
+
   // Auto-select recommended soundscape
   useEffect(() => {
+    if (sessionId) return; // Skip if loading from DB
     const presets = soundscapePresets[detectedIntent] || soundscapePresets.default;
     if (presets.length > 0) {
       setSoundscape(presets[0].label);
     }
-  }, [detectedIntent]);
+  }, [detectedIntent, sessionId]);
 
-  // Simulate generation
+  // Simulate generation (only for non-persisted sessions)
   useEffect(() => {
+    if (sessionId) return;
     const timer = setTimeout(() => setStage("ready"), 3000);
     return () => clearTimeout(timer);
-  }, []);
+  }, [sessionId]);
 
-  if (!prompt) {
+  if (!prompt && !sessionId) {
     router.push("/");
     return null;
   }

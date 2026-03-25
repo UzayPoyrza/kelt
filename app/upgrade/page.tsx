@@ -188,13 +188,56 @@ function CheckoutModal({
       : 0;
   const credits = plan ? plan.credits : creditCount || 0;
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     setProcessing(true);
-    setTimeout(() => {
+    try {
+      const priceId = getPriceId(plan, billing, creditCount);
+      if (!priceId) {
+        setProcessing(false);
+        return;
+      }
+      const mode = isSingleCredit ? "payment" : "subscription";
+      const res = await fetch("/api/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ priceId, mode }),
+      });
+      if (!res.ok) {
+        setProcessing(false);
+        return;
+      }
+      const data = await res.json();
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        setProcessing(false);
+      }
+    } catch {
       setProcessing(false);
-      setDone(true);
-    }, 2000);
+    }
   };
+
+  function getPriceId(
+    plan: (typeof plans)[number] | null,
+    billing: "monthly" | "yearly" | "single",
+    creditCount?: number
+  ): string | null {
+    if (!plan && creditCount) {
+      return process.env.NEXT_PUBLIC_PRICE_SINGLE_CREDIT || null;
+    }
+    if (!plan) return null;
+    if (plan.id === "personal") {
+      return billing === "yearly"
+        ? process.env.NEXT_PUBLIC_PRICE_PERSONAL_YEARLY || null
+        : process.env.NEXT_PUBLIC_PRICE_PERSONAL_MONTHLY || null;
+    }
+    if (plan.id === "creator") {
+      return billing === "yearly"
+        ? process.env.NEXT_PUBLIC_PRICE_CREATOR_YEARLY || null
+        : process.env.NEXT_PUBLIC_PRICE_CREATOR_MONTHLY || null;
+    }
+    return null;
+  }
 
   return (
     <motion.div

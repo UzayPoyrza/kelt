@@ -52,6 +52,10 @@ import {
 } from "lucide-react";
 import svgPaths from "@/lib/svg-paths";
 import { suggestions, voices as sharedVoices, durations as sharedDurations, detectIntent, rotatingPhrases, protocols } from "@/lib/shared";
+import { ProfileProvider, useProfile } from "@/lib/hooks/useProfile";
+import { generateScript as generateScriptFn, deriveSessionName, estimateDuration, type ScriptBlock } from "@/lib/generateScript";
+import { useSearchParams } from "next/navigation";
+import { Suspense } from "react";
 
 /* ─── Logo ─── */
 
@@ -87,50 +91,9 @@ const soundCategories = {
   others: { label: "Others", items: ["Sanctuary", "Open Sky", "Forest Floor", "Letting Go", "Morning Clear"] },
 };
 
-const mockSessions = [
-  { id: "1", title: "Deep sleep after a long day", duration: "15 min", voice: "Aria", protocol: "CBT-I + NSDR", sound: "Deep Night", createdAt: "Mar 24, 2026 · 12:34 PM", createdAtShort: "2 hours ago", accessedAt: "Just now", category: "sleep", icon: Moon, hasGeneration: true },
-  { id: "2", title: "Morning focus before standup", duration: "10 min", voice: "James", protocol: "MBSR", sound: "Flow State", createdAt: "Mar 23, 2026 · 8:15 AM", createdAtShort: "Yesterday", accessedAt: "3:14 PM", category: "focus", icon: Sun, hasGeneration: true },
-  { id: "3", title: "Calm my nerves before the flight", duration: "8 min", voice: "Kai", protocol: "HRV-BF + ACT", sound: "Still Water", createdAt: "Mar 22, 2026 · 3:47 PM", createdAtShort: "2 days ago", accessedAt: "Mar 22, 2026", category: "anxiety", icon: Heart, hasGeneration: true },
-  { id: "4", title: "Stress relief after deadline", duration: "20 min", voice: "Luna", protocol: "PMR + ACT", sound: "Safe Harbor", createdAt: "Mar 21, 2026 · 6:22 PM", createdAtShort: "3 days ago", accessedAt: "Mar 21, 2026", category: "stress", icon: Wind, hasGeneration: true },
-  { id: "5", title: "Quick breathing reset", duration: "5 min", voice: "Aria", protocol: "HRV-BF", sound: "Sanctuary", createdAt: "Mar 17, 2026 · 10:05 AM", createdAtShort: "Last week", accessedAt: "Mar 20, 2026", category: "focus", icon: Brain, hasGeneration: true },
-  { id: "6", title: "Wind down for bed", duration: "15 min", voice: "Luna", protocol: "NSDR", sound: "Soft Drift", createdAt: "Mar 16, 2026 · 11:12 PM", createdAtShort: "Last week", accessedAt: "Mar 17, 2026", category: "sleep", icon: Moon, hasGeneration: true },
-  { id: "7", title: "Body scan for tension release", duration: "12 min", voice: "Aria", protocol: "PMR", sound: "Letting Go", createdAt: "Mar 14, 2026 · 7:45 PM", createdAtShort: "Last week", accessedAt: "Mar 16, 2026", category: "stress", icon: Heart, hasGeneration: false },
-  { id: "8", title: "Pre-presentation confidence boost", duration: "8 min", voice: "Kai", protocol: "ACT", sound: "Open Sky", createdAt: "Mar 13, 2026 · 9:00 AM", createdAtShort: "2 weeks ago", accessedAt: "Mar 15, 2026", category: "anxiety", icon: Heart, hasGeneration: false },
-  { id: "9", title: "Late night overthinking reset", duration: "20 min", voice: "Luna", protocol: "CBT-I", sound: "Deep Night", createdAt: "Mar 11, 2026 · 11:55 PM", createdAtShort: "2 weeks ago", accessedAt: "Mar 11, 2026", category: "sleep", icon: Moon, hasGeneration: true },
-  { id: "10", title: "Post-workout recovery calm", duration: "10 min", voice: "James", protocol: "NSDR", sound: "Still Water", createdAt: "Mar 10, 2026 · 6:30 PM", createdAtShort: "2 weeks ago", accessedAt: "Mar 10, 2026", category: "focus", icon: Sun, hasGeneration: false },
-  { id: "11", title: "Midday energy recharge", duration: "5 min", voice: "Kai", protocol: "HRV-BF", sound: "Flow State", createdAt: "Mar 8, 2026 · 1:15 PM", createdAtShort: "2 weeks ago", accessedAt: "Mar 8, 2026", category: "focus", icon: Brain, hasGeneration: false },
-  { id: "12", title: "Sunday evening wind down", duration: "15 min", voice: "Aria", protocol: "PMR + NSDR", sound: "Safe Harbor", createdAt: "Mar 7, 2026 · 9:20 PM", createdAtShort: "2 weeks ago", accessedAt: "Mar 7, 2026", category: "sleep", icon: Moon, hasGeneration: true },
-];
-
-const mockGenerations = [
-  // Session 1 — multiple generations within same session
-  { id: "g1", prompt: "Help me fall asleep after a stressful day", voice: "Aria", duration: "15 min", protocol: "CBT-I + NSDR", status: "completed" as const, timestamp: "Mar 24, 2026 · 12:34 PM", creditUsed: 1, sessionId: "1" },
-  { id: "g1b", prompt: "Make it softer, more whisper-like", voice: "Aria", duration: "15 min", protocol: "CBT-I + NSDR", status: "completed" as const, timestamp: "Mar 24, 2026 · 12:52 PM", creditUsed: 1, sessionId: "1" },
-  { id: "g1c", prompt: "Add longer pauses between breathing cues", voice: "Aria", duration: "18 min", protocol: "CBT-I + NSDR", status: "completed" as const, timestamp: "Mar 24, 2026 · 1:10 PM", creditUsed: 1, sessionId: "1" },
-  // Session 2
-  { id: "g2", prompt: "Morning focus session before my standup meeting", voice: "James", duration: "10 min", protocol: "MBSR", status: "completed" as const, timestamp: "Mar 23, 2026 · 8:15 AM", creditUsed: 1, sessionId: "2" },
-  { id: "g2b", prompt: "Shorter intro, get to the focus part faster", voice: "James", duration: "8 min", protocol: "MBSR", status: "completed" as const, timestamp: "Mar 23, 2026 · 8:40 AM", creditUsed: 1, sessionId: "2" },
-  // Session 3
-  { id: "g3", prompt: "Calm my nerves, I have a flight in 2 hours", voice: "Kai", duration: "8 min", protocol: "HRV-BF + ACT", status: "completed" as const, timestamp: "Mar 22, 2026 · 3:47 PM", creditUsed: 1, sessionId: "3" },
-  // Session 4
-  { id: "g4", prompt: "I just finished a massive deadline, need to decompress", voice: "Luna", duration: "20 min", protocol: "PMR + ACT", status: "completed" as const, timestamp: "Mar 21, 2026 · 6:22 PM", creditUsed: 1, sessionId: "4" },
-  { id: "g4b", prompt: "Try with deeper body scan at the end", voice: "Luna", duration: "22 min", protocol: "PMR + ACT", status: "failed" as const, timestamp: "Mar 21, 2026 · 7:01 PM", creditUsed: 0, sessionId: "4" },
-  { id: "g4c", prompt: "Same but shorter, 15 min max", voice: "Luna", duration: "15 min", protocol: "PMR + ACT", status: "completed" as const, timestamp: "Mar 21, 2026 · 7:15 PM", creditUsed: 1, sessionId: "4" },
-  // Session 5
-  { id: "g5", prompt: "Quick 5 minute breathing exercise", voice: "Aria", duration: "5 min", protocol: "HRV-BF", status: "completed" as const, timestamp: "Mar 17, 2026 · 10:05 AM", creditUsed: 1, sessionId: "5" },
-  // Session 6
-  { id: "g6", prompt: "Wind down before bed with gentle guidance", voice: "Luna", duration: "15 min", protocol: "NSDR", status: "completed" as const, timestamp: "Mar 16, 2026 · 11:12 PM", creditUsed: 1, sessionId: "6" },
-  // No session (orphaned/failed)
-  { id: "g7", prompt: "Deep relaxation for muscle tension in my neck", voice: "James", duration: "10 min", protocol: "PMR", status: "failed" as const, timestamp: "Mar 15, 2026 · 2:30 PM", creditUsed: 0, sessionId: null },
-  // Session 9
-  { id: "g10", prompt: "Can't stop overthinking, need to shut my brain off for sleep", voice: "Luna", duration: "20 min", protocol: "CBT-I", status: "completed" as const, timestamp: "Mar 11, 2026 · 11:55 PM", creditUsed: 1, sessionId: "9" },
-  // Session 12
-  { id: "g13", prompt: "Gentle Sunday evening session before the new week", voice: "Aria", duration: "15 min", protocol: "PMR + NSDR", status: "completed" as const, timestamp: "Mar 7, 2026 · 9:20 PM", creditUsed: 1, sessionId: "12" },
-  // Orphaned failed
-  { id: "g14", prompt: "Breathing exercise during a panic moment", voice: "Luna", duration: "5 min", protocol: "HRV-BF", status: "failed" as const, timestamp: "Mar 5, 2026 · 4:10 PM", creditUsed: 0, sessionId: null },
-];
-
 type HistoryFilter = "all" | "sessions" | "generations";
+type SessionItem = { id: string; title: string; duration: string; voice: string; protocol: string; sound: string; createdAt: string; createdAtShort: string; accessedAt: string; category: string; icon: typeof Moon; hasGeneration: boolean };
+type GenerationItem = { id: string; prompt: string; voice: string; duration: string; protocol: string; status: "completed" | "failed" | "pending" | "processing"; timestamp: string; creditUsed: number; sessionId: string | null };
 
 const navItems = [
   { id: "sessions" as const, label: "All Sessions", icon: LayoutGrid },
@@ -140,59 +103,10 @@ const navItems = [
 
 type NavId = (typeof navItems)[number]["id"] | "generate";
 
-type ScriptBlock = {
-  id: string;
-  type: "voice" | "pause";
-  text: string;
-  pauseDuration?: number; // seconds — under 3s is "short", 3s+ is "long"
-};
 
-function deriveSessionName(prompt: string): string {
-  const lower = prompt.toLowerCase();
-  if (/sleep|insomnia|bed|night|dream|tired/i.test(lower)) return "Deep Sleep Session";
-  if (/focus|concentrat|work|study|morning|productivity/i.test(lower)) return "Focus & Clarity";
-  if (/stress|anxi|worry|overwhelm|calm|relax|tension/i.test(lower)) return "Calm & Release";
-  if (/breath/i.test(lower)) return "Breathing Reset";
-  if (/body scan|muscle/i.test(lower)) return "Body Scan";
-  // Fallback: capitalize first few words
-  const words = prompt.split(/\s+/).slice(0, 4).join(" ");
-  return words.length > 30 ? words.slice(0, 30) + "…" : words;
-}
 
-function estimateDuration(script: ScriptBlock[]): { minutes: number; seconds: number } {
-  let totalSeconds = 0;
-  for (const block of script) {
-    if (block.type === "voice") {
-      // ~150 words per minute, avg 5 chars per word
-      totalSeconds += Math.ceil((block.text.length / 5) / 150 * 60);
-    } else if (block.type === "pause") {
-      totalSeconds += block.pauseDuration ?? 0;
-    }
-  }
-  return { minutes: Math.floor(totalSeconds / 60), seconds: totalSeconds % 60 };
-}
 
-const generateScript = (prompt: string): ScriptBlock[] => [
-  { id: "1", type: "voice", text: "Find a comfortable position. Let your body settle into wherever you are right now." },
-  { id: "2", type: "pause", text: "Pause", pauseDuration: 2 },
-  { id: "3", type: "voice", text: "Gently close your eyes. Take a moment to notice how you\u2019re feeling without judgment." },
-  { id: "4", type: "pause", text: "Pause", pauseDuration: 5 },
-  { id: "5", type: "voice", text: "Now take a slow, deep breath in through your nose\u2026" },
-  { id: "6", type: "pause", text: "Pause", pauseDuration: 4 },
-  { id: "7", type: "voice", text: "And release it slowly through your mouth. Let everything go." },
-  { id: "8", type: "pause", text: "Pause", pauseDuration: 6 },
-  { id: "9", type: "voice", text: "Notice any tension in your shoulders. With each exhale, let them drop a little lower." },
-  { id: "10", type: "pause", text: "Pause", pauseDuration: 5 },
-  { id: "11", type: "voice", text: "You\u2019re doing great. There\u2019s nowhere else you need to be right now." },
-  { id: "12", type: "pause", text: "Pause", pauseDuration: 2 },
-  { id: "13", type: "voice", text: "Let\u2019s continue with another deep breath. In through the nose\u2026" },
-  { id: "14", type: "pause", text: "Pause", pauseDuration: 4 },
-  { id: "15", type: "voice", text: "And out through the mouth. Feel your body becoming heavier, more relaxed." },
-  { id: "16", type: "pause", text: "Pause", pauseDuration: 6 },
-  { id: "17", type: "voice", text: "Allow this feeling of calm to spread through your entire body. You are safe here." },
-  { id: "18", type: "pause", text: "Pause", pauseDuration: 4 },
-  { id: "19", type: "voice", text: "When you\u2019re ready, slowly begin to bring your awareness back. Take your time." },
-];
+const generateScript = generateScriptFn;
 
 /* ─── Session Card ─── */
 
@@ -205,7 +119,7 @@ const categoryColors: Record<string, { accent: string; bg: string }> = {
 
 /* ─── Google Docs-style Session Card ─── */
 function SessionCard({ session, delay, isNowPlaying, onPlay, onOpenStudio, onDelete, onRegen, onGenerate }: {
-  session: (typeof mockSessions)[number]; delay: number;
+  session: SessionItem; delay: number;
   isNowPlaying: boolean; onPlay: () => void; onOpenStudio: () => void;
   onDelete?: () => void; onRegen?: () => void; onGenerate?: () => void;
 }) {
@@ -435,7 +349,7 @@ function SessionCard({ session, delay, isNowPlaying, onPlay, onOpenStudio, onDel
 /* ─── Bottom Player Bar ─── */
 
 function PlayerBar({ session, isPlaying, onTogglePlay, onClose, inline, sound, volume, onSoundChange, onVolumeChange }: {
-  session: (typeof mockSessions)[number]; isPlaying: boolean;
+  session: SessionItem; isPlaying: boolean;
   onTogglePlay: () => void; onClose: () => void; inline?: boolean;
   sound?: string; volume?: number; onSoundChange?: (s: string) => void; onVolumeChange?: (v: number) => void;
 }) {
@@ -594,6 +508,7 @@ function EmptyState({ label }: { label: string }) {
 function StudioSession({ prompt, voice, duration, sound, sessionId, onBack, onToggleSidebar }: {
   prompt: string; voice: string; duration: number; sound: string; sessionId: string | null; onBack: () => void; onToggleSidebar?: () => void;
 }) {
+  const { profile } = useProfile();
   const [script, setScript] = useState<ScriptBlock[]>(() => generateScript(prompt));
   const [selectedBlock, setSelectedBlock] = useState<string | null>(null);
   const [editOriginalText, setEditOriginalText] = useState<string | null>(null);
@@ -617,6 +532,7 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, onBack, onTo
   const [showStudioPlayer, setShowStudioPlayer] = useState(false);
   const [hasGenerated, setHasGenerated] = useState(false);
   const [sessionName, setSessionName] = useState(() => deriveSessionName(prompt));
+  const [sessionIdState, setSessionIdState] = useState<string | null>(sessionId);
   const [isRenamingSession, setIsRenamingSession] = useState(false);
   const renameInputRef = useRef<HTMLInputElement>(null);
 
@@ -667,7 +583,7 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, onBack, onTo
   const savedFadeRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const buildSessionPayload = useCallback(() => ({
-    sessionId: sessionId || "draft",
+    sessionId: sessionIdState || "draft",
     name: sessionName,
     prompt,
     script,
@@ -676,12 +592,42 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, onBack, onTo
     soundVolume,
     duration: estimated.minutes,
     hasGenerated,
-  }), [sessionId, sessionName, prompt, script, sessionVoice, sessionSound, soundVolume, estimated.minutes, hasGenerated]);
+  }), [sessionIdState, sessionName, prompt, script, sessionVoice, sessionSound, soundVolume, estimated.minutes, hasGenerated]);
 
   // TODO: Replace with actual API call when database is ready
   const persistSession = useCallback(async (payload: ReturnType<typeof buildSessionPayload>) => {
-    console.log("[autosave] session saved:", payload);
-    // await fetch("/api/sessions", { method: "PUT", body: JSON.stringify(payload) });
+    if (!payload.sessionId || payload.sessionId === "draft") {
+      // Create new session
+      const res = await fetch("/api/sessions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: payload.name,
+          prompt: payload.prompt,
+          script: payload.script,
+          voice: payload.voice,
+          soundscape: payload.sound,
+          duration: payload.duration,
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setSessionIdState(data.id);
+      }
+    } else {
+      await fetch(`/api/sessions/${payload.sessionId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: payload.name,
+          prompt: payload.prompt,
+          script: payload.script,
+          voice: payload.voice,
+          soundscape: payload.sound,
+          duration: payload.duration,
+        }),
+      });
+    }
   }, []);
 
   const triggerAutosave = useCallback(() => {
@@ -722,15 +668,24 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, onBack, onTo
       if (saveTimerRef.current) {
         clearTimeout(saveTimerRef.current);
         const payload = buildSessionPayload();
-        // navigator.sendBeacon("/api/sessions", JSON.stringify(payload));
-        console.log("[autosave] flushed on unload:", payload);
+        const beaconPayload = {
+          title: payload.name,
+          prompt: payload.prompt,
+          script: payload.script,
+          voice: payload.voice,
+          soundscape: payload.sound,
+          duration: payload.duration,
+        };
+        if (payload.sessionId && payload.sessionId !== "draft") {
+          navigator.sendBeacon(`/api/sessions/${payload.sessionId}`, JSON.stringify(beaconPayload));
+        }
       }
     };
     window.addEventListener("beforeunload", onBeforeUnload);
     return () => window.removeEventListener("beforeunload", onBeforeUnload);
   }, [buildSessionPayload]);
 
-  const handleGenerateAudio = useCallback(() => {
+  const handleGenerateAudio = useCallback(async () => {
     const emptyPauses = script.filter(b => b.type === "pause" && (!b.pauseDuration || b.pauseDuration === 0));
     if (emptyPauses.length > 0) {
       setGenerateWarning(`${emptyPauses.length} pause${emptyPauses.length > 1 ? "s have" : " has"} no duration set. Set a value or remove the segment.`);
@@ -740,13 +695,41 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, onBack, onTo
     setGenerateWarning(null);
     setErrorPauseIds(new Set());
     setIsGenerating(true);
-    setTimeout(() => {
+    try {
+      const res = await fetch("/api/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          prompt,
+          voice: sessionVoice,
+          duration: estimated.minutes,
+          soundscape: sessionSound,
+          sessionId: sessionIdState,
+        }),
+      });
+      if (res.status === 402) {
+        setGenerateWarning("Insufficient credits. Please upgrade your plan.");
+        setIsGenerating(false);
+        return;
+      }
+      if (!res.ok) {
+        setGenerateWarning("Generation failed. Please try again.");
+        setIsGenerating(false);
+        return;
+      }
+      const data = await res.json();
+      if (data.session) {
+        setSessionIdState(data.session.id);
+      }
       setIsGenerating(false);
       setShowStudioPlayer(true);
       setStudioPlaying(true);
       setHasGenerated(true);
-    }, 2000);
-  }, [script]);
+    } catch {
+      setGenerateWarning("Generation failed. Please try again.");
+      setIsGenerating(false);
+    }
+  }, [script, prompt, sessionVoice, estimated.minutes, sessionSound, sessionIdState]);
 
   // Build a mock session for the player
   const intent = prompt.toLowerCase().includes("sleep") ? "sleep" : prompt.toLowerCase().includes("focus") ? "focus" : prompt.toLowerCase().includes("stress") || prompt.toLowerCase().includes("anxi") ? "stress" : "focus";
@@ -1416,12 +1399,12 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, onBack, onTo
               <circle cx="9" cy="9" r="7" stroke="#e4e4e7" strokeWidth="2" />
               <circle cx="9" cy="9" r="7" stroke="#18181b" strokeWidth="2" strokeLinecap="round"
                 strokeDasharray={`${2 * Math.PI * 7}`}
-                strokeDashoffset={`${2 * Math.PI * 7 * (1 - 3 / 10)}`}
+                strokeDashoffset={`${2 * Math.PI * 7 * (1 - (profile?.credits_remaining ?? 0) / Math.max(1, profile?.plan === "creator" ? 200 : profile?.plan === "personal" ? 50 : 10))}`}
                 style={{ transform: "rotate(-90deg)", transformOrigin: "center" }}
               />
             </svg>
             <span className="text-[13px] text-[#18181b]" style={{ fontFamily: "var(--font-body)", fontWeight: 400 }}>
-              3 credits remaining
+              {profile?.credits_remaining ?? 0} credits remaining
             </span>
           </div>
           <div className="flex items-center gap-4">
@@ -1697,9 +1680,7 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, onBack, onTo
           <div className="flex-1 overflow-y-auto studio-scroll p-4 space-y-3">
             {(() => {
               // Filter generations to only this session
-              const sessionGens = sessionId
-                ? mockGenerations.filter(g => g.sessionId === sessionId).slice().reverse()
-                : [];
+              const sessionGens: { id: string; prompt: string; voice: string; duration: string; protocol: string; status: string; timestamp: string; creditUsed: number; sessionId: string | null }[] = [];
 
               if (sessionGens.length === 0) {
                 return (
@@ -1801,20 +1782,41 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, onBack, onTo
   );
 }
 
+function getRelativeTime(dateStr: string): string {
+  const now = new Date();
+  const date = new Date(dateStr);
+  const diffMs = now.getTime() - date.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  if (diffMins < 1) return "Just now";
+  if (diffMins < 60) return `${diffMins}m ago`;
+  const diffHours = Math.floor(diffMins / 60);
+  if (diffHours < 24) return `${diffHours}h ago`;
+  const diffDays = Math.floor(diffHours / 24);
+  if (diffDays === 1) return "Yesterday";
+  if (diffDays < 7) return `${diffDays} days ago`;
+  if (diffDays < 14) return "Last week";
+  return `${Math.floor(diffDays / 7)} weeks ago`;
+}
+
 /* ─── Main Studio Page ─── */
 
-export default function StudioPage() {
+function StudioPageContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [activeNav, setActiveNav] = useState<NavId>("sessions");
   const [searchQuery, setSearchQuery] = useState("");
   const [generatePrompt, setGeneratePrompt] = useState("");
+  const [sessions, setSessions] = useState<SessionItem[]>([]);
+  const [generations, setGenerations] = useState<GenerationItem[]>([]);
+  const [sessionsLoading, setSessionsLoading] = useState(true);
+  const { profile, refetch: refetchProfile } = useProfile();
   const [voicePlaying, setVoicePlaying] = useState<string | null>(null);
 
   // Bottom player state
   const [nowPlayingId, setNowPlayingId] = useState<string | null>(null);
   const [playerPlaying, setPlayerPlaying] = useState(false);
-  const nowPlayingGeneration = mockGenerations.find(g => g.id === nowPlayingId);
-  const nowPlayingSession = mockSessions.find(s => s.id === nowPlayingId || (nowPlayingGeneration && s.id === nowPlayingGeneration.sessionId)) || null;
+  const nowPlayingGeneration = generations.find(g => g.id === nowPlayingId);
+  const nowPlayingSession = sessions.find(s => s.id === nowPlayingId || (nowPlayingGeneration && s.id === nowPlayingGeneration.sessionId)) || null;
 
   const handlePlaySession = useCallback((sessionId: string) => {
     if (nowPlayingId === sessionId) {
@@ -1829,6 +1831,63 @@ export default function StudioPage() {
     setNowPlayingId(null);
     setPlayerPlaying(false);
   }, []);
+
+  // Fetch sessions from API
+  const fetchSessions = useCallback(async () => {
+    try {
+      setSessionsLoading(true);
+      const res = await fetch(`/api/sessions?search=${encodeURIComponent(searchQuery)}`);
+      if (!res.ok) return;
+      const data = await res.json();
+      const iconMap: Record<string, typeof Moon> = { sleep: Moon, focus: Sun, stress: Heart, anxiety: Heart };
+      setSessions(data.map((s: Record<string, unknown>) => ({
+        id: s.id,
+        title: (s.title as string) || "Untitled",
+        duration: `${s.duration || 10} min`,
+        voice: (s.voice as string) || "Aria",
+        protocol: (s.protocol as string) || "Custom",
+        sound: (s.soundscape as string) || "Sanctuary",
+        createdAt: new Intl.DateTimeFormat("en-US", { dateStyle: "medium", timeStyle: "short" }).format(new Date(s.created_at as string)),
+        createdAtShort: getRelativeTime(s.created_at as string),
+        accessedAt: getRelativeTime(s.updated_at as string),
+        category: (s.category as string) || "focus",
+        icon: iconMap[(s.category as string) || "focus"] || Brain,
+        hasGeneration: !!(s.has_generation),
+      })));
+    } finally {
+      setSessionsLoading(false);
+    }
+  }, [searchQuery]);
+
+  const [generationsPage, setGenerationsPage] = useState(1);
+  const fetchGenerations = useCallback(async () => {
+    const res = await fetch(`/api/generations?page=${generationsPage}&limit=5`);
+    if (!res.ok) return;
+    const data = await res.json();
+    setGenerations(data.map((g: Record<string, unknown>) => ({
+      id: g.id,
+      prompt: (g.prompt as string) || "",
+      voice: (g.voice as string) || "Aria",
+      duration: (g.duration as string) || "10 min",
+      protocol: "",
+      status: g.status as "completed" | "failed" | "pending" | "processing",
+      timestamp: new Intl.DateTimeFormat("en-US", { dateStyle: "medium", timeStyle: "short" }).format(new Date(g.created_at as string)),
+      creditUsed: (g.credit_cost as number) || 0,
+      sessionId: (g.session_id as string) || null,
+    })));
+  }, [generationsPage]);
+
+  useEffect(() => { fetchSessions(); }, [fetchSessions]);
+  useEffect(() => { fetchGenerations(); }, [fetchGenerations]);
+
+  // Handle checkout return
+  useEffect(() => {
+    if (searchParams.get("checkout") === "success") {
+      refetchProfile();
+      // Clean URL
+      window.history.replaceState({}, "", "/studio");
+    }
+  }, [searchParams, refetchProfile]);
 
   // Rotating phrases for generate heading
   const [phraseIndex, setPhraseIndex] = useState(0);
@@ -1865,26 +1924,78 @@ export default function StudioPage() {
   const [showGenProtocolInfo, setShowGenProtocolInfo] = useState(false);
   const [historyFilter, setHistoryFilter] = useState<HistoryFilter>("all");
   const [sessionsPage, setSessionsPage] = useState(1);
-  const [generationsPage, setGenerationsPage] = useState(1);
   const [confirmDialog, setConfirmDialog] = useState<{ type: "regenerate" | "delete" | "generate"; sessionId: string; sessionTitle: string } | null>(null);
   const [settingsVoice, setSettingsVoice] = useState("aria");
   const [settingsDuration, setSettingsDuration] = useState(10);
   const [settingsSound, setSettingsSound] = useState("Sanctuary");
   const [settingsAutoDownload, setSettingsAutoDownload] = useState(false);
   const [settingsAmbientPreview, setSettingsAmbientPreview] = useState(true);
+
+  // Populate settings from profile preferences
+  useEffect(() => {
+    if (profile?.preferences) {
+      const p = profile.preferences;
+      if (p.defaultVoice) setSettingsVoice(p.defaultVoice);
+      if (p.defaultDuration) setSettingsDuration(p.defaultDuration);
+      if (p.defaultSound) setSettingsSound(p.defaultSound);
+      if (p.autoDownload !== undefined) setSettingsAutoDownload(p.autoDownload);
+      if (p.ambientPreview !== undefined) setSettingsAmbientPreview(p.ambientPreview);
+    }
+  }, [profile]);
+
+  // Debounced settings persistence
+  const settingsSaveRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    if (!profile) return;
+    if (settingsSaveRef.current) clearTimeout(settingsSaveRef.current);
+    settingsSaveRef.current = setTimeout(() => {
+      fetch("/api/user", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          preferences: {
+            defaultVoice: settingsVoice,
+            defaultDuration: settingsDuration,
+            defaultSound: settingsSound,
+            autoDownload: settingsAutoDownload,
+            ambientPreview: settingsAmbientPreview,
+          },
+        }),
+      });
+    }, 500);
+    return () => { if (settingsSaveRef.current) clearTimeout(settingsSaveRef.current); };
+  }, [settingsVoice, settingsDuration, settingsSound, settingsAutoDownload, settingsAmbientPreview, profile]);
+
   const [settingsOpenDropdown, setSettingsOpenDropdown] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  const handleQuickGenerate = useCallback(() => {
-    const intent = detectIntent(genConfig.prompt);
-    const params = new URLSearchParams({
-      prompt: genConfig.prompt,
-      voice: genConfig.voice,
-      duration: String(genConfig.duration),
-      intent,
-    });
-    router.push(`/session?${params.toString()}`);
-  }, [router, genConfig]);
+  const handleQuickGenerate = useCallback(async () => {
+    try {
+      const res = await fetch("/api/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          prompt: genConfig.prompt,
+          voice: genConfig.voice,
+          duration: genConfig.duration,
+          soundscape: genConfig.sound,
+        }),
+      });
+      if (!res.ok) {
+        const intent = detectIntent(genConfig.prompt);
+        const params = new URLSearchParams({ prompt: genConfig.prompt, voice: genConfig.voice, duration: String(genConfig.duration), intent });
+        router.push(`/session?${params.toString()}`);
+        return;
+      }
+      const data = await res.json();
+      refetchProfile();
+      router.push(`/session?id=${data.session.id}`);
+    } catch {
+      const intent = detectIntent(genConfig.prompt);
+      const params = new URLSearchParams({ prompt: genConfig.prompt, voice: genConfig.voice, duration: String(genConfig.duration), intent });
+      router.push(`/session?${params.toString()}`);
+    }
+  }, [router, genConfig, refetchProfile]);
 
   const handlePromptSubmit = (text: string) => {
     if (!text.trim()) return;
@@ -1898,9 +2009,7 @@ export default function StudioPage() {
     setGenStep("input");
   };
 
-  const filteredSessions = mockSessions.filter((s) =>
-    s.title.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredSessions = sessions;
 
   // Studio view — sidebar stays, top header hidden
   if (activeNav === "generate" && genStep === "studio") {
@@ -1936,12 +2045,16 @@ export default function StudioPage() {
           <div className="mt-auto px-0 pb-0">
             <div className="px-4 py-4 border-t border-[#e4e4e7]" style={{ background: "#fdf8f7" }}>
               <div className="flex items-center gap-2.5 mb-3 flex-wrap">
-                <div className="w-8 h-8 rounded-full bg-[var(--color-sand-300)] flex items-center justify-center shrink-0">
-                  <span className="text-xs text-[var(--color-sand-700)]" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>U</span>
-                </div>
+                {profile?.avatar_url ? (
+                  <img src={profile.avatar_url} alt="" className="w-8 h-8 rounded-full shrink-0 object-cover" />
+                ) : (
+                  <div className="w-8 h-8 rounded-full bg-[var(--color-sand-300)] flex items-center justify-center shrink-0">
+                    <span className="text-xs text-[var(--color-sand-700)]" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>{profile?.display_name?.[0]?.toUpperCase() || "U"}</span>
+                  </div>
+                )}
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs text-[var(--color-sand-900)]" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>User</p>
-                  <p className="text-[10px] text-[var(--color-sand-500)]" style={{ fontFamily: "var(--font-body)" }}>Free plan</p>
+                  <p className="text-xs text-[var(--color-sand-900)]" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>{profile?.display_name || "User"}</p>
+                  <p className="text-[10px] text-[var(--color-sand-500)]" style={{ fontFamily: "var(--font-body)" }}>{profile?.plan === "free" ? "Free plan" : `${profile?.plan?.charAt(0).toUpperCase()}${profile?.plan?.slice(1)} plan`}</p>
                 </div>
                 <a href="/upgrade" className="text-[11px] px-3.5 py-1.5 rounded-lg text-white bg-clip-padding bg-[length:300%_300%] animate-[border-glow_4s_ease_infinite] hover:opacity-90 transition-opacity cursor-pointer shadow-sm shrink-0" style={{ fontFamily: "var(--font-body)", fontWeight: 600, backgroundImage: "linear-gradient(135deg, var(--color-sage), var(--color-ocean), var(--color-dusk), var(--color-ember), var(--color-sage))", backgroundSize: "300% 300%" }}>
                   Upgrade
@@ -1950,16 +2063,16 @@ export default function StudioPage() {
               <div className="px-2 mb-2 space-y-1">
                 <div className="flex items-center justify-between">
                   <span className="text-[11px] text-[var(--color-sand-500)]" style={{ fontFamily: "var(--font-body)" }}>Total</span>
-                  <span className="text-[11px] text-[var(--color-sand-900)] tabular-nums" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>10 credits</span>
+                  <span className="text-[11px] text-[var(--color-sand-900)] tabular-nums" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>{profile?.plan === "creator" ? 200 : profile?.plan === "personal" ? 50 : 10} credits</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-[11px] text-[var(--color-sand-500)]" style={{ fontFamily: "var(--font-body)" }}>Remaining</span>
-                  <span className="text-[11px] text-[var(--color-sand-900)] tabular-nums" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>3</span>
+                  <span className="text-[11px] text-[var(--color-sand-900)] tabular-nums" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>{profile?.credits_remaining ?? 0}</span>
                 </div>
               </div>
-              <a href="/" className="flex items-center gap-1.5 px-2 py-1 rounded-md text-red-600 hover:text-red-700 transition-all text-[11px]" style={{ fontFamily: "var(--font-body)" }}>
+              <button onClick={async () => { await fetch("/api/auth/signout", { method: "POST" }); router.push("/"); }} className="flex items-center gap-1.5 px-2 py-1 rounded-md text-red-600 hover:text-red-700 transition-all text-[11px] cursor-pointer" style={{ fontFamily: "var(--font-body)" }}>
                 <LogOut className="w-3.5 h-3.5" /> Sign out
-              </a>
+              </button>
             </div>
           </div>
         </aside>
@@ -2049,12 +2162,16 @@ export default function StudioPage() {
         <div className="mt-auto px-0 pb-0">
           <div className="px-4 py-4 border-t border-[#e4e4e7]" style={{ background: "#fdf8f7" }}>
             <div className="flex items-center gap-2.5 mb-3 flex-wrap">
-              <div className="w-8 h-8 rounded-full bg-[var(--color-sand-300)] flex items-center justify-center shrink-0">
-                <span className="text-xs text-[var(--color-sand-700)]" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>U</span>
-              </div>
+              {profile?.avatar_url ? (
+                <img src={profile.avatar_url} alt="" className="w-8 h-8 rounded-full shrink-0 object-cover" />
+              ) : (
+                <div className="w-8 h-8 rounded-full bg-[var(--color-sand-300)] flex items-center justify-center shrink-0">
+                  <span className="text-xs text-[var(--color-sand-700)]" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>{profile?.display_name?.[0]?.toUpperCase() || "U"}</span>
+                </div>
+              )}
               <div className="flex-1 min-w-0">
-                <p className="text-xs text-[var(--color-sand-900)]" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>User</p>
-                <p className="text-[10px] text-[var(--color-sand-500)]" style={{ fontFamily: "var(--font-body)" }}>Free plan</p>
+                <p className="text-xs text-[var(--color-sand-900)]" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>{profile?.display_name || "User"}</p>
+                <p className="text-[10px] text-[var(--color-sand-500)]" style={{ fontFamily: "var(--font-body)" }}>{profile?.plan === "free" ? "Free plan" : `${profile?.plan?.charAt(0).toUpperCase()}${profile?.plan?.slice(1)} plan`}</p>
               </div>
               <a href="/upgrade" className="text-[11px] px-3.5 py-1.5 rounded-lg text-white bg-clip-padding bg-[length:300%_300%] animate-[border-glow_4s_ease_infinite] hover:opacity-90 transition-opacity cursor-pointer shadow-sm shrink-0" style={{ fontFamily: "var(--font-body)", fontWeight: 600, backgroundImage: "linear-gradient(135deg, var(--color-sage), var(--color-ocean), var(--color-dusk), var(--color-ember), var(--color-sage))", backgroundSize: "300% 300%" }}>
                 Upgrade
@@ -2063,16 +2180,16 @@ export default function StudioPage() {
             <div className="px-2 mb-2 space-y-1">
               <div className="flex items-center justify-between">
                 <span className="text-[11px] text-[var(--color-sand-500)]" style={{ fontFamily: "var(--font-body)" }}>Total</span>
-                <span className="text-[11px] text-[var(--color-sand-800)] tabular-nums" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>10 credits</span>
+                <span className="text-[11px] text-[var(--color-sand-800)] tabular-nums" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>{profile?.plan === "creator" ? 200 : profile?.plan === "personal" ? 50 : 10} credits</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-[11px] text-[var(--color-sand-500)]" style={{ fontFamily: "var(--font-body)" }}>Remaining</span>
-                <span className="text-[11px] text-[var(--color-sand-800)] tabular-nums" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>3</span>
+                <span className="text-[11px] text-[var(--color-sand-800)] tabular-nums" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>{profile?.credits_remaining ?? 0}</span>
               </div>
             </div>
-            <a href="/" className="flex items-center gap-1.5 px-2 py-1 rounded-md text-red-600 hover:text-red-700 transition-all text-[11px]" style={{ fontFamily: "var(--font-body)" }}>
+            <button onClick={async () => { await fetch("/api/auth/signout", { method: "POST" }); router.push("/"); }} className="flex items-center gap-1.5 px-2 py-1 rounded-md text-red-600 hover:text-red-700 transition-all text-[11px] cursor-pointer" style={{ fontFamily: "var(--font-body)" }}>
               <LogOut className="w-3.5 h-3.5" /> Sign out
-            </a>
+            </button>
           </div>
         </div>
       </motion.aside>
@@ -2122,8 +2239,24 @@ export default function StudioPage() {
                         delay={0.04 + i * 0.03}
                         isNowPlaying={nowPlayingId === session.id && playerPlaying}
                         onPlay={() => handlePlaySession(session.id)}
-                        onOpenStudio={() => {
-                          setGenConfig({ prompt: session.title, voice: session.voice.toLowerCase(), duration: parseInt(session.duration), sound: session.sound, sessionId: session.id });
+                        onOpenStudio={async () => {
+                          try {
+                            const res = await fetch(`/api/sessions/${session.id}`);
+                            if (res.ok) {
+                              const full = await res.json();
+                              setGenConfig({
+                                prompt: full.prompt || session.title,
+                                voice: (full.voice || session.voice).toLowerCase(),
+                                duration: full.duration || parseInt(session.duration),
+                                sound: full.soundscape || session.sound,
+                                sessionId: session.id,
+                              });
+                            } else {
+                              setGenConfig({ prompt: session.title, voice: session.voice.toLowerCase(), duration: parseInt(session.duration), sound: session.sound, sessionId: session.id });
+                            }
+                          } catch {
+                            setGenConfig({ prompt: session.title, voice: session.voice.toLowerCase(), duration: parseInt(session.duration), sound: session.sound, sessionId: session.id });
+                          }
                           setActiveNav("generate" as NavId);
                           setGenStep("studio");
                         }}
@@ -2163,8 +2296,8 @@ export default function StudioPage() {
                 {/* Generations section (first) */}
                 {(historyFilter === "all" || historyFilter === "generations") && (() => {
                   const perPage = 5;
-                  const totalPages = Math.ceil(mockGenerations.length / perPage);
-                  const paged = mockGenerations.slice((generationsPage - 1) * perPage, generationsPage * perPage);
+                  const totalPages = Math.ceil(generations.length / perPage);
+                  const paged = generations;
                   return (
                   <div className="mb-6">
                     {historyFilter === "all" && (
@@ -2184,7 +2317,7 @@ export default function StudioPage() {
                       </div>
                       {paged.map((gen, i) => {
                         const isGenPlaying = gen.sessionId ? nowPlayingId === gen.id && playerPlaying : false;
-                        const genSession = gen.sessionId ? mockSessions.find(s => s.id === gen.sessionId) : null;
+                        const genSession = gen.sessionId ? sessions.find(s => s.id === gen.sessionId) : null;
                         const genAccent = genSession ? (categoryColors[genSession.category] || categoryColors.focus).accent : "#18181b";
                         return (
                         <motion.div
@@ -2273,8 +2406,8 @@ export default function StudioPage() {
                 {/* Sessions section (second) */}
                 {(historyFilter === "all" || historyFilter === "sessions") && (() => {
                   const perPage = 5;
-                  const totalPages = Math.ceil(mockSessions.length / perPage);
-                  const paged = mockSessions.slice((sessionsPage - 1) * perPage, sessionsPage * perPage);
+                  const totalPages = Math.ceil(sessions.length / perPage);
+                  const paged = sessions.slice((sessionsPage - 1) * perPage, sessionsPage * perPage);
                   return (
                   <div className="mb-6">
                     {historyFilter === "all" && (
@@ -2639,13 +2772,13 @@ export default function StudioPage() {
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
                         <div className="flex items-center gap-3.5 min-w-0">
                           <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0" style={{ background: "linear-gradient(135deg, var(--color-sage), var(--color-ocean))" }}>
-                            <span className="text-sm text-white" style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}>U</span>
+                            <span className="text-sm text-white" style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}>{profile?.display_name?.[0]?.toUpperCase() || "U"}</span>
                           </div>
                           <div className="min-w-0">
-                            <p className="text-[13px] text-[var(--color-sand-900)] truncate" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>user@example.com</p>
+                            <p className="text-[13px] text-[var(--color-sand-900)] truncate" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>{profile?.email || "user@example.com"}</p>
                             <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] bg-[var(--color-sand-100)] text-[var(--color-sand-600)] border border-[var(--color-sand-200)]" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>Free</span>
-                              <span className="text-[11px] text-[var(--color-sand-400)]" style={{ fontFamily: "var(--font-body)" }}>3 credits remaining</span>
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] bg-[var(--color-sand-100)] text-[var(--color-sand-600)] border border-[var(--color-sand-200)]" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>{profile?.plan === "free" ? "Free" : profile?.plan?.charAt(0).toUpperCase() + (profile?.plan?.slice(1) || "")}</span>
+                              <span className="text-[11px] text-[var(--color-sand-400)]" style={{ fontFamily: "var(--font-body)" }}>{profile?.credits_remaining ?? 0} credits remaining</span>
                             </div>
                           </div>
                         </div>
@@ -2853,8 +2986,31 @@ export default function StudioPage() {
                   Cancel
                 </button>
                 <button
-                  onClick={() => {
-                    // Mock action — would trigger API call
+                  onClick={async () => {
+                    if (confirmDialog.type === "delete") {
+                      await fetch(`/api/sessions/${confirmDialog.sessionId}`, { method: "DELETE" });
+                      setSessions(prev => prev.filter(s => s.id !== confirmDialog.sessionId));
+                    } else if (confirmDialog.type === "generate" || confirmDialog.type === "regenerate") {
+                      const session = sessions.find(s => s.id === confirmDialog.sessionId);
+                      if (session) {
+                        const res = await fetch("/api/generate", {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({
+                            prompt: session.title,
+                            voice: session.voice,
+                            duration: parseInt(session.duration),
+                            soundscape: session.sound,
+                            sessionId: session.id,
+                          }),
+                        });
+                        if (res.ok) {
+                          refetchProfile();
+                          fetchSessions();
+                          fetchGenerations();
+                        }
+                      }
+                    }
                     setConfirmDialog(null);
                   }}
                   className={`flex-1 px-4 py-2.5 rounded-xl text-[13px] text-white transition-colors cursor-pointer ${
@@ -2872,5 +3028,15 @@ export default function StudioPage() {
         )}
       </AnimatePresence>
     </div>
+  );
+}
+
+export default function StudioPage() {
+  return (
+    <ProfileProvider>
+      <Suspense fallback={<div className="h-screen" style={{ background: "var(--color-sand-50)" }} />}>
+        <StudioPageContent />
+      </Suspense>
+    </ProfileProvider>
   );
 }
