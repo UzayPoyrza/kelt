@@ -308,6 +308,7 @@ function CheckoutModal({
   const [done, setDone] = useState(false);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [redirecting, setRedirecting] = useState(false);
 
   const isSingleCredit = !plan && creditCount;
   const displayName = plan ? plan.name : `${creditCount} Credit${creditCount !== 1 ? "s" : ""}`;
@@ -334,21 +335,50 @@ function CheckoutModal({
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ priceId, mode }),
     })
-      .then((res) => res.json())
+      .then((res) => {
+        if (!res.ok) throw new Error("Failed");
+        return res.json();
+      })
       .then((data) => {
         if (data.clientSecret) {
           setClientSecret(data.clientSecret);
         }
       })
+      .catch(() => {
+        // Embedded form failed — will fall back to Stripe Checkout redirect
+      })
       .finally(() => setLoading(false));
   }, [plan, billing, creditCount, isSingleCredit]);
+
+  const handleCheckoutRedirect = async () => {
+    setRedirecting(true);
+    try {
+      const priceId = getPriceId(plan, billing, creditCount);
+      if (!priceId) { setRedirecting(false); return; }
+      const mode = isSingleCredit ? "payment" : "subscription";
+      const res = await fetch("/api/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ priceId, mode }),
+      });
+      if (!res.ok) { setRedirecting(false); return; }
+      const data = await res.json();
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        setRedirecting(false);
+      }
+    } catch {
+      setRedirecting(false);
+    }
+  };
 
   return (
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto"
       style={{ background: "rgba(0,0,0,0.4)", backdropFilter: "blur(8px)" }}
     >
       <motion.div
@@ -356,7 +386,8 @@ function CheckoutModal({
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 20 }}
         transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-        className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden"
+        className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden my-auto"
+        style={{ maxHeight: "calc(100vh - 2rem)" }}
       >
         {/* Close */}
         <button
@@ -524,13 +555,49 @@ function CheckoutModal({
                 />
               </Elements>
             ) : (
-              <div className="px-5 sm:px-8 py-8 text-center">
+              <div className="px-5 sm:px-8 py-6 space-y-4">
                 <p
-                  className="text-[13px] text-[#71717a]"
+                  className="text-[13px] text-[#71717a] text-center"
                   style={{ fontFamily: "var(--font-body)" }}
                 >
-                  Unable to load payment form. Please try again.
+                  You&apos;ll be redirected to Stripe&apos;s secure checkout to complete payment.
                 </p>
+                <button
+                  onClick={handleCheckoutRedirect}
+                  disabled={redirecting}
+                  className="w-full py-3 rounded-xl text-white text-[13px] transition-all cursor-pointer shadow-md hover:shadow-lg disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  style={{
+                    fontFamily: "var(--font-body)",
+                    fontWeight: 600,
+                    background: displayColor,
+                  }}
+                >
+                  {redirecting ? (
+                    <>
+                      <motion.div
+                        animate={{ rotate: 360 }}
+                        transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                      >
+                        <Sparkles className="w-4 h-4" />
+                      </motion.div>
+                      Redirecting to Stripe...
+                    </>
+                  ) : (
+                    <>
+                      <Lock className="w-3.5 h-3.5" />
+                      {isSingleCredit ? `Pay $${price}` : `Subscribe for $${price}/mo`}
+                    </>
+                  )}
+                </button>
+                <div className="flex items-center justify-center gap-1.5 pt-1">
+                  <Shield className="w-3 h-3 text-[#d4d4d8]" />
+                  <span
+                    className="text-[10px] text-[#a1a1aa]"
+                    style={{ fontFamily: "var(--font-body)" }}
+                  >
+                    Secured by Stripe. {isSingleCredit ? "One-time charge." : "Cancel anytime."}
+                  </span>
+                </div>
               </div>
             )}
           </>

@@ -1050,7 +1050,7 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, savedScript,
           </div>
 
           {/* Center: Session title — fills remaining space, truncates */}
-          <div className="flex-1 min-w-0 flex justify-center">
+          <div className="flex-1 min-w-0 flex justify-center overflow-hidden">
             {isRenamingSession ? (
               <input
                 ref={renameInputRef}
@@ -1076,8 +1076,8 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, savedScript,
           </div>
 
           {/* Right: Autosave status + stats */}
-          <div className="flex items-center gap-2 shrink-0 w-[200px] justify-end">
-            <div className="flex items-center gap-1.5 min-w-[120px] justify-end">
+          <div className="flex items-center gap-2 shrink-0 justify-end">
+            <div className="flex items-center gap-1.5 justify-end">
               <AnimatePresence mode="wait">
                 {saveStatus === "saving" ? (
                   <motion.span
@@ -1120,9 +1120,9 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, savedScript,
               </AnimatePresence>
             </div>
 
-            <div className="hidden md:block w-px h-4 bg-[#e4e4e7]" />
+            <div className="hidden min-[1160px]:block w-px h-4 bg-[#e4e4e7]" />
 
-            <span className="hidden md:inline text-[10px] text-[#a1a1aa] tabular-nums whitespace-nowrap" style={{ fontFamily: "var(--font-body)" }}>
+            <span className="hidden min-[1160px]:inline text-[10px] text-[#a1a1aa] tabular-nums whitespace-nowrap" style={{ fontFamily: "var(--font-body)" }}>
               {script.filter(b => b.type === "voice").length} seg · {script.filter(b => b.type === "pause").length} pau · ~{estimated.minutes}m{estimated.seconds > 0 ? ` ${estimated.seconds}s` : ""}
             </span>
           </div>

@@ -379,6 +379,10 @@ export default function HomePage() {
               </motion.span>
             </h1>
 
+            <p className="text-center text-sm text-[var(--color-sand-500)] -mt-3 mb-8" style={{ fontFamily: "var(--font-body)" }}>
+              Enter a prompt to create a fully voiced, pause-aware meditation session
+            </p>
+
             {/* Input */}
             <div className="w-full mb-8 relative rounded-xl group">
               <div className="absolute -inset-[2px] rounded-xl bg-[length:300%_300%] animate-[border-glow_4s_ease_infinite] opacity-80 group-focus-within:opacity-100 transition-opacity duration-300 blur-[0.5px]" style={{ background: "linear-gradient(135deg, var(--color-sage), var(--color-ocean), var(--color-dusk), var(--color-ember), var(--color-sage))", backgroundSize: "300% 300%" }} />

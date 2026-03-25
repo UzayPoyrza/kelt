@@ -111,12 +111,13 @@ function StudioPreview() {
               >
                 <div className="flex-1 flex items-center gap-1.5">
                   <div className="flex-1 h-px bg-[var(--color-sand-200)]" />
-                  <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-[var(--color-sand-50)] border border-[var(--color-sand-200)]">
-                    <svg width="7" height="7" viewBox="0 0 14 14" fill="none" style={{ opacity: 0.5 }}>
-                      <rect x="2" y="2" width="3.5" height="10" rx="1" fill="var(--color-sand-400)" />
-                      <rect x="8.5" y="2" width="3.5" height="10" rx="1" fill="var(--color-sand-400)" />
+                  <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[var(--color-sand-50)] border border-[var(--color-sand-200)]">
+                    <svg width="8" height="8" viewBox="0 0 14 14" fill="none">
+                      <rect x="2" y="2" width="3.5" height="10" rx="1" fill="var(--color-sand-500)" />
+                      <rect x="8.5" y="2" width="3.5" height="10" rx="1" fill="var(--color-sand-500)" />
                     </svg>
-                    <span className="text-[9px] text-[var(--color-sand-500)] tabular-nums" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>{block.duration}</span>
+                    <span className="text-[9px] text-[var(--color-sand-500)]" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>Pause</span>
+                    <span className="text-[9px] text-[var(--color-sand-400)] tabular-nums" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>{block.duration}</span>
                   </div>
                   <div className="flex-1 h-px bg-[var(--color-sand-200)]" />
                 </div>
