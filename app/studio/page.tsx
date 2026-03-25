@@ -92,7 +92,8 @@ const soundCategories = {
 };
 
 type HistoryFilter = "all" | "sessions" | "generations";
-type SessionItem = { id: string; title: string; duration: string; voice: string; protocol: string; sound: string; createdAt: string; createdAtShort: string; accessedAt: string; category: string; icon: typeof Moon; hasGeneration: boolean };
+type ScriptEntry = { type: string; text?: string; content?: string; pauseDuration?: number; label?: string };
+type SessionItem = { id: string; title: string; duration: string; voice: string; protocol: string; sound: string; createdAt: string; createdAtShort: string; accessedAt: string; category: string; icon: typeof Moon; hasGeneration: boolean; script: ScriptEntry[] | null };
 type GenerationItem = { id: string; prompt: string; voice: string; duration: string; protocol: string; status: "completed" | "failed" | "pending" | "processing"; timestamp: string; creditUsed: number; sessionId: string | null };
 
 const navItems = [
@@ -169,22 +170,23 @@ function SessionCard({ session, delay, isNowPlaying, onPlay, onOpenStudio, onDel
     return () => document.removeEventListener("mousedown", handler);
   }, [menuOpen]);
 
-  // Build fake "script preview" lines based on the session
-  const previewLines = [
-    "Find a comfortable position. Let your body settle into wherever you are right now.",
-    "",
-    "Gently close your eyes. Take a moment to notice how you're feeling without judgment.",
-    "",
-    "— pause · 5s —",
-    "",
-    "Now take a slow, deep breath in through your nose…",
-    "",
-    "And release it slowly through your mouth. Let everything go.",
-    "",
-    "— pause · 6s —",
-    "",
-    "Notice any tension in your shoulders. With each exhale, let them drop a little lower.",
-  ];
+  // Build script preview lines from real session data
+  const previewLines: string[] = [];
+  if (session.script && session.script.length > 0) {
+    for (const block of session.script.slice(0, 8)) {
+      if (block.type === "voice" || block.type === "text") {
+        previewLines.push(block.text || block.content || "");
+        previewLines.push("");
+      } else if (block.type === "pause") {
+        const dur = block.pauseDuration || 0;
+        const label = block.label || "pause";
+        previewLines.push(`— ${label} · ${dur}s —`);
+        previewLines.push("");
+      }
+    }
+  } else {
+    previewLines.push("No script yet — open in Studio to generate one.");
+  }
 
   return (
     <motion.div
@@ -531,11 +533,11 @@ function EmptyState({ label }: { label: string }) {
 
 /* ─── Studio Session View ─── */
 
-function StudioSession({ prompt, voice, duration, sound, sessionId, onBack, onToggleSidebar }: {
-  prompt: string; voice: string; duration: number; sound: string; sessionId: string | null; onBack: () => void; onToggleSidebar?: () => void;
+function StudioSession({ prompt, voice, duration, sound, sessionId, savedScript, savedTitle, savedVolume, onBack, onToggleSidebar }: {
+  prompt: string; voice: string; duration: number; sound: string; sessionId: string | null; savedScript?: ScriptBlock[] | null; savedTitle?: string | null; savedVolume?: number; onBack: () => void; onToggleSidebar?: () => void;
 }) {
   const { profile } = useProfile();
-  const [script, setScript] = useState<ScriptBlock[]>(() => generateScript(prompt));
+  const [script, setScript] = useState<ScriptBlock[]>(() => savedScript && savedScript.length > 0 ? savedScript : generateScript(prompt));
   const [selectedBlock, setSelectedBlock] = useState<string | null>(null);
   const [editOriginalText, setEditOriginalText] = useState<string | null>(null);
   const [sessionVoice, setSessionVoice] = useState(voice);
@@ -543,7 +545,7 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, onBack, onTo
   const [showVoiceDropdown, setShowVoiceDropdown] = useState(false);
   const [showSoundDropdown, setShowSoundDropdown] = useState(false);
   const [showSoundInfo, setShowSoundInfo] = useState(false);
-  const [soundVolume, setSoundVolume] = useState(70);
+  const [soundVolume, setSoundVolume] = useState(savedVolume ?? 70);
 
   const [showDurationInfo, setShowDurationInfo] = useState(false);
   const [editingPauseId, setEditingPauseId] = useState<string | null>(null);
@@ -556,14 +558,14 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, onBack, onTo
   const [isGenerating, setIsGenerating] = useState(false);
   const [studioPlaying, setStudioPlaying] = useState(false);
   const [showStudioPlayer, setShowStudioPlayer] = useState(false);
-  const [hasGenerated, setHasGenerated] = useState(false);
-  const [sessionName, setSessionName] = useState(() => deriveSessionName(prompt));
+  const [hasGenerated, setHasGenerated] = useState(!!(savedScript && savedScript.length > 0));
+  const [sessionName, setSessionName] = useState(() => savedTitle || deriveSessionName(prompt));
   const [sessionIdState, setSessionIdState] = useState<string | null>(sessionId);
   const [isRenamingSession, setIsRenamingSession] = useState(false);
   const renameInputRef = useRef<HTMLInputElement>(null);
 
   // ─── Undo / Redo history ───
-  const scriptHistoryRef = useRef<ScriptBlock[][]>([generateScript(prompt)]);
+  const scriptHistoryRef = useRef<ScriptBlock[][]>([savedScript && savedScript.length > 0 ? savedScript : generateScript(prompt)]);
   const historyIndexRef = useRef(0);
   const isUndoRedoRef = useRef(false);
 
@@ -622,19 +624,20 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, onBack, onTo
 
   // TODO: Replace with actual API call when database is ready
   const persistSession = useCallback(async (payload: ReturnType<typeof buildSessionPayload>) => {
+    const sessionData = {
+      title: payload.name,
+      prompt: payload.prompt,
+      script: payload.script,
+      voice: payload.voice,
+      soundscape: payload.sound,
+      duration: payload.duration,
+      sound_volume: payload.soundVolume,
+    };
     if (!payload.sessionId || payload.sessionId === "draft") {
-      // Create new session
       const res = await fetch("/api/sessions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          title: payload.name,
-          prompt: payload.prompt,
-          script: payload.script,
-          voice: payload.voice,
-          soundscape: payload.sound,
-          duration: payload.duration,
-        }),
+        body: JSON.stringify(sessionData),
       });
       if (res.ok) {
         const data = await res.json();
@@ -644,14 +647,7 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, onBack, onTo
       await fetch(`/api/sessions/${payload.sessionId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          title: payload.name,
-          prompt: payload.prompt,
-          script: payload.script,
-          voice: payload.voice,
-          soundscape: payload.sound,
-          duration: payload.duration,
-        }),
+        body: JSON.stringify(sessionData),
       });
     }
   }, []);
@@ -701,9 +697,15 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, onBack, onTo
           voice: payload.voice,
           soundscape: payload.sound,
           duration: payload.duration,
+          sound_volume: payload.soundVolume,
         };
         if (payload.sessionId && payload.sessionId !== "draft") {
-          navigator.sendBeacon(`/api/sessions/${payload.sessionId}`, JSON.stringify(beaconPayload));
+          fetch(`/api/sessions/${payload.sessionId}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(beaconPayload),
+            keepalive: true,
+          });
         }
       }
     };
@@ -1879,6 +1881,7 @@ function StudioPageContent() {
         category: (s.category as string) || "focus",
         icon: iconMap[(s.category as string) || "focus"] || Brain,
         hasGeneration: !!(s.has_generation),
+        script: Array.isArray(s.script) ? s.script as ScriptEntry[] : null,
       })));
     } finally {
       setSessionsLoading(false);
@@ -1957,7 +1960,7 @@ function StudioPageContent() {
 
   // Generate flow: "input" → "choose" → "studio"
   const [genStep, setGenStep] = useState<"input" | "choose" | "studio">("input");
-  const [genConfig, setGenConfig] = useState({ prompt: "", voice: "aria", duration: 10, sound: "Sanctuary", sessionId: null as string | null });
+  const [genConfig, setGenConfig] = useState({ prompt: "", voice: "aria", duration: 10, sound: "Sanctuary", sessionId: null as string | null, script: null as ScriptBlock[] | null, title: null as string | null, soundVolume: 70 });
   const [showGenAdvanced, setShowGenAdvanced] = useState(false);
   const [selectedGenProtocol, setSelectedGenProtocol] = useState<string | null>(null);
   const [showGenProtocolInfo, setShowGenProtocolInfo] = useState(false);
@@ -2123,11 +2126,15 @@ function StudioPageContent() {
         {/* Studio content — no top header */}
         <div className="flex-1 flex flex-col min-h-0 min-w-0">
           <StudioSession
+            key={genConfig.sessionId || genConfig.prompt}
             prompt={genConfig.prompt}
             voice={genConfig.voice}
             duration={genConfig.duration}
             sound={genConfig.sound}
             sessionId={genConfig.sessionId}
+            savedScript={genConfig.script}
+            savedTitle={genConfig.title}
+            savedVolume={genConfig.soundVolume}
             onBack={() => { setActiveNav("sessions"); setGenStep("input"); fetchSessions(); refetchProfile(); }}
             onToggleSidebar={() => setSidebarOpen(true)}
           />
@@ -2297,12 +2304,15 @@ function StudioPageContent() {
                                 duration: full.duration || parseInt(session.duration),
                                 sound: full.soundscape || session.sound,
                                 sessionId: session.id,
+                                script: full.script || null,
+                                title: full.title || session.title,
+                                soundVolume: full.sound_volume ?? 70,
                               });
                             } else {
-                              setGenConfig({ prompt: session.title, voice: session.voice.toLowerCase(), duration: parseInt(session.duration), sound: session.sound, sessionId: session.id });
+                              setGenConfig({ prompt: session.title, voice: session.voice.toLowerCase(), duration: parseInt(session.duration), sound: session.sound, sessionId: session.id, script: null, title: session.title, soundVolume: 70 });
                             }
                           } catch {
-                            setGenConfig({ prompt: session.title, voice: session.voice.toLowerCase(), duration: parseInt(session.duration), sound: session.sound, sessionId: session.id });
+                            setGenConfig({ prompt: session.title, voice: session.voice.toLowerCase(), duration: parseInt(session.duration), sound: session.sound, sessionId: session.id, script: null, title: session.title, soundVolume: 70 });
                           }
                           setActiveNav("generate" as NavId);
                           setGenStep("studio");
@@ -2482,7 +2492,7 @@ function StudioPageContent() {
                             animate={{ opacity: 1 }}
                             transition={{ delay: i * 0.04, duration: 0.25 }}
                             onClick={() => {
-                              setGenConfig({ prompt: session.title, voice: session.voice.toLowerCase(), duration: parseInt(session.duration), sound: session.sound, sessionId: session.id });
+                              setGenConfig({ prompt: session.title, voice: session.voice.toLowerCase(), duration: parseInt(session.duration), sound: session.sound, sessionId: session.id, script: null, title: session.title, soundVolume: 70 });
                               setActiveNav("generate" as NavId);
                               setGenStep("studio");
                             }}
@@ -2502,7 +2512,7 @@ function StudioPageContent() {
                             <div className="flex items-center justify-end gap-1">
                               <div className="relative group/tip">
                                 <button
-                                  onClick={(e) => { e.stopPropagation(); setGenConfig({ prompt: session.title, voice: session.voice.toLowerCase(), duration: parseInt(session.duration), sound: session.sound, sessionId: session.id }); setActiveNav("generate" as NavId); setGenStep("studio"); }}
+                                  onClick={(e) => { e.stopPropagation(); setGenConfig({ prompt: session.title, voice: session.voice.toLowerCase(), duration: parseInt(session.duration), sound: session.sound, sessionId: session.id, script: null, title: session.title, soundVolume: 70 }); setActiveNav("generate" as NavId); setGenStep("studio"); }}
                                   className="w-8 h-8 rounded-lg hover:bg-[#ededfc] flex items-center justify-center text-[#3f3f46] hover:text-[#18181b] transition-colors cursor-pointer"
                                 >
                                   <PenLine className="w-4 h-4" />
@@ -3082,7 +3092,22 @@ function StudioPageContent() {
 export default function StudioPage() {
   return (
     <ProfileProvider>
-      <Suspense fallback={<div className="h-screen" style={{ background: "var(--color-sand-50)" }} />}>
+      <Suspense fallback={
+        <div className="h-screen flex flex-col items-center justify-center" style={{ backgroundColor: "var(--color-sand-50)" }}>
+          <div className="animate-[breathe_6s_ease-in-out_infinite]">
+            <svg width={36} height={38} fill="none" viewBox="0 0 36 37.8281" className="text-[var(--color-sand-300)]">
+              <path d={svgPaths.p1c4d2300} fill="currentColor" />
+              <path d={svgPaths.p2128f680} fill="currentColor" />
+              <path d={svgPaths.p1c2ff500} fill="currentColor" />
+            </svg>
+          </div>
+          <div className="flex gap-1.5 mt-4">
+            <span className="w-2 h-2 rounded-full animate-[dot-bounce_1.4s_ease-in-out_infinite]" style={{ backgroundColor: "#c9a96e", animationDelay: "0s" }} />
+            <span className="w-2 h-2 rounded-full animate-[dot-bounce_1.4s_ease-in-out_infinite]" style={{ backgroundColor: "#c9a96e", animationDelay: "0.2s" }} />
+            <span className="w-2 h-2 rounded-full animate-[dot-bounce_1.4s_ease-in-out_infinite]" style={{ backgroundColor: "#c9a96e", animationDelay: "0.4s" }} />
+          </div>
+        </div>
+      }>
         <StudioPageContent />
       </Suspense>
     </ProfileProvider>
