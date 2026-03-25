@@ -2121,11 +2121,14 @@ export default function StudioPage() {
                         Generations
                       </h3>
                     )}
-                    <div className="bg-white rounded-xl border border-[#e7e5e4] overflow-hidden shadow-sm overflow-x-auto">
-                      <div className="grid grid-cols-[1fr_80px_70px_90px_70px_130px] gap-4 px-5 py-3 border-b border-[#e7e5e4] bg-[#f5f3f0] min-w-[640px]">
-                        {["Prompt", "Voice", "Duration", "Protocol", "Credit", ""].map((h) => (
-                          <span key={h} className="text-[11px] uppercase tracking-wide text-[var(--color-sand-900)]" style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}>{h}</span>
-                        ))}
+                    <div className="bg-white rounded-xl border border-[#e7e5e4] overflow-hidden shadow-sm">
+                      <div className="grid grid-cols-[1fr_70px_60px_80px] sm:grid-cols-[1fr_80px_70px_90px_70px_130px] gap-2 sm:gap-4 px-3 sm:px-5 py-3 border-b border-[#e7e5e4] bg-[#f5f3f0]">
+                        <span className="text-[11px] uppercase tracking-wide text-[var(--color-sand-900)]" style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}>Prompt</span>
+                        <span className="text-[11px] uppercase tracking-wide text-[var(--color-sand-900)]" style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}>Voice</span>
+                        <span className="text-[11px] uppercase tracking-wide text-[var(--color-sand-900)]" style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}>Duration</span>
+                        <span className="text-[11px] uppercase tracking-wide text-[var(--color-sand-900)] hidden sm:block" style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}>Protocol</span>
+                        <span className="text-[11px] uppercase tracking-wide text-[var(--color-sand-900)] hidden sm:block" style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}>Credit</span>
+                        <span className="text-[11px] uppercase tracking-wide text-[var(--color-sand-900)]" style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}></span>
                       </div>
                       {paged.map((gen, i) => {
                         const isGenPlaying = gen.sessionId ? nowPlayingId === gen.id && playerPlaying : false;
@@ -2137,7 +2140,7 @@ export default function StudioPage() {
                           initial={{ opacity: 0 }}
                           animate={{ opacity: 1 }}
                           transition={{ delay: i * 0.04, duration: 0.25 }}
-                          className="group grid grid-cols-[1fr_80px_70px_90px_70px_130px] gap-4 items-center px-5 py-3.5 border-b border-[#f4f4f5] last:border-b-0 hover:bg-[#fafafa] transition-colors min-w-[640px]"
+                          className="group grid grid-cols-[1fr_70px_60px_80px] sm:grid-cols-[1fr_80px_70px_90px_70px_130px] gap-2 sm:gap-4 items-center px-3 sm:px-5 py-3.5 border-b border-[#f4f4f5] last:border-b-0 hover:bg-[#fafafa] transition-colors"
                         >
                           <div className="flex items-center gap-3 min-w-0">
                             {gen.status === "failed" ? (
@@ -2155,13 +2158,13 @@ export default function StudioPage() {
                             {gen.voice}
                           </span>
                           <span className="text-[11px] text-[#71717a] tabular-nums" style={{ fontFamily: "var(--font-body)" }}>{gen.duration}</span>
-                          <div>
+                          <div className="hidden sm:block">
                             <span className="text-[11px] text-[#71717a] truncate block" style={{ fontFamily: "var(--font-body)" }}>{gen.protocol}</span>
                             {gen.status === "failed" && (
                               <span className="text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded bg-[#fef2f2] text-[#ef4444] inline-block mt-0.5" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>Failed</span>
                             )}
                           </div>
-                          <span className="text-[11px] tabular-nums" style={{ fontFamily: "var(--font-body)", color: gen.creditUsed > 0 ? "#71717a" : "#a1a1aa" }}>{gen.creditUsed > 0 ? `-${gen.creditUsed}` : "0"}</span>
+                          <span className="text-[11px] tabular-nums hidden sm:block" style={{ fontFamily: "var(--font-body)", color: gen.creditUsed > 0 ? "#71717a" : "#a1a1aa" }}>{gen.creditUsed > 0 ? `-${gen.creditUsed}` : "0"}</span>
                           <div className="flex items-center justify-end gap-1">
                             <div className="relative group/tip">
                               <button
@@ -2228,11 +2231,14 @@ export default function StudioPage() {
                         Sessions Created
                       </h3>
                     )}
-                    <div className="bg-white rounded-xl border border-[#e7e5e4] overflow-hidden shadow-sm overflow-x-auto">
-                      <div className="grid grid-cols-[1fr_100px_80px_80px_140px_130px] gap-4 px-5 py-3 border-b border-[#e7e5e4] bg-[#f5f3f0] min-w-[700px]">
-                        {["Session", "Protocol", "Duration", "Voice", "Created", ""].map((h) => (
-                          <span key={h} className="text-[11px] uppercase tracking-wide text-[var(--color-sand-900)]" style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}>{h}</span>
-                        ))}
+                    <div className="bg-white rounded-xl border border-[#e7e5e4] overflow-hidden shadow-sm">
+                      <div className="grid grid-cols-[1fr_60px_70px_80px] sm:grid-cols-[1fr_100px_80px_80px_140px_130px] gap-2 sm:gap-4 px-3 sm:px-5 py-3 border-b border-[#e7e5e4] bg-[#f5f3f0]">
+                        <span className="text-[11px] uppercase tracking-wide text-[var(--color-sand-900)]" style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}>Session</span>
+                        <span className="text-[11px] uppercase tracking-wide text-[var(--color-sand-900)] hidden sm:block" style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}>Protocol</span>
+                        <span className="text-[11px] uppercase tracking-wide text-[var(--color-sand-900)]" style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}>Duration</span>
+                        <span className="text-[11px] uppercase tracking-wide text-[var(--color-sand-900)]" style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}>Voice</span>
+                        <span className="text-[11px] uppercase tracking-wide text-[var(--color-sand-900)] hidden sm:block" style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}>Created</span>
+                        <span className="text-[11px] uppercase tracking-wide text-[var(--color-sand-900)]" style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}></span>
                       </div>
                       {paged.map((session, i) => {
                         const accent = (categoryColors[session.category] || categoryColors.focus).accent;
@@ -2248,19 +2254,19 @@ export default function StudioPage() {
                               setActiveNav("generate" as NavId);
                               setGenStep("studio");
                             }}
-                            className="group grid grid-cols-[1fr_100px_80px_80px_140px_130px] gap-4 items-center px-5 py-3.5 border-b border-[#f4f4f5] last:border-b-0 hover:bg-[#fafafa] transition-colors cursor-pointer min-w-[700px]"
+                            className="group grid grid-cols-[1fr_60px_70px_80px] sm:grid-cols-[1fr_100px_80px_80px_140px_130px] gap-2 sm:gap-4 items-center px-3 sm:px-5 py-3.5 border-b border-[#f4f4f5] last:border-b-0 hover:bg-[#fafafa] transition-colors cursor-pointer"
                           >
                             <div className="flex items-center gap-3 min-w-0">
                               <div className="w-2 h-2 rounded-full shrink-0" style={{ background: isRowPlaying ? accent : "#d4d4d8" }} />
                               <span className="text-[13px] text-[#18181b] truncate" style={{ fontFamily: "var(--font-body)", fontWeight: 450 }}>{session.title}</span>
                             </div>
-                            <span className="text-[11px] text-[#71717a] truncate" style={{ fontFamily: "var(--font-body)" }}>{session.protocol}</span>
+                            <span className="text-[11px] text-[#71717a] truncate hidden sm:block" style={{ fontFamily: "var(--font-body)" }}>{session.protocol}</span>
                             <span className="text-[11px] text-[#71717a] tabular-nums" style={{ fontFamily: "var(--font-body)" }}>{session.duration}</span>
                             <span className="text-[11px] text-[#71717a] flex items-center gap-1.5" style={{ fontFamily: "var(--font-body)" }}>
                               <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: voices.find(v => v.name === session.voice)?.color || "#a1a1aa" }} />
                               {session.voice}
                             </span>
-                            <span className="text-[11px] text-[#52525b] whitespace-nowrap" style={{ fontFamily: "var(--font-body)", fontWeight: 450 }}>{session.createdAt}</span>
+                            <span className="text-[11px] text-[#52525b] whitespace-nowrap hidden sm:block" style={{ fontFamily: "var(--font-body)", fontWeight: 450 }}>{session.createdAt}</span>
                             <div className="flex items-center justify-end gap-1">
                               <div className="relative group/tip">
                                 <button
