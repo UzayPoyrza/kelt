@@ -996,7 +996,7 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, onBack }: {
                           borderLeft: isSelected ? "3px solid var(--color-sage)" : undefined,
                         }}
                       >
-                        <div className="flex items-start gap-3" style={{ padding: isSelected ? "14px 14px 14px 13px" : "14px 14px 14px 16px" }}>
+                        <div className="flex items-center gap-3" style={{ padding: isSelected ? "14px 14px 14px 13px" : "14px 14px 14px 16px" }}>
                           {/* Content */}
                           <div className="flex-1 min-w-0">
                             {isSelected ? (
@@ -1043,14 +1043,6 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, onBack }: {
                           {/* Actions */}
                           {!isSelected && (
                             <div className="flex items-center gap-0.5 shrink-0">
-                              {/* Pencil — always visible */}
-                              <button
-                                onClick={(e) => { e.stopPropagation(); startEditing(block.id); }}
-                                className="w-7 h-7 rounded-md flex items-center justify-center text-[#a1a1aa] hover:text-[#52525b] hover:bg-[#f4f4f5] transition-all cursor-pointer"
-                                title="Edit text"
-                              >
-                                <PenLine className="w-3.5 h-3.5" />
-                              </button>
                               {/* Reorder — hover only */}
                               <div className="flex flex-col opacity-0 group-hover/row:opacity-100 transition-opacity">
                                 <button
@@ -1068,6 +1060,14 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, onBack }: {
                                   <svg width="8" height="5" viewBox="0 0 10 6" fill="none"><path d="M5 6L0 1h10L5 6z" fill="currentColor"/></svg>
                                 </button>
                               </div>
+                              {/* Pencil — always visible */}
+                              <button
+                                onClick={(e) => { e.stopPropagation(); startEditing(block.id); }}
+                                className="w-7 h-7 rounded-md flex items-center justify-center text-[#a1a1aa] hover:text-[#52525b] hover:bg-[#f4f4f5] transition-all cursor-pointer"
+                                title="Edit text"
+                              >
+                                <PenLine className="w-3.5 h-3.5" />
+                              </button>
                               {/* Trash — always visible, always red */}
                               <button
                                 onClick={(e) => { e.stopPropagation(); deleteBlock(block.id); }}
@@ -1118,13 +1118,22 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, onBack }: {
         </div>
 
         {/* Bottom bar */}
-        <div className="flex items-center justify-between px-6 py-4 border-t border-[#e4e4e7]" style={{ background: "#fafafa" }}>
-          <div className="flex items-center gap-4">
-            <span className="text-[10px] text-[#a1a1aa]" style={{ fontFamily: "var(--font-body)" }}>
+        <div className="flex items-center justify-between px-6 py-3.5 border-t border-[#e8e8e8]" style={{ background: "#ffffff" }}>
+          <div className="flex items-center gap-2.5">
+            {/* Credit progress ring */}
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+              <circle cx="9" cy="9" r="7" stroke="#e4e4e7" strokeWidth="2" />
+              <circle cx="9" cy="9" r="7" stroke="#18181b" strokeWidth="2" strokeLinecap="round"
+                strokeDasharray={`${2 * Math.PI * 7}`}
+                strokeDashoffset={`${2 * Math.PI * 7 * (1 - 3 / 10)}`}
+                style={{ transform: "rotate(-90deg)", transformOrigin: "center" }}
+              />
+            </svg>
+            <span className="text-[13px] text-[#18181b]" style={{ fontFamily: "var(--font-body)", fontWeight: 400 }}>
               3 credits remaining
             </span>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-4">
             {generateWarning && (
               <div className="flex items-center gap-1.5 text-[11px] text-amber-600 bg-amber-50 border border-amber-200 rounded-lg px-3 py-1.5" style={{ fontFamily: "var(--font-body)" }}>
                 <AlertCircle className="w-3.5 h-3.5 shrink-0" />
