@@ -232,7 +232,7 @@ function CreateContent() {
                       return (
                         <button
                           key={p.abbr}
-                          onClick={(e) => { e.stopPropagation(); setSelectedProtocol(p.abbr); }}
+                          onClick={(e) => { e.stopPropagation(); setSelectedProtocol(isSelected ? null : p.abbr); }}
                           className={`relative p-3 rounded-xl text-left transition-all cursor-pointer ${
                             isSelected
                               ? "bg-[var(--color-sand-900)] text-[var(--color-sand-50)] shadow-md"
@@ -259,18 +259,19 @@ function CreateContent() {
                 <div className="absolute -inset-[2.5px] rounded-2xl bg-[length:300%_300%] animate-[border-glow_4s_ease_infinite] opacity-90 group-hover:opacity-100 transition-opacity duration-300" style={{ background: "linear-gradient(135deg, var(--color-sage), var(--color-ocean), var(--color-dusk), var(--color-ember), var(--color-sage))", backgroundSize: "300% 300%" }} />
                 <motion.button
                   onClick={handleGenerate}
-                  className="relative flex items-center justify-center gap-3 px-10 sm:px-16 py-4 sm:py-5 rounded-2xl bg-[var(--color-sand-900)] text-[var(--color-sand-50)] hover:bg-[var(--color-sand-800)] transition-all text-base sm:text-lg shadow-xl cursor-pointer w-full sm:w-auto"
+                  disabled={isGenerating}
+                  className="relative flex items-center justify-center gap-3 px-10 sm:px-16 py-4 sm:py-5 rounded-2xl bg-[var(--color-sand-900)] text-[var(--color-sand-50)] hover:bg-[var(--color-sand-800)] transition-all text-base sm:text-lg shadow-xl cursor-pointer w-full sm:w-auto disabled:opacity-60 disabled:cursor-not-allowed"
                   style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.97 }}
+                  whileHover={isGenerating ? {} : { scale: 1.02 }}
+                  whileTap={isGenerating ? {} : { scale: 0.97 }}
                 >
                   <motion.div
-                    animate={{ rotate: [0, 15, -15, 0] }}
-                    transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                    animate={isGenerating ? { rotate: 360 } : { rotate: [0, 15, -15, 0] }}
+                    transition={isGenerating ? { duration: 1, repeat: Infinity, ease: "linear" } : { duration: 2, repeat: Infinity, ease: "easeInOut" }}
                   >
                     <Sparkles className="w-5 h-5" />
                   </motion.div>
-                  Generate Meditation
+                  {isGenerating ? "Generating..." : "Generate Meditation"}
                 </motion.button>
               </div>
             </motion.div>

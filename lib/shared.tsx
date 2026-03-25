@@ -149,16 +149,13 @@ const VOICE_BASE = "https://audio.neurotypeapp.com/meditation_voices";
 
 export const samples = [
   {
-    id: "U006", label: "Gentle Even Breathing", duration: "5:00", protocol: "Slow Breathing",
-    src: `${VOICE_BASE}/U006.mp3`,
-    prompt: "Guide me through calm, even breathing to settle my nerves",
-    description: "A 5-min slow breathing session with gentle pacing cues. Pink noise and a calm drone layer underneath to ease you into rhythm.",
-    voice: "Aria", ambient: "Pink Noise",
+    id: "U010", label: "Low-Drone Calm", duration: "8:00", protocol: "Supportive Ambient Sound",
+    src: `${VOICE_BASE}/U010.mp3`,
+    prompt: "I just need something calming in the background while I decompress",
+    description: "An 8-min ambient session built around a single warm drone. Minimal guidance lets the sound do the work.",
+    voice: "Aditya", ambient: "Calm Drone",
     sounds: [
-      { label: "Pink Noise", src: `${AUDIO_BASE}/pink_noise.mp3` },
-      { label: "Room Tone", src: `${AUDIO_BASE}/room_tone.mp3` },
       { label: "Calm Drone", src: `${AUDIO_BASE}/plain_stereo_calm_drone.mp3` },
-      { label: "Rain", src: `${AUDIO_BASE}/rain.mp3` },
     ],
   },
   {
@@ -166,20 +163,10 @@ export const samples = [
     src: `${VOICE_BASE}/U008.mp3`,
     prompt: "Help me release tension in my shoulders and upper body",
     description: "A 9-min PMR session focused on the shoulders and neck. Progressive tension-release cues guide you through each muscle group.",
-    voice: "Luna", ambient: "Rain",
+    voice: "Aditya", ambient: "Rain",
     sounds: [
       { label: "Rain", src: `${AUDIO_BASE}/rain.mp3` },
       { label: "River", src: `${AUDIO_BASE}/river.mp3` },
-      { label: "Calm Drone", src: `${AUDIO_BASE}/plain_stereo_calm_drone.mp3` },
-    ],
-  },
-  {
-    id: "U010", label: "Low-Drone Calm", duration: "8:00", protocol: "Supportive Ambient Sound",
-    src: `${VOICE_BASE}/U010.mp3`,
-    prompt: "I just need something calming in the background while I decompress",
-    description: "An 8-min ambient session built around a single warm drone. Minimal guidance lets the sound do the work.",
-    voice: "James", ambient: "Calm Drone",
-    sounds: [
       { label: "Calm Drone", src: `${AUDIO_BASE}/plain_stereo_calm_drone.mp3` },
     ],
   },
@@ -188,12 +175,26 @@ export const samples = [
     src: `${VOICE_BASE}/U020.mp3`,
     prompt: "Help me challenge catastrophic thinking and see things more clearly",
     description: "A 13-min CBT session that walks through probability estimation and cognitive reframing. Background layers shift as the session deepens.",
-    voice: "Kai", ambient: "Calm Drone",
+    voice: "Aditya", ambient: "Fireplace",
     sounds: [
+      { label: "Fireplace", src: `${AUDIO_BASE}/fireplace.mp3` },
       { label: "Calm Drone", src: `${AUDIO_BASE}/plain_stereo_calm_drone.mp3` },
       { label: "River", src: `${AUDIO_BASE}/river.mp3` },
       { label: "Rain", src: `${AUDIO_BASE}/rain.mp3` },
       { label: "Deep Space", src: `${AUDIO_BASE}/deep_space.mp3` },
+    ],
+  },
+  {
+    id: "U006", label: "Gentle Even Breathing", duration: "5:00", protocol: "Slow Breathing", sampleStart: 80, sampleLimit: 30,
+    src: `${VOICE_BASE}/U006.mp3`,
+    prompt: "Guide me through calm, even breathing to settle my nerves",
+    description: "A 5-min slow breathing session with gentle pacing cues. Pink noise and a calm drone layer underneath to ease you into rhythm.",
+    voice: "Aditya", ambient: "Pink Noise",
+    sounds: [
+      { label: "Pink Noise", src: `${AUDIO_BASE}/pink_noise.mp3` },
+      { label: "Room Tone", src: `${AUDIO_BASE}/room_tone.mp3` },
+      { label: "Calm Drone", src: `${AUDIO_BASE}/plain_stereo_calm_drone.mp3` },
+      { label: "Rain", src: `${AUDIO_BASE}/rain.mp3` },
     ],
   },
 ];
