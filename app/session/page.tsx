@@ -294,7 +294,7 @@ function SessionContent() {
                               {recommendedPresets.map((preset) => {
                                 const isSel = soundscape === preset.label;
                                 return (
-                                  <button key={preset.label} onClick={() => setSoundscape(isSel ? null : preset.label)} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs transition-colors cursor-pointer ${isSel ? "bg-[var(--color-sand-900)] text-[var(--color-sand-50)] border border-[var(--color-sand-900)]" : "bg-[var(--color-sand-50)] text-[var(--color-sand-700)] hover:bg-[var(--color-sand-100)] border border-[var(--color-sand-200)]"}`} style={{ fontFamily: "var(--font-body)" }}>
+                                  <button key={preset.label} onClick={() => { if (!isSel) setSoundscape(preset.label); }} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs transition-colors cursor-pointer ${isSel ? "bg-[var(--color-sand-900)] text-[var(--color-sand-50)] border border-[var(--color-sand-900)]" : "bg-[var(--color-sand-50)] text-[var(--color-sand-700)] hover:bg-[var(--color-sand-100)] border border-[var(--color-sand-200)]"}`} style={{ fontFamily: "var(--font-body)" }}>
                                     <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: isSel ? "var(--color-sand-50)" : preset.color }} />
                                     {preset.label}
                                   </button>
@@ -311,7 +311,7 @@ function SessionContent() {
                                 {alternativePresets.map((preset) => {
                                   const isSel = soundscape === preset.label;
                                   return (
-                                    <button key={preset.label} onClick={() => setSoundscape(isSel ? null : preset.label)} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs transition-colors cursor-pointer ${isSel ? "bg-[var(--color-sand-900)] text-[var(--color-sand-50)] border border-[var(--color-sand-900)]" : "bg-[var(--color-sand-50)] text-[var(--color-sand-700)] hover:bg-[var(--color-sand-100)] border border-[var(--color-sand-200)]"}`} style={{ fontFamily: "var(--font-body)" }}>
+                                    <button key={preset.label} onClick={() => { if (!isSel) setSoundscape(preset.label); }} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs transition-colors cursor-pointer ${isSel ? "bg-[var(--color-sand-900)] text-[var(--color-sand-50)] border border-[var(--color-sand-900)]" : "bg-[var(--color-sand-50)] text-[var(--color-sand-700)] hover:bg-[var(--color-sand-100)] border border-[var(--color-sand-200)]"}`} style={{ fontFamily: "var(--font-body)" }}>
                                       <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: isSel ? "var(--color-sand-50)" : preset.color }} />
                                       {preset.label}
                                     </button>
@@ -328,7 +328,7 @@ function SessionContent() {
                               {otherPresets.map((preset) => {
                                 const isSel = soundscape === preset.label;
                                 return (
-                                  <button key={preset.label} onClick={() => setSoundscape(isSel ? null : preset.label)} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs transition-colors cursor-pointer ${isSel ? "bg-[var(--color-sand-900)] text-[var(--color-sand-50)] border border-[var(--color-sand-900)]" : "bg-[var(--color-sand-50)] text-[var(--color-sand-700)] hover:bg-[var(--color-sand-100)] border border-[var(--color-sand-200)]"}`} style={{ fontFamily: "var(--font-body)" }}>
+                                  <button key={preset.label} onClick={() => { if (!isSel) setSoundscape(preset.label); }} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs transition-colors cursor-pointer ${isSel ? "bg-[var(--color-sand-900)] text-[var(--color-sand-50)] border border-[var(--color-sand-900)]" : "bg-[var(--color-sand-50)] text-[var(--color-sand-700)] hover:bg-[var(--color-sand-100)] border border-[var(--color-sand-200)]"}`} style={{ fontFamily: "var(--font-body)" }}>
                                     <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: isSel ? "var(--color-sand-50)" : preset.color }} />
                                     {preset.label}
                                   </button>
@@ -381,6 +381,7 @@ function SessionContent() {
                         <div className="max-h-0 group-hover:max-h-[200px] transition-[max-height] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] overflow-hidden">
                           <div className="mx-2.5 sm:mx-4 mb-3 rounded-lg overflow-hidden border border-white/[0.08]" style={{ background: "rgba(255,255,255,0.02)" }}>
                             <div className="px-3 py-2 space-y-[4px]">
+                              {/* Voice block */}
                               <div className="flex items-center gap-2 px-2 py-1.5 rounded" style={{ background: "rgba(255,255,255,0.03)" }}>
                                 <div className="w-3 h-3 rounded-full flex items-center justify-center shrink-0" style={{ background: "rgba(122,158,126,0.2)" }}>
                                   <div className="w-1 h-1 rounded-full" style={{ background: "var(--color-sage)" }} />
@@ -388,15 +389,16 @@ function SessionContent() {
                                 <span className="text-[8px] text-white/40 truncate" style={{ fontFamily: "var(--font-body)" }}>Find a comfortable position...</span>
                               </div>
 
-                              <div className="flex items-center gap-2 px-2 py-1.5 rounded border border-white/[0.12]" style={{ background: "rgba(139,126,158,0.08)" }}>
-                                <div className="w-3 h-3 rounded-full flex items-center justify-center shrink-0" style={{ background: "rgba(139,126,158,0.25)" }}>
-                                  <div className="w-1 h-1 rounded-full" style={{ background: "var(--color-dusk)" }} />
+                              {/* Pause block — short */}
+                              <div className="flex items-center gap-2 px-2 py-1 rounded" style={{ background: "rgba(255,255,255,0.02)" }}>
+                                <div className="w-3 h-3 rounded-full flex items-center justify-center shrink-0" style={{ background: "rgba(161,161,170,0.15)" }}>
+                                  <svg width="6" height="6" viewBox="0 0 14 14" fill="none"><rect x="2" y="1" width="3.5" height="12" rx="1" fill="rgba(255,255,255,0.3)" /><rect x="8.5" y="1" width="3.5" height="12" rx="1" fill="rgba(255,255,255,0.3)" /></svg>
                                 </div>
-                                <span className="text-[8px] text-white/35 italic flex-1" style={{ fontFamily: "var(--font-body)" }}>⏸ Settle in</span>
-                                <span className="text-[7px] text-white/30 px-1.5 py-0.5 rounded-full border border-white/15">Short</span>
-                                <span className="text-[7px] text-white/15 px-1.5 py-0.5 rounded-full border border-white/[0.06]">Long</span>
+                                <span className="text-[7px] text-white/25" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>Short Pause</span>
+                                <span className="text-[7px] text-white/20 tabular-nums ml-auto" style={{ fontFamily: "var(--font-body)" }}>2s</span>
                               </div>
 
+                              {/* Voice block — selected/editing */}
                               <div className="flex items-center gap-2 px-2 py-1.5 rounded border border-white/[0.1]" style={{ background: "rgba(255,255,255,0.04)" }}>
                                 <div className="w-3 h-3 rounded-full flex items-center justify-center shrink-0" style={{ background: "rgba(122,158,126,0.2)" }}>
                                   <div className="w-1 h-1 rounded-full" style={{ background: "var(--color-sage)" }} />
@@ -405,13 +407,13 @@ function SessionContent() {
                                 <div className="w-[1px] h-3 bg-white/40 animate-pulse shrink-0" />
                               </div>
 
-                              <div className="flex items-center gap-2 px-2 py-1.5 rounded border border-white/[0.12]" style={{ background: "rgba(139,126,158,0.08)" }}>
-                                <div className="w-3 h-3 rounded-full flex items-center justify-center shrink-0" style={{ background: "rgba(139,126,158,0.25)" }}>
-                                  <div className="w-1 h-1 rounded-full" style={{ background: "var(--color-dusk)" }} />
+                              {/* Pause block — long */}
+                              <div className="flex items-center gap-2 px-2 py-1 rounded" style={{ background: "rgba(122,158,126,0.04)" }}>
+                                <div className="w-3 h-3 rounded-full flex items-center justify-center shrink-0" style={{ background: "rgba(122,158,126,0.2)" }}>
+                                  <svg width="6" height="6" viewBox="0 0 14 14" fill="none"><rect x="2" y="1" width="3.5" height="12" rx="1" fill="rgba(122,158,126,0.5)" /><rect x="8.5" y="1" width="3.5" height="12" rx="1" fill="rgba(122,158,126,0.5)" /></svg>
                                 </div>
-                                <span className="text-[8px] text-white/35 italic flex-1" style={{ fontFamily: "var(--font-body)" }}>⏸ Body responds</span>
-                                <span className="text-[7px] text-white/15 px-1.5 py-0.5 rounded-full border border-white/[0.06]">Short</span>
-                                <span className="text-[7px] text-white/30 px-1.5 py-0.5 rounded-full border border-white/15" style={{ background: "rgba(139,126,158,0.15)" }}>Long</span>
+                                <span className="text-[7px] text-white/30" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>Long Pause</span>
+                                <span className="text-[7px] text-white/20 tabular-nums ml-auto" style={{ fontFamily: "var(--font-body)" }}>5s</span>
                               </div>
                             </div>
                           </div>

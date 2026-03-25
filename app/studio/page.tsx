@@ -562,6 +562,7 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, savedScript,
   const [swappedUp, setSwappedUp] = useState<string | null>(null);
   const [swappedDown, setSwappedDown] = useState<string | null>(null);
   const [rightTab, setRightTab] = useState<"settings" | "history">("settings");
+  const [mobilePanel, setMobilePanel] = useState<"settings" | "history" | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [studioPlaying, setStudioPlaying] = useState(false);
   const [showStudioPlayer, setShowStudioPlayer] = useState(false);
@@ -1023,11 +1024,11 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, savedScript,
   return (
     <div className="flex flex-col lg:flex-row flex-1 min-h-0" style={{ background: "#ffffff" }}>
       {/* ─── Script Editor (left) ─── */}
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col min-w-0 min-h-0">
         {/* Script toolbar */}
         <div className="flex items-center gap-2 sm:gap-3 px-3 sm:px-6 py-3 border-b border-[#e4e4e7]" style={{ background: "#fafafa" }}>
           {/* Left: Hamburger (mobile) + Back + Undo/Redo */}
-          <div className="flex items-center gap-1 shrink-0 w-[200px]">
+          <div className="flex items-center gap-1 shrink-0 w-auto sm:w-[200px]">
             {onToggleSidebar && (
               <button onClick={onToggleSidebar} className="lg:hidden w-7 h-7 rounded-md flex items-center justify-center text-[#52525b] hover:text-[#18181b] hover:bg-[#f4f4f5] transition-colors cursor-pointer mr-1">
                 <Menu className="w-4 h-4" />
@@ -1083,7 +1084,7 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, savedScript,
           </div>
 
           {/* Right: Autosave status + stats */}
-          <div className="flex items-center gap-2 shrink-0 justify-end">
+          <div className="flex items-center gap-2 shrink-0 justify-end w-auto sm:w-[200px]">
             <div className="flex items-center gap-1.5 justify-end">
               <AnimatePresence mode="wait">
                 {saveStatus === "saving" ? (
@@ -1468,8 +1469,8 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, savedScript,
           </div>
         </div>
 
-        {/* Bottom bar */}
-        <div className="flex items-center justify-between px-6 py-3.5 border-t border-[#e8e8e8]" style={{ background: "#ffffff" }}>
+        {/* Bottom bar — desktop */}
+        <div className="hidden lg:flex items-center justify-between px-6 py-3.5 border-t border-[#e8e8e8]" style={{ background: "#ffffff" }}>
           <div className="flex items-center gap-2.5">
             {/* Credit progress ring */}
             <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
@@ -1524,6 +1525,82 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, savedScript,
           </div>
         </div>
 
+        {/* Bottom bar — mobile (sticky at bottom) */}
+        <div className="flex lg:hidden flex-col border-t border-[#e8e8e8] shrink-0" style={{ background: "#ffffff" }}>
+          {/* Voice indicator + panel toggles */}
+          <div className="flex items-center gap-2 px-4 pt-3 pb-2">
+            <div className="flex-1 min-w-0 flex items-center gap-2 px-3 py-2 rounded-lg bg-[#f4f4f5] border border-[#e4e4e7]">
+              <div className="w-5 h-5 rounded-full flex items-center justify-center shrink-0" style={{ background: selectedVoice.color + "20" }}>
+                <div className="w-2 h-2 rounded-full" style={{ background: selectedVoice.color }} />
+              </div>
+              <span className="text-[13px] text-[#18181b] truncate" style={{ fontFamily: "var(--font-body)" }}>{selectedVoice.name}</span>
+            </div>
+            <button
+              onClick={() => setMobilePanel(mobilePanel === "settings" ? null : "settings")}
+              className={`w-10 h-10 rounded-lg flex items-center justify-center transition-colors cursor-pointer ${
+                mobilePanel === "settings" ? "bg-[#18181b] text-white" : "bg-[#f4f4f5] text-[#52525b] hover:bg-[#e4e4e7]"
+              }`}
+            >
+              <Settings className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => setMobilePanel(mobilePanel === "history" ? null : "history")}
+              className={`w-10 h-10 rounded-lg flex items-center justify-center transition-colors cursor-pointer ${
+                mobilePanel === "history" ? "bg-[#18181b] text-white" : "bg-[#f4f4f5] text-[#52525b] hover:bg-[#e4e4e7]"
+              }`}
+            >
+              <Clock className="w-4 h-4" />
+            </button>
+          </div>
+          {/* Generate button */}
+          <div className="px-4 pb-3">
+            <div className="relative">
+              <div
+                className="absolute -inset-[2px] rounded-[10px] bg-[length:300%_300%] animate-[border-glow_4s_ease_infinite] opacity-70 blur-[1px]"
+                style={{ background: "linear-gradient(135deg, var(--color-sage), var(--color-ocean), var(--color-dusk), var(--color-ember), var(--color-sage))", backgroundSize: "300% 300%" }}
+              />
+              <button
+                onClick={handleGenerateAudio}
+                disabled={isGenerating}
+                className="relative w-full flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg bg-[#18181b] text-white hover:bg-[#27272a] transition-colors text-sm cursor-pointer shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
+                style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}>
+                {isGenerating ? (
+                  <>
+                    <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }}>
+                      <Sparkles className="w-3.5 h-3.5" />
+                    </motion.div>
+                    Generating...
+                  </>
+                ) : hasGenerated ? (
+                  <>
+                    <Sparkles className="w-3.5 h-3.5" />
+                    Regenerate Audio
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-3.5 h-3.5" />
+                    Generate Audio
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+          {/* Credits */}
+          <div className="flex items-center justify-center gap-2 pb-3 px-4">
+            <svg width="16" height="16" viewBox="0 0 18 18" fill="none">
+              <circle cx="9" cy="9" r="7" stroke="#e4e4e7" strokeWidth="2" />
+              <circle cx="9" cy="9" r="7" stroke="#18181b" strokeWidth="2" strokeLinecap="round"
+                strokeDasharray={`${2 * Math.PI * 7}`}
+                strokeDashoffset={`${2 * Math.PI * 7 * (1 - (profile?.credits_remaining ?? 0) / Math.max(1, profile?.plan === "creator" ? 200 : profile?.plan === "personal" ? 50 : 10))}`}
+                style={{ transform: "rotate(-90deg)", transformOrigin: "center" }}
+              />
+            </svg>
+            <span className="text-[11px] text-[#a1a1aa]" style={{ fontFamily: "var(--font-body)" }}>
+              {profile?.credits_remaining ?? 0} credits remaining
+            </span>
+          </div>
+        </div>
+
         {/* Inline Studio Player */}
         <AnimatePresence>
           {showStudioPlayer && (
@@ -1542,8 +1619,8 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, savedScript,
         </AnimatePresence>
       </div>
 
-      {/* ─── Right Panel (Settings / History) ─── */}
-      <div className="w-full lg:w-72 shrink-0 border-t lg:border-t-0 lg:border-l border-[#e4e4e7] flex flex-col overflow-y-auto studio-scroll" style={{ background: "#fafafa" }}>
+      {/* ─── Right Panel (Settings / History) — desktop only ─── */}
+      <div className="w-full lg:w-72 shrink-0 border-t lg:border-t-0 lg:border-l border-[#e4e4e7] hidden lg:flex flex-col overflow-y-auto studio-scroll" style={{ background: "#fafafa" }}>
         <div className="px-4 pt-1 border-b border-[#e4e4e7] flex items-center gap-0">
           <button
             onClick={() => setRightTab("settings")}
@@ -1853,6 +1930,255 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, savedScript,
           </div>
         )}
       </div>
+
+      {/* ─── Mobile Bottom Sheet (Settings / History) ─── */}
+      <AnimatePresence>
+        {mobilePanel && (
+          <motion.div
+            className="fixed inset-0 z-[300] lg:hidden"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+          >
+            {/* Backdrop */}
+            <div className="absolute inset-0 bg-black/30" onClick={() => setMobilePanel(null)} />
+            {/* Sheet */}
+            <motion.div
+              className="absolute bottom-0 left-0 right-0 bg-white rounded-t-2xl shadow-2xl flex flex-col"
+              style={{ maxHeight: "75vh" }}
+              initial={{ y: "100%" }}
+              animate={{ y: 0 }}
+              exit={{ y: "100%" }}
+              transition={{ type: "spring", damping: 28, stiffness: 300 }}
+            >
+              {/* Drag handle */}
+              <div className="flex justify-center pt-3 pb-1">
+                <div className="w-9 h-1 rounded-full bg-[#d4d4d8]" />
+              </div>
+              {/* Tab bar */}
+              <div className="px-4 border-b border-[#e4e4e7] flex items-center justify-between">
+                <div className="flex items-center gap-0">
+                  <button
+                    onClick={() => setMobilePanel("settings")}
+                    className={`flex items-center gap-1.5 px-3 py-2.5 text-[13px] transition-all cursor-pointer border-b-2 -mb-px ${
+                      mobilePanel === "settings" ? "border-[#18181b] text-[#18181b]" : "border-transparent text-[#a1a1aa] hover:text-[#52525b]"
+                    }`}
+                    style={{ fontFamily: "var(--font-body)", fontWeight: mobilePanel === "settings" ? 600 : 400 }}
+                  >
+                    <Settings className="w-3.5 h-3.5" />
+                    Settings
+                  </button>
+                  <button
+                    onClick={() => setMobilePanel("history")}
+                    className={`flex items-center gap-1.5 px-3 py-2.5 text-[13px] transition-all cursor-pointer border-b-2 -mb-px ${
+                      mobilePanel === "history" ? "border-[#18181b] text-[#18181b]" : "border-transparent text-[#a1a1aa] hover:text-[#52525b]"
+                    }`}
+                    style={{ fontFamily: "var(--font-body)", fontWeight: mobilePanel === "history" ? 600 : 400 }}
+                  >
+                    <Clock className="w-3.5 h-3.5" />
+                    History
+                  </button>
+                </div>
+                <button onClick={() => setMobilePanel(null)} className="w-8 h-8 rounded-lg flex items-center justify-center text-[#a1a1aa] hover:text-[#18181b] hover:bg-[#f4f4f5] transition-colors cursor-pointer">
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+              {/* Content */}
+              <div className="flex-1 overflow-y-auto studio-scroll">
+                {mobilePanel === "settings" && <div className="px-5 py-4 space-y-6">
+                  {/* Voice */}
+                  <div>
+                    <label className="text-[10px] uppercase tracking-wider text-[#71717a] mb-2.5 block" style={{ fontFamily: "var(--font-body)" }}>Voice</label>
+                    <div className="relative">
+                      <button
+                        onClick={() => { setShowVoiceDropdown(!showVoiceDropdown); setShowSoundDropdown(false); setShowSoundInfo(false); setShowDurationInfo(false); }}
+                        className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg bg-white border border-[#e4e4e7] hover:border-[#d4d4d8] transition-colors cursor-pointer text-left">
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-6 h-6 rounded-full flex items-center justify-center" style={{ background: selectedVoice.color + "20" }}>
+                            <div className="w-2 h-2 rounded-full" style={{ background: selectedVoice.color }} />
+                          </div>
+                          <div>
+                            <p className="text-sm text-[#18181b]" style={{ fontFamily: "var(--font-body)" }}>{selectedVoice.name}</p>
+                            <p className="text-[10px] text-[#71717a]" style={{ fontFamily: "var(--font-body)" }}>{selectedVoice.desc}</p>
+                          </div>
+                        </div>
+                        <ChevronDown className={`w-3.5 h-3.5 text-[#a1a1aa] transition-transform ${showVoiceDropdown ? "rotate-180" : ""}`} />
+                      </button>
+                      {showVoiceDropdown && (
+                        <>
+                          <div className="fixed inset-0 z-[310]" onClick={() => setShowVoiceDropdown(false)} />
+                          <div className="absolute bottom-full left-0 right-0 mb-1 bg-white rounded-lg border border-[#e4e4e7] shadow-lg z-[320] max-h-48 overflow-y-auto">
+                            {voices.map((v, i) => (
+                              <button key={v.id} onClick={() => { setSessionVoice(v.id); setShowVoiceDropdown(false); markEdited(); }}
+                                className={`w-full flex items-center gap-2.5 px-3 py-2.5 hover:bg-[#f4f4f5] transition-colors cursor-pointer text-left ${i > 0 ? "border-t border-[#f0f0f3]" : ""}`}>
+                                <div className="w-6 h-6 rounded-full flex items-center justify-center" style={{ background: v.color + "20" }}>
+                                  <div className="w-2 h-2 rounded-full" style={{ background: v.color }} />
+                                </div>
+                                <div className="flex-1">
+                                  <p className="text-sm text-[#18181b]" style={{ fontFamily: "var(--font-body)" }}>{v.name}</p>
+                                  <p className="text-[10px] text-[#71717a]" style={{ fontFamily: "var(--font-body)" }}>{v.desc}</p>
+                                </div>
+                                {v.id === sessionVoice && <Check className="w-3.5 h-3.5 text-[#6b9a70]" />}
+                              </button>
+                            ))}
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Sound */}
+                  <div>
+                    <label className="text-[10px] uppercase tracking-wider text-[#71717a] mb-2.5 block" style={{ fontFamily: "var(--font-body)" }}>Background Sound</label>
+                    <div className="relative">
+                      <button
+                        onClick={() => { setShowSoundDropdown(!showSoundDropdown); setShowVoiceDropdown(false); setShowSoundInfo(false); setShowDurationInfo(false); }}
+                        className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg bg-white border border-[#e4e4e7] hover:border-[#d4d4d8] transition-colors cursor-pointer text-left">
+                        <div className="flex items-center gap-2.5">
+                          <Music className="w-4 h-4 text-[#71717a]" />
+                          <div>
+                            <span className="text-sm text-[#18181b] block" style={{ fontFamily: "var(--font-body)" }}>{sessionSound}</span>
+                            {soundCategories.recommended.items.includes(sessionSound) && (
+                              <span className="text-[9px] uppercase tracking-wider text-[#6b9a70]" style={{ fontFamily: "var(--font-body)" }}>Recommended</span>
+                            )}
+                          </div>
+                        </div>
+                        <ChevronDown className={`w-3.5 h-3.5 text-[#a1a1aa] transition-transform ${showSoundDropdown ? "rotate-180" : ""}`} />
+                      </button>
+                      {showSoundDropdown && (
+                        <>
+                          <div className="fixed inset-0 z-[310]" onClick={() => setShowSoundDropdown(false)} />
+                          <div className="absolute bottom-full left-0 right-0 mb-1 bg-white rounded-lg border border-[#e4e4e7] shadow-lg z-[320] max-h-48 overflow-y-auto">
+                            {Object.entries(soundCategories).map(([key, cat], catIdx) => (
+                              <div key={key}>
+                                <div className={`px-3 py-1.5 bg-[#f7f7f8] ${catIdx > 0 ? "border-t border-[#e4e4e7]" : ""}`}>
+                                  <span className="text-[9px] uppercase tracking-wider text-[#a1a1aa] font-medium" style={{ fontFamily: "var(--font-body)" }}>
+                                    {cat.label}{key === "recommended" ? " — Default" : ""}
+                                  </span>
+                                </div>
+                                {cat.items.map((s, i) => (
+                                  <button key={s} onClick={() => { setSessionSound(s); setShowSoundDropdown(false); markEdited(); }}
+                                    className={`w-full flex items-center justify-between px-3 py-2.5 hover:bg-[#f4f4f5] transition-colors cursor-pointer text-left ${i > 0 ? "border-t border-[#f0f0f3]" : ""}`}>
+                                    <span className="text-sm text-[#18181b]" style={{ fontFamily: "var(--font-body)" }}>{s}</span>
+                                    {s === sessionSound && <Check className="w-3.5 h-3.5 text-[#6b9a70]" />}
+                                  </button>
+                                ))}
+                              </div>
+                            ))}
+                          </div>
+                        </>
+                      )}
+                    </div>
+                    {/* Volume */}
+                    <div className="flex items-center gap-2.5 mt-2.5">
+                      <button onClick={() => setSoundVolume(soundVolume > 0 ? 0 : 70)} className="shrink-0 text-[#a1a1aa] hover:text-[#18181b] transition-colors cursor-pointer">
+                        {soundVolume === 0 ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5" />}
+                      </button>
+                      <input
+                        type="range"
+                        min={0}
+                        max={100}
+                        value={soundVolume}
+                        onChange={(e) => setSoundVolume(Number(e.target.value))}
+                        className="flex-1 h-1 rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-[#18181b] [&::-webkit-slider-thumb]:cursor-pointer"
+                        style={{ background: `linear-gradient(to right, #18181b ${soundVolume}%, #e4e4e7 ${soundVolume}%)` }}
+                      />
+                      <span className="text-[10px] text-[#a1a1aa] tabular-nums w-7 text-right" style={{ fontFamily: "var(--font-body)" }}>{soundVolume}%</span>
+                    </div>
+                  </div>
+
+                  {/* Estimated duration */}
+                  <div>
+                    <label className="text-[10px] uppercase tracking-wider text-[#71717a] mb-2.5 block" style={{ fontFamily: "var(--font-body)" }}>Estimated Duration</label>
+                    <div className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg bg-[#f9f9fb] border border-transparent">
+                      <Timer className="w-4 h-4 text-[#a1a1aa]" />
+                      <span className="text-sm text-[#71717a] tabular-nums" style={{ fontFamily: "var(--font-body)" }}>~{estimated.minutes}m {estimated.seconds > 0 ? `${estimated.seconds}s` : ""}</span>
+                    </div>
+                  </div>
+                </div>}
+
+                {mobilePanel === "history" && (
+                  <div className="flex-1 overflow-y-auto studio-scroll p-4 space-y-3">
+                    {(() => {
+                      const sessionGens = sessionGenerations;
+                      if (sessionGens.length === 0) {
+                        return (
+                          <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
+                            <div className="w-10 h-10 rounded-full bg-[#f4f4f5] flex items-center justify-center mb-3">
+                              <Clock className="w-4 h-4 text-[#a1a1aa]" />
+                            </div>
+                            <p className="text-[13px] text-[#71717a] mb-1" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>No generations yet</p>
+                            <p className="text-[11px] text-[#a1a1aa]" style={{ fontFamily: "var(--font-body)" }}>Generate audio to see history here</p>
+                          </div>
+                        );
+                      }
+                      const sessionTitle = sessionGens[0].prompt;
+                      return (
+                        <>
+                          <div className="px-1 pb-1">
+                            <p className="text-[11px] text-[#a1a1aa] mb-0.5" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>{sessionGens.length} generation{sessionGens.length !== 1 ? "s" : ""} in this session</p>
+                            <p className="text-[12px] text-[#52525b] truncate" style={{ fontFamily: "var(--font-body)", fontWeight: 450, fontStyle: "italic" }}>&ldquo;{sessionTitle}&rdquo;</p>
+                          </div>
+                          {sessionGens.map((gen, i) => {
+                            const timePart = gen.timestamp.split(" · ")[1] || "";
+                            const datePart = gen.timestamp.split(" · ")[0] || "";
+                            const genVoice = voices.find(v => v.name === gen.voice);
+                            const voiceColor = genVoice?.color || "#a1a1aa";
+                            const isFailed = (gen.status as string) === "failed";
+                            return (
+                              <motion.div
+                                key={gen.id}
+                                initial={{ opacity: 0, y: 6 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: i * 0.05, duration: 0.25 }}
+                                className={`rounded-xl border p-3.5 transition-all ${
+                                  isFailed ? "border-[#fecaca] bg-[#fffbfb]" : "border-[#e8e8ec] bg-white"
+                                }`}
+                              >
+                                <div className="flex items-center justify-between mb-2">
+                                  <span className="text-[10px] uppercase tracking-wider" style={{ fontFamily: "var(--font-body)", fontWeight: 600, color: isFailed ? "#ef4444" : "#a1a1aa" }}>
+                                    v{sessionGens.length - i}{isFailed ? " · Failed" : ""}
+                                  </span>
+                                  <span className="text-[11px] text-[#71717a]" style={{ fontFamily: "var(--font-body)", fontWeight: 450 }}>{datePart} · {timePart}</span>
+                                </div>
+                                <p className={`text-[12.5px] leading-snug mb-2 ${isFailed ? "text-[#b91c1c]/70 line-through" : "text-[#18181b]"}`} style={{ fontFamily: "var(--font-body)", fontWeight: 450 }}>
+                                  {gen.prompt}
+                                </p>
+                                <div className="flex items-center gap-1.5">
+                                  <div className="w-3 h-3 rounded-full flex items-center justify-center shrink-0" style={{ background: voiceColor + "20" }}>
+                                    <div className="w-1.5 h-1.5 rounded-full" style={{ background: voiceColor }} />
+                                  </div>
+                                  <span className="text-[10px] text-[#71717a]" style={{ fontFamily: "var(--font-body)" }}>
+                                    {gen.voice} · {gen.protocol} · {gen.duration}
+                                  </span>
+                                </div>
+                                {!isFailed && (
+                                  <div className="flex items-center gap-1 mt-2.5 pt-2 border-t border-[#f4f4f5]">
+                                    <button
+                                      onClick={() => { setShowStudioPlayer(true); setStudioPlaying(true); setHasGenerated(true); setMobilePanel(null); }}
+                                      className="h-7 px-2 rounded-md hover:bg-[#f0f0f3] flex items-center justify-center text-[#a1a1aa] hover:text-[#18181b] transition-colors cursor-pointer"
+                                    >
+                                      <Play className="w-3 h-3" />
+                                    </button>
+                                    <button className="h-7 px-2 rounded-md hover:bg-[#f0f0f3] flex items-center justify-center text-[#a1a1aa] hover:text-[#18181b] transition-colors cursor-pointer">
+                                      <Download className="w-3 h-3" />
+                                    </button>
+                                  </div>
+                                )}
+                              </motion.div>
+                            );
+                          })}
+                        </>
+                      );
+                    })()}
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
     </div>
   );
@@ -2384,7 +2710,7 @@ function StudioPageContent() {
           </div>
         </motion.header>
 
-        <div className="flex-1 overflow-y-auto">
+        <div className={`flex-1 ${activeNav === ("generate" as NavId) && genStep === "input" ? "overflow-hidden" : "overflow-y-auto"}`}>
         <div className={`max-w-7xl mx-auto px-4 sm:px-8 pt-6 ${nowPlayingSession ? "pb-28" : "pb-8"}`}>
           <AnimatePresence mode="wait">
             {/* All Sessions */}
@@ -2693,7 +3019,7 @@ function StudioPageContent() {
 
             {/* Generate — Step 1: Prompt Input (identical to homepage) */}
             {activeNav === ("generate" as NavId) && genStep === "input" && (
-              <motion.div key="gen-input" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }} className="max-w-2xl mx-auto flex flex-col items-center justify-center min-h-[calc(100vh-120px)] -mt-40">
+              <motion.div key="gen-input" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }} className="max-w-2xl w-full mx-auto px-4 flex flex-col items-center justify-center min-h-[calc(100vh-120px)]">
                 {/* Hidden measurer */}
                 <span
                   ref={measureRef}
