@@ -145,11 +145,57 @@ export const protocols = [
   },
 ];
 
+const VOICE_BASE = "https://audio.neurotypeapp.com/meditation_voices";
+
 export const samples = [
-  { id: "sleep", label: "Deep Sleep", duration: "0:30", protocol: "CBT-I + NSDR", src: "/samples/sleep.mp3", prompt: "I can't fall asleep, my mind keeps racing with tomorrow's tasks", description: "A 20-min sleep onset session blending cognitive restructuring with yoga nidra body scan. Notice how pauses lengthen as the session progresses.", voice: "Aria", ambient: "Soft Drift" },
-  { id: "focus", label: "Sharp Focus", duration: "0:25", protocol: "MBSR", src: "/samples/focus.mp3", prompt: "Morning focus session before a big presentation", description: "10-min attention anchor using breath counting and open monitoring. The pacing adapts to build sustained concentration.", voice: "James", ambient: "Flow State" },
-  { id: "stress", label: "Stress Relief", duration: "0:30", protocol: "PMR + ACT", src: "/samples/stress.mp3", prompt: "I'm overwhelmed and need to calm down right now", description: "15-min progressive muscle release paired with acceptance exercises. Each muscle group gets precise tension-release timing.", voice: "Luna", ambient: "Safe Harbor" },
-  { id: "anxiety", label: "Ease Anxiety", duration: "0:20", protocol: "HRV-BF", src: "/samples/anxiety.mp3", prompt: "Help me breathe through this anxiety before my flight", description: "8-min resonance breathing at 5.5 breaths/min with real-time pace guidance. Inhale and exhale windows are precision-timed.", voice: "Kai", ambient: "Still Water" },
+  {
+    id: "U006", label: "Gentle Even Breathing", duration: "5:00", protocol: "Slow Breathing",
+    src: `${VOICE_BASE}/U006.mp3`,
+    prompt: "Guide me through calm, even breathing to settle my nerves",
+    description: "A 5-min slow breathing session with gentle pacing cues. Pink noise and a calm drone layer underneath to ease you into rhythm.",
+    voice: "Aria", ambient: "Pink Noise",
+    sounds: [
+      { label: "Pink Noise", src: `${AUDIO_BASE}/pink_noise.mp3` },
+      { label: "Room Tone", src: `${AUDIO_BASE}/room_tone.mp3` },
+      { label: "Calm Drone", src: `${AUDIO_BASE}/plain_stereo_calm_drone.mp3` },
+      { label: "Rain", src: `${AUDIO_BASE}/rain.mp3` },
+    ],
+  },
+  {
+    id: "U008", label: "Shoulder Drop Scan", duration: "9:00", protocol: "Progressive Muscle Relaxation",
+    src: `${VOICE_BASE}/U008.mp3`,
+    prompt: "Help me release tension in my shoulders and upper body",
+    description: "A 9-min PMR session focused on the shoulders and neck. Progressive tension-release cues guide you through each muscle group.",
+    voice: "Luna", ambient: "Rain",
+    sounds: [
+      { label: "Rain", src: `${AUDIO_BASE}/rain.mp3` },
+      { label: "River", src: `${AUDIO_BASE}/river.mp3` },
+      { label: "Calm Drone", src: `${AUDIO_BASE}/plain_stereo_calm_drone.mp3` },
+    ],
+  },
+  {
+    id: "U010", label: "Low-Drone Calm", duration: "8:00", protocol: "Supportive Ambient Sound",
+    src: `${VOICE_BASE}/U010.mp3`,
+    prompt: "I just need something calming in the background while I decompress",
+    description: "An 8-min ambient session built around a single warm drone. Minimal guidance lets the sound do the work.",
+    voice: "James", ambient: "Calm Drone",
+    sounds: [
+      { label: "Calm Drone", src: `${AUDIO_BASE}/plain_stereo_calm_drone.mp3` },
+    ],
+  },
+  {
+    id: "U020", label: "Probability Rebalance", duration: "13:00", protocol: "CBT-style Cognitive Skill",
+    src: `${VOICE_BASE}/U020.mp3`,
+    prompt: "Help me challenge catastrophic thinking and see things more clearly",
+    description: "A 13-min CBT session that walks through probability estimation and cognitive reframing. Background layers shift as the session deepens.",
+    voice: "Kai", ambient: "Calm Drone",
+    sounds: [
+      { label: "Calm Drone", src: `${AUDIO_BASE}/plain_stereo_calm_drone.mp3` },
+      { label: "River", src: `${AUDIO_BASE}/river.mp3` },
+      { label: "Rain", src: `${AUDIO_BASE}/rain.mp3` },
+      { label: "Deep Space", src: `${AUDIO_BASE}/deep_space.mp3` },
+    ],
+  },
 ];
 
 /* ─── Intent detection ─── */

@@ -31,7 +31,6 @@ import {
   suggestions,
   protocols,
   samples,
-  soundscapePresets,
 } from "@/lib/shared";
 
 /* ─── Transition Interstitial ─── */
@@ -176,7 +175,12 @@ export default function HomePage() {
   const [sampleSound, setSampleSound] = useState<Record<string, string>>(
     Object.fromEntries(samples.map((s) => [s.id, s.ambient]))
   );
+  const [bgVolume, setBgVolume] = useState<Record<string, number>>(
+    Object.fromEntries(samples.map((s) => [s.id, 0.3]))
+  );
   const sampleIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const voiceAudioRef = useRef<HTMLAudioElement | null>(null);
+  const bgAudioRef = useRef<HTMLAudioElement | null>(null);
   const infoRef = useRef<HTMLDivElement>(null);
   const howRef = useRef<HTMLDivElement>(null);
 
@@ -194,36 +198,90 @@ export default function HomePage() {
     }
   };
 
-  const handleSamplePlay = useCallback((id: string, durationStr: string) => {
+  const stopAudio = useCallback(() => {
+    if (voiceAudioRef.current) { voiceAudioRef.current.pause(); voiceAudioRef.current.src = ""; voiceAudioRef.current = null; }
+    if (bgAudioRef.current) { bgAudioRef.current.pause(); bgAudioRef.current.src = ""; bgAudioRef.current = null; }
     if (sampleIntervalRef.current) clearInterval(sampleIntervalRef.current);
+  }, []);
+
+  const handleSamplePlay = useCallback((id: string, durationStr: string) => {
+    stopAudio();
 
     if (playing === id) {
       setPlaying(null);
       return;
     }
 
+    const sample = samples.find((s) => s.id === id);
+    if (!sample) return;
+
+    // Voice audio
+    const voice = new Audio(sample.src);
+    voice.volume = 1;
+    voiceAudioRef.current = voice;
+
+    // Background sound
+    const selectedSound = sampleSound[id];
+    const soundEntry = sample.sounds.find((s) => s.label === selectedSound);
+    if (soundEntry) {
+      const bg = new Audio(soundEntry.src);
+      bg.loop = true;
+      bg.volume = bgVolume[id] ?? 0.3;
+      bgAudioRef.current = bg;
+      bg.play().catch(() => {});
+    }
+
+    voice.play().catch(() => {});
+    voice.addEventListener("ended", () => {
+      stopAudio();
+      setPlaying(null);
+    });
+
     setPlaying(id);
     setSampleProgress((p) => ({ ...p, [id]: 0 }));
 
-    const parts = durationStr.split(":");
-    const totalMs = (parseInt(parts[0]) * 60 + parseInt(parts[1])) * 1000;
-    const tick = 50;
-    let elapsed = 0;
-
+    // Progress tracking from actual audio time
+    const tick = 100;
     sampleIntervalRef.current = setInterval(() => {
-      elapsed += tick;
-      const pct = Math.min(elapsed / totalMs, 1);
-      setSampleProgress((p) => ({ ...p, [id]: pct }));
-      if (pct >= 1) {
-        if (sampleIntervalRef.current) clearInterval(sampleIntervalRef.current);
-        setPlaying(null);
+      if (voiceAudioRef.current && voiceAudioRef.current.duration) {
+        const pct = voiceAudioRef.current.currentTime / voiceAudioRef.current.duration;
+        setSampleProgress((p) => ({ ...p, [id]: pct }));
       }
     }, tick);
-  }, [playing]);
+  }, [playing, sampleSound, bgVolume, stopAudio]);
+
+  // Update bg sound when user switches it while playing
+  useEffect(() => {
+    if (!playing) return;
+    const sample = samples.find((s) => s.id === playing);
+    if (!sample) return;
+    const selectedSound = sampleSound[playing];
+    const soundEntry = sample.sounds.find((s) => s.label === selectedSound);
+
+    if (bgAudioRef.current) {
+      bgAudioRef.current.pause();
+      bgAudioRef.current.src = "";
+      bgAudioRef.current = null;
+    }
+    if (soundEntry) {
+      const bg = new Audio(soundEntry.src);
+      bg.loop = true;
+      bg.volume = bgVolume[playing] ?? 0.3;
+      bgAudioRef.current = bg;
+      bg.play().catch(() => {});
+    }
+  }, [sampleSound, playing]);
+
+  // Update bg volume in real time
+  useEffect(() => {
+    if (playing && bgAudioRef.current) {
+      bgAudioRef.current.volume = bgVolume[playing] ?? 0.3;
+    }
+  }, [bgVolume, playing]);
 
   useEffect(() => {
-    return () => { if (sampleIntervalRef.current) clearInterval(sampleIntervalRef.current); };
-  }, []);
+    return () => { stopAudio(); };
+  }, [stopAudio]);
 
   const [phraseIndex, setPhraseIndex] = useState(0);
   const [phraseWidth, setPhraseWidth] = useState<number | null>(null);
@@ -440,18 +498,35 @@ export default function HomePage() {
                         <div className="flex items-center gap-2 sm:gap-3">
                           <span className="text-[10px] uppercase tracking-wider text-white/25 w-14 sm:w-16 shrink-0">Sound</span>
                           <div className="flex flex-wrap gap-1">
-                            {(soundscapePresets[s.id] || soundscapePresets.default).map((preset) => {
-                              const isSelected = sampleSound[s.id] === preset.label;
+                            {s.sounds.map((sound) => {
+                              const isSelected = sampleSound[s.id] === sound.label;
                               return (
                                 <button
-                                  key={preset.label}
-                                  onClick={(e) => { e.stopPropagation(); setSampleSound((prev) => ({ ...prev, [s.id]: preset.label })); }}
+                                  key={sound.label}
+                                  onClick={(e) => { e.stopPropagation(); setSampleSound((prev) => ({ ...prev, [s.id]: sound.label })); }}
                                   className={`px-2 py-0.5 rounded-full text-[10px] transition-all cursor-pointer ${isSelected ? "bg-white/20 text-white/90" : "bg-white/[0.04] text-white/35 hover:bg-white/10 hover:text-white/60"}`}
                                 >
-                                  {preset.label}
+                                  {sound.label}
                                 </button>
                               );
                             })}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 sm:gap-3">
+                          <span className="text-[10px] uppercase tracking-wider text-white/25 w-14 sm:w-16 shrink-0">Volume</span>
+                          <div className="flex items-center gap-2 flex-1" onClick={(e) => e.stopPropagation()}>
+                            <Volume2 className="w-3 h-3 text-white/25 shrink-0" />
+                            <input
+                              type="range"
+                              min={0}
+                              max={1}
+                              step={0.01}
+                              value={bgVolume[s.id] ?? 0.3}
+                              onChange={(e) => setBgVolume((prev) => ({ ...prev, [s.id]: parseFloat(e.target.value) }))}
+                              className="w-20 sm:w-28 accent-white/60"
+                              style={{ height: "2px" }}
+                            />
+                            <span className="text-[10px] text-white/35 tabular-nums w-7 text-right">{Math.round((bgVolume[s.id] ?? 0.3) * 100)}%</span>
                           </div>
                         </div>
                         <div className="flex items-baseline gap-2 sm:gap-3">
