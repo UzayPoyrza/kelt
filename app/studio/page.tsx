@@ -607,6 +607,7 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, onBack }: {
   const [editingPauseId, setEditingPauseId] = useState<string | null>(null);
   const [generateWarning, setGenerateWarning] = useState<string | null>(null);
   const [errorPauseIds, setErrorPauseIds] = useState<Set<string>>(new Set());
+  const [newBlockIds, setNewBlockIds] = useState<Set<string>>(new Set());
   const [swappedUp, setSwappedUp] = useState<string | null>(null);
   const [swappedDown, setSwappedDown] = useState<string | null>(null);
   const [rightTab, setRightTab] = useState<"settings" | "history">("settings");
@@ -617,6 +618,71 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, onBack }: {
   const [sessionName, setSessionName] = useState(() => deriveSessionName(prompt));
   const [isRenamingSession, setIsRenamingSession] = useState(false);
   const renameInputRef = useRef<HTMLInputElement>(null);
+
+  // ─── Undo / Redo history ───
+  const scriptHistoryRef = useRef<ScriptBlock[][]>([generateScript(prompt)]);
+  const historyIndexRef = useRef(0);
+  const isUndoRedoRef = useRef(false);
+
+  useEffect(() => {
+    if (isUndoRedoRef.current) {
+      isUndoRedoRef.current = false;
+      return;
+    }
+    const history = scriptHistoryRef.current;
+    const idx = historyIndexRef.current;
+    // Trim any future entries after current index
+    scriptHistoryRef.current = [...history.slice(0, idx + 1), script];
+    historyIndexRef.current = scriptHistoryRef.current.length - 1;
+  }, [script]);
+
+  const canUndo = historyIndexRef.current > 0;
+  const canRedo = historyIndexRef.current < scriptHistoryRef.current.length - 1;
+
+  const undo = useCallback(() => {
+    if (historyIndexRef.current <= 0) return;
+    isUndoRedoRef.current = true;
+    historyIndexRef.current -= 1;
+    setScript(scriptHistoryRef.current[historyIndexRef.current]);
+    setSelectedBlock(null);
+    setEditOriginalText(null);
+  }, []);
+
+  const redo = useCallback(() => {
+    if (historyIndexRef.current >= scriptHistoryRef.current.length - 1) return;
+    isUndoRedoRef.current = true;
+    historyIndexRef.current += 1;
+    setScript(scriptHistoryRef.current[historyIndexRef.current]);
+    setSelectedBlock(null);
+    setEditOriginalText(null);
+  }, []);
+
+  // ─── Save state ───
+  const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const savedScriptRef = useRef<string | null>(null);
+  const isDirty = savedScriptRef.current !== JSON.stringify(script);
+
+  const handleSave = useCallback(() => {
+    setIsSaving(true);
+    setTimeout(() => {
+      savedScriptRef.current = JSON.stringify(script);
+      setLastSavedAt(new Date());
+      setIsSaving(false);
+    }, 500);
+  }, [script]);
+
+  // Keyboard shortcuts for undo/redo/save
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "z" && !e.shiftKey) { e.preventDefault(); undo(); }
+      if ((e.metaKey || e.ctrlKey) && e.key === "z" && e.shiftKey) { e.preventDefault(); redo(); }
+      if ((e.metaKey || e.ctrlKey) && e.key === "s") { e.preventDefault(); handleSave(); }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [undo, redo, handleSave]);
+
   const estimated = estimateDuration(script);
 
   const handleGenerateAudio = useCallback(() => {
@@ -673,14 +739,6 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, onBack }: {
     markEdited();
   }, [markEdited]);
 
-  const discardEdit = useCallback(() => {
-    if (selectedBlock && editOriginalText !== null) {
-      setScript(prev => prev.map(b => b.id === selectedBlock ? { ...b, text: editOriginalText } : b));
-    }
-    setEditOriginalText(null);
-    setSelectedBlock(null);
-  }, [selectedBlock, editOriginalText]);
-
   const nextId = useRef(100);
 
   const setPauseDuration = useCallback((id: string, seconds: number) => {
@@ -721,6 +779,24 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, onBack }: {
     markEdited();
   }, [markEdited]);
 
+  const discardEdit = useCallback(() => {
+    if (selectedBlock) {
+      const block = script.find(b => b.id === selectedBlock);
+      if (block && block.text === "New text segment...") {
+        deleteBlock(selectedBlock);
+      } else if (editOriginalText !== null) {
+        setScript(prev => prev.map(b => b.id === selectedBlock ? { ...b, text: editOriginalText } : b));
+      }
+    }
+    setEditOriginalText(null);
+    setSelectedBlock(null);
+  }, [selectedBlock, editOriginalText, script, deleteBlock]);
+
+  const markNewBlocks = useCallback((ids: string[]) => {
+    setNewBlockIds(new Set(ids));
+    setTimeout(() => setNewBlockIds(new Set()), 500);
+  }, []);
+
   const addBlockBefore = useCallback((beforeId: string) => {
     const voiceBlock: ScriptBlock = {
       id: String(nextId.current++),
@@ -736,13 +812,14 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, onBack }: {
     setScript(prev => {
       const idx = prev.findIndex(b => b.id === beforeId);
       const next = [...prev];
-      // Insert voice + pause before the target
       next.splice(idx, 0, voiceBlock, pauseBlock);
       setSelectedBlock(voiceBlock.id);
+      setEditOriginalText(voiceBlock.text);
       return next;
     });
+    markNewBlocks([voiceBlock.id, pauseBlock.id]);
     markEdited();
-  }, [markEdited]);
+  }, [markEdited, markNewBlocks]);
 
   const addBlockAfter = useCallback((afterId: string, type: "voice" | "pause") => {
     const voiceBlock: ScriptBlock = {
@@ -760,20 +837,19 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, onBack }: {
       const idx = prev.findIndex(b => b.id === afterId);
       const next = [...prev];
       const currentBlock = prev[idx];
-      // Always insert a pair to maintain alternation
       if (currentBlock.type === "voice") {
-        // After voice → insert pause then voice
         next.splice(idx + 1, 0, pauseBlock, voiceBlock);
         setSelectedBlock(voiceBlock.id);
       } else {
-        // After pause → insert voice then pause
         next.splice(idx + 1, 0, voiceBlock, pauseBlock);
         setSelectedBlock(voiceBlock.id);
       }
+      setEditOriginalText(voiceBlock.text);
       return next;
     });
+    markNewBlocks([voiceBlock.id, pauseBlock.id]);
     markEdited();
-  }, [markEdited]);
+  }, [markEdited, markNewBlocks]);
 
   // Swap with the nearest same-type block in the given direction
   const moveBlock = useCallback((id: string, direction: "up" | "down") => {
@@ -847,8 +923,66 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, onBack }: {
               {sessionName}
             </h2>
           )}
-          <div className="flex items-center gap-3">
-            <span className="text-[10px] text-[#a1a1aa] tabular-nums" style={{ fontFamily: "var(--font-body)" }}>
+          <div className="flex items-center gap-2">
+            {/* Undo / Redo */}
+            <div className="flex items-center gap-0.5 mr-1">
+              <button
+                onClick={undo}
+                disabled={!canUndo}
+                className="w-7 h-7 rounded-md flex items-center justify-center transition-colors cursor-pointer disabled:cursor-default disabled:opacity-30 text-[#71717a] hover:text-[#18181b] hover:bg-[#f4f4f5]"
+                title="Undo (⌘Z)"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+              </button>
+              <button
+                onClick={redo}
+                disabled={!canRedo}
+                className="w-7 h-7 rounded-md flex items-center justify-center transition-colors cursor-pointer disabled:cursor-default disabled:opacity-30 text-[#71717a] hover:text-[#18181b] hover:bg-[#f4f4f5]"
+                title="Redo (⇧⌘Z)"
+              >
+                <RotateCw className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
+            <div className="w-px h-4 bg-[#e4e4e7]" />
+
+            {/* Save + last saved */}
+            <div className="flex items-center gap-2 ml-1">
+              <button
+                onClick={handleSave}
+                disabled={isSaving || !isDirty}
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] transition-all cursor-pointer disabled:cursor-default"
+                style={{
+                  fontFamily: "var(--font-body)",
+                  fontWeight: 500,
+                  background: isDirty && !isSaving ? "#18181b" : "#f4f4f5",
+                  color: isDirty && !isSaving ? "#fff" : "#a1a1aa",
+                }}
+              >
+                {isSaving ? (
+                  <motion.div animate={{ rotate: 360 }} transition={{ duration: 0.6, repeat: Infinity, ease: "linear" }}>
+                    <RotateCw className="w-3 h-3" />
+                  </motion.div>
+                ) : (
+                  <Check className="w-3 h-3" />
+                )}
+                {isSaving ? "Saving…" : "Save"}
+              </button>
+              {lastSavedAt && !isDirty && (
+                <span className="text-[10px] text-[#a1a1aa] whitespace-nowrap" style={{ fontFamily: "var(--font-body)" }}>
+                  Saved {lastSavedAt.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }).toLowerCase()}
+                </span>
+              )}
+              {lastSavedAt && isDirty && (
+                <span className="text-[10px] text-[#c4876c] whitespace-nowrap" style={{ fontFamily: "var(--font-body)" }}>
+                  Unsaved changes
+                </span>
+              )}
+            </div>
+
+            <div className="w-px h-4 bg-[#e4e4e7]" />
+
+            <span className="text-[10px] text-[#a1a1aa] tabular-nums ml-1" style={{ fontFamily: "var(--font-body)" }}>
               {script.filter(b => b.type === "voice").length} segments · {script.filter(b => b.type === "pause").length} pauses · ~{estimated.minutes}m {estimated.seconds > 0 ? `${estimated.seconds}s` : ""}
             </span>
           </div>
@@ -871,6 +1005,7 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, onBack }: {
               </div>
             )}
 
+            <AnimatePresence mode="popLayout">
             {(() => {
               let voiceIndex = 0;
               return script.map((block, index) => {
@@ -886,7 +1021,15 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, onBack }: {
                   const canMoveUp = script.slice(0, index).some(b => b.type === "pause");
                   const canMoveDown = script.slice(index + 1).some(b => b.type === "pause");
 
-                  return <React.Fragment key={block.id}>
+                  const isNewBlock = newBlockIds.has(block.id);
+                  return <motion.div
+                      key={block.id}
+                      layout
+                      initial={isNewBlock ? { opacity: 0 } : false}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0, height: 0, overflow: "hidden", transition: { duration: 0.25, ease: "easeIn" } }}
+                      transition={{ duration: 0.3, ease: "easeOut" }}
+                    >
                     <div className="relative flex items-center group/pause" style={{ height: isLong ? "52px" : "40px", animation: swapAnim ? `${swapAnim} 0.35s ease` : undefined }}>
                       {/* Timeline connector */}
                       <div className="absolute left-[19px] top-0 bottom-0 w-px" style={{ background: hasError ? "#fca5a5" : "rgba(122,158,126,0.15)" }} />
@@ -997,7 +1140,7 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, onBack }: {
                         <Plus className="w-3 h-3" />
                       </button>
                     </div>
-                  </React.Fragment>;
+                    </motion.div>;
                 }
 
                 // Voice block
@@ -1007,9 +1150,19 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, onBack }: {
                 const voiceSwapAnim = swappedUp === block.id ? "swap-up" : swappedDown === block.id ? "swap-down" : undefined;
                 const isLastVoice = !script.slice(index + 1).some(b => b.type === "voice");
                 const isFirstVoice = !script.slice(0, index).some(b => b.type === "voice");
+                const isNewVoice = newBlockIds.has(block.id);
 
                 return (
-                  <div key={block.id} className="relative flex group/row" style={{ animation: voiceSwapAnim ? `${voiceSwapAnim} 0.35s ease` : undefined }}>
+                  <motion.div
+                    key={block.id}
+                    layout
+                    className="relative flex group/row"
+                    style={{ animation: voiceSwapAnim ? `${voiceSwapAnim} 0.35s ease` : undefined }}
+                    initial={isNewVoice ? { opacity: 0, y: -10, scale: 0.97 } : false}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.95, y: -5, transition: { duration: 0.25, ease: "easeIn" } }}
+                    transition={{ duration: 0.3, ease: "easeOut", delay: isNewVoice ? 0.1 : 0 }}
+                  >
                     {/* Timeline connector + number */}
                     <div className="relative shrink-0" style={{ width: "39px" }}>
                       {/* Line above */}
@@ -1142,10 +1295,11 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, onBack }: {
                         </button>
                       </div>
                     </div>
-                  </div>
+                  </motion.div>
                 );
               });
             })()}
+            </AnimatePresence>
 
             {/* Add segment at end */}
             {script.length > 0 && (
@@ -1691,7 +1845,7 @@ export default function StudioPage() {
                   <span className="text-[11px] text-[var(--color-sand-900)] tabular-nums" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>3</span>
                 </div>
               </div>
-              <a href="/" className="flex items-center gap-1.5 px-2 py-1 rounded-md text-red-400/70 hover:text-red-500 transition-all text-[11px]" style={{ fontFamily: "var(--font-body)" }}>
+              <a href="/" className="flex items-center gap-1.5 px-2 py-1 rounded-md text-red-600 hover:text-red-700 transition-all text-[11px]" style={{ fontFamily: "var(--font-body)" }}>
                 <LogOut className="w-3.5 h-3.5" /> Sign out
               </a>
             </div>
@@ -1798,7 +1952,7 @@ export default function StudioPage() {
                 <span className="text-[11px] text-[var(--color-sand-800)] tabular-nums" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>3</span>
               </div>
             </div>
-            <a href="/" className="flex items-center gap-1.5 px-2 py-1 rounded-md text-red-500 hover:text-red-600 transition-all text-[11px]" style={{ fontFamily: "var(--font-body)" }}>
+            <a href="/" className="flex items-center gap-1.5 px-2 py-1 rounded-md text-red-600 hover:text-red-700 transition-all text-[11px]" style={{ fontFamily: "var(--font-body)" }}>
               <LogOut className="w-3.5 h-3.5" /> Sign out
             </a>
           </div>
