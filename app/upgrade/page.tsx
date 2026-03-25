@@ -1331,7 +1331,7 @@ export default function UpgradePage() {
                 Terms of Service
               </a>
               <a
-                href="mailto:contact@launchspace.org"
+                href="/contact"
                 className="text-[12px] text-[#a1a1aa] hover:text-[#71717a] transition-colors"
                 style={{ fontFamily: "var(--font-body)" }}
               >

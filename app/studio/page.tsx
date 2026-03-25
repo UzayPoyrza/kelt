@@ -2027,6 +2027,7 @@ function StudioPageContent() {
   const genAdvancedRef = useRef<HTMLDivElement>(null);
   const [selectedGenProtocol, setSelectedGenProtocol] = useState<string | null>(null);
   const [showGenProtocolInfo, setShowGenProtocolInfo] = useState(false);
+  const [genPromptError, setGenPromptError] = useState(false);
   const [historyFilter, setHistoryFilter] = useState<HistoryFilter>("all");
   const [sessionsPage, setSessionsPage] = useState(1);
   const [confirmDialog, setConfirmDialog] = useState<{ type: "regenerate" | "delete" | "generate"; sessionId: string; sessionTitle: string } | null>(null);
@@ -2075,6 +2076,11 @@ function StudioPageContent() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const handleQuickGenerate = useCallback(async () => {
+    if (!genConfig.prompt.trim()) {
+      setGenPromptError(true);
+      return;
+    }
+    setGenPromptError(false);
     try {
       const res = await fetch("/api/generate", {
         method: "POST",
@@ -2725,7 +2731,7 @@ function StudioPageContent() {
                 </h1>
                 {/* Step hint */}
                 <p className="text-[11px] text-[var(--color-sand-400)] mb-6 flex items-center justify-center gap-1.5" style={{ fontFamily: "var(--font-body)" }}>
-                  <span className="inline-flex items-center justify-center w-4 h-4 rounded-full leading-none pt-px bg-[var(--color-sand-900)] text-[var(--color-sand-50)] text-[9px] font-medium">1</span>
+                  <span className="inline-flex items-center justify-center w-[18px] h-[18px] rounded-full text-[10px] !leading-[0] bg-[var(--color-sand-900)] text-[var(--color-sand-50)] font-medium">1</span>
                   <span>Prompt</span>
                   <span className="text-[var(--color-sand-300)]">→</span>
                   <span className="text-[var(--color-sand-300)]">Customize</span>
@@ -2780,17 +2786,17 @@ function StudioPageContent() {
                 {/* Step indicator */}
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.05 }} className="flex items-center justify-center gap-1.5 mb-6 sm:mb-8 text-[11px]" style={{ fontFamily: "var(--font-body)" }}>
                   <span className="text-[var(--color-sand-400)] flex items-center gap-1">
-                    <span className="inline-flex items-center justify-center w-4 h-4 rounded-full leading-none pt-px border border-[var(--color-sand-300)] text-[var(--color-sand-400)] text-[9px] font-medium">1</span>
+                    <span className="inline-flex items-center justify-center w-[18px] h-[18px] rounded-full text-[10px] !leading-[0] border border-[var(--color-sand-300)] text-[var(--color-sand-400)] font-medium">1</span>
                     Prompt
                   </span>
                   <span className="text-[var(--color-sand-300)]">→</span>
                   <span className="text-[var(--color-sand-900)] flex items-center gap-1 font-medium">
-                    <span className="inline-flex items-center justify-center w-4 h-4 rounded-full leading-none pt-px bg-[var(--color-sand-900)] text-[var(--color-sand-50)] text-[9px] font-medium">2</span>
+                    <span className="inline-flex items-center justify-center w-[18px] h-[18px] rounded-full text-[10px] !leading-[0] bg-[var(--color-sand-900)] text-[var(--color-sand-50)] font-medium">2</span>
                     Customize
                   </span>
                   <span className="text-[var(--color-sand-300)]">→</span>
                   <span className="text-[var(--color-sand-300)] flex items-center gap-1">
-                    <span className="inline-flex items-center justify-center w-4 h-4 rounded-full leading-none pt-px border border-[var(--color-sand-300)] text-[var(--color-sand-300)] text-[9px] font-medium">3</span>
+                    <span className="inline-flex items-center justify-center w-[18px] h-[18px] rounded-full text-[10px] !leading-[0] border border-[var(--color-sand-300)] text-[var(--color-sand-300)] font-medium">3</span>
                     Generate
                   </span>
                 </motion.div>
@@ -2820,11 +2826,17 @@ function StudioPageContent() {
                         }
                       }}
                       onKeyDown={(e) => { if (e.key === "Enter") e.preventDefault(); }}
-                      className="outline-none border-b border-transparent focus:border-[var(--color-sand-300)] transition-colors"
+                      onFocus={() => setGenPromptError(false)}
+                      className={`outline-none border-b transition-colors ${genPromptError ? "border-[var(--color-ember)]" : "border-transparent focus:border-[var(--color-sand-300)]"}`}
                     >{genConfig.prompt}</span>
                     <span className="text-[var(--color-sand-400)] select-none">&rdquo;</span>
                     <Pencil className="w-3 h-3 text-[var(--color-sand-400)] inline-block ml-1.5 mb-1" />
                   </p>
+                  {genPromptError && (
+                    <p className="text-xs text-[var(--color-ember)] mt-2 block" style={{ fontFamily: "var(--font-body)" }}>
+                      Write something to describe your meditation
+                    </p>
+                  )}
                 </motion.div>
 
                 {/* Duration */}
@@ -2885,7 +2897,7 @@ function StudioPageContent() {
                 {/* Advanced — Protocol selection */}
                 <motion.div ref={genAdvancedRef} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="mb-10">
                   <button
-                    onClick={() => { setShowGenAdvanced(!showGenAdvanced); setTimeout(() => genAdvancedRef.current?.scrollIntoView({ behavior: "smooth", block: "center" }), 100); }}
+                    onClick={() => { setShowGenAdvanced(!showGenAdvanced); setTimeout(() => genAdvancedRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 100); }}
                     className="flex items-center gap-3 w-full px-4 py-3 rounded-xl bg-white/60 border border-[var(--color-sand-200)] hover:border-[var(--color-sand-300)] hover:bg-white transition-all cursor-pointer"
                     style={{ fontFamily: "var(--font-body)" }}
                   >
@@ -2964,7 +2976,7 @@ function StudioPageContent() {
                   {/* Open in Studio — primary CTA with border glow */}
                   <div className="relative rounded-full group w-full">
                     <div className="absolute -inset-[2.5px] rounded-full bg-[length:300%_300%] animate-[border-glow_4s_ease_infinite] opacity-90 group-hover:opacity-100 transition-opacity duration-300" style={{ background: "linear-gradient(135deg, var(--color-sage), var(--color-ocean), var(--color-dusk), var(--color-ember), var(--color-sage))", backgroundSize: "300% 300%" }} />
-                    <button onClick={() => setGenStep("studio")}
+                    <button onClick={() => { if (!genConfig.prompt.trim()) { setGenPromptError(true); return; } setGenPromptError(false); setGenStep("studio"); }}
                       className="relative w-full flex items-center justify-center gap-2.5 py-4 rounded-full bg-[var(--color-sand-900)] text-[var(--color-sand-50)] hover:bg-[var(--color-sand-800)] transition-all shadow-lg cursor-pointer text-sm"
                       style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>
                       <PenLine className="w-4 h-4" />
@@ -3170,29 +3182,13 @@ function StudioPageContent() {
                     <div className="px-4 sm:px-6 py-4 border-b border-[#e7e5e4] bg-[#f5f3f0]">
                       <h3 className="text-[11px] uppercase tracking-wide text-[var(--color-sand-900)]" style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}>Support</h3>
                     </div>
-                    <div className="divide-y divide-[var(--color-sand-100)]">
-                      <a href="mailto:contact@launchspace.org?subject=Bug%20Report" className="flex items-center justify-between px-4 sm:px-6 py-4 hover:bg-[var(--color-sand-50)]/50 transition-colors group">
-                        <div>
-                          <span className="text-[13px] text-[var(--color-sand-900)] block leading-none" style={{ fontFamily: "var(--font-body)", fontWeight: 450 }}>Report a Bug</span>
-                          <span className="text-[11px] text-[var(--color-sand-400)] block mt-1 leading-none" style={{ fontFamily: "var(--font-body)" }}>Something not working? Let us know</span>
-                        </div>
-                        <ArrowRight className="w-3.5 h-3.5 text-[var(--color-sand-300)] group-hover:text-[var(--color-sand-500)] transition-colors" />
-                      </a>
-                      <a href="mailto:contact@launchspace.org?subject=Feature%20Request" className="flex items-center justify-between px-4 sm:px-6 py-4 hover:bg-[var(--color-sand-50)]/50 transition-colors group">
-                        <div>
-                          <span className="text-[13px] text-[var(--color-sand-900)] block leading-none" style={{ fontFamily: "var(--font-body)", fontWeight: 450 }}>Feature Request</span>
-                          <span className="text-[11px] text-[var(--color-sand-400)] block mt-1 leading-none" style={{ fontFamily: "var(--font-body)" }}>Suggest an improvement or new feature</span>
-                        </div>
-                        <ArrowRight className="w-3.5 h-3.5 text-[var(--color-sand-300)] group-hover:text-[var(--color-sand-500)] transition-colors" />
-                      </a>
-                      <a href="mailto:contact@launchspace.org" className="flex items-center justify-between px-4 sm:px-6 py-4 hover:bg-[var(--color-sand-50)]/50 transition-colors group">
-                        <div>
-                          <span className="text-[13px] text-[var(--color-sand-900)] block leading-none" style={{ fontFamily: "var(--font-body)", fontWeight: 450 }}>Customer Support</span>
-                          <span className="text-[11px] text-[var(--color-sand-400)] block mt-1 leading-none" style={{ fontFamily: "var(--font-body)" }}>Billing, account, or general questions</span>
-                        </div>
-                        <ArrowRight className="w-3.5 h-3.5 text-[var(--color-sand-300)] group-hover:text-[var(--color-sand-500)] transition-colors" />
-                      </a>
-                    </div>
+                    <a href="/contact" className="flex items-center justify-between px-4 sm:px-6 py-4 hover:bg-[var(--color-sand-50)]/50 transition-colors group">
+                      <div>
+                        <span className="text-[13px] text-[var(--color-sand-900)] block leading-none" style={{ fontFamily: "var(--font-body)", fontWeight: 450 }}>Bugs, feature requests & support</span>
+                        <span className="text-[11px] text-[var(--color-sand-400)] block mt-1 leading-none" style={{ fontFamily: "var(--font-body)" }}>Get in touch with our team</span>
+                      </div>
+                      <ArrowRight className="w-3.5 h-3.5 text-[var(--color-sand-300)] group-hover:text-[var(--color-sand-500)] transition-colors" />
+                    </a>
                   </div>
                 </div>
               </motion.div>

@@ -415,7 +415,7 @@ export default function HomePage() {
 
             {/* Step hint */}
             <p className="text-[11px] text-[var(--color-sand-400)] -mt-4 mb-6 flex items-center gap-1.5" style={{ fontFamily: "var(--font-body)" }}>
-              <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-[var(--color-sand-900)] text-[var(--color-sand-50)] text-[9px] font-medium leading-none pt-px">1</span>
+              <span className="inline-flex items-center justify-center w-[18px] h-[18px] rounded-full bg-[var(--color-sand-900)] text-[var(--color-sand-50)] text-[10px] !leading-[0] font-medium">1</span>
               <span>Prompt</span>
               <span className="text-[var(--color-sand-300)]">→</span>
               <span className="text-[var(--color-sand-300)]">Customize</span>
@@ -912,11 +912,7 @@ export default function HomePage() {
             <Logo />
             <span className="text-sm" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>MindFlow</span>
           </div>
-          <div className="flex items-center gap-4 sm:gap-6">
-            <a href="mailto:contact@launchspace.org" className="text-[12px] text-white/50 hover:text-white/80 transition-colors" style={{ fontFamily: "var(--font-body)" }}>Support</a>
-            <a href="mailto:contact@launchspace.org?subject=Bug%20Report" className="text-[12px] text-white/50 hover:text-white/80 transition-colors" style={{ fontFamily: "var(--font-body)" }}>Report a Bug</a>
-            <a href="mailto:contact@launchspace.org?subject=Feature%20Request" className="text-[12px] text-white/50 hover:text-white/80 transition-colors" style={{ fontFamily: "var(--font-body)" }}>Feature Request</a>
-          </div>
+          <a href="/contact" className="text-[12px] text-white/50 hover:text-white/80 transition-colors" style={{ fontFamily: "var(--font-body)" }}>Contact</a>
           <p className="text-xs text-white/40" style={{ fontFamily: "var(--font-body)" }}>
             &copy; 2026 MindFlow. All rights reserved.
           </p>
