@@ -20,6 +20,7 @@ import {
   Clock,
   Layers,
   ArrowRight,
+  Info,
 } from "lucide-react";
 import {
   AmbientBackground,
@@ -276,6 +277,14 @@ function SessionContent() {
                               style={{ background: soundscape ? `linear-gradient(to right, var(--color-sand-900) ${bgVolume}%, var(--color-sand-200) ${bgVolume}%)` : "var(--color-sand-200)" }}
                             />
                             <span className="text-[10px] text-[var(--color-sand-400)] w-8 text-right tabular-nums" style={{ fontFamily: "var(--font-body)" }}>{bgVolume}%</span>
+                          </div>
+
+                          {/* Info note */}
+                          <div className="flex gap-2.5 p-2.5 rounded-lg bg-[var(--color-sand-50)] border border-[var(--color-sand-200)]">
+                            <Info className="w-3.5 h-3.5 text-[var(--color-sand-400)] shrink-0 mt-0.5" />
+                            <p className="text-[11px] text-[var(--color-sand-500)] leading-relaxed" style={{ fontFamily: "var(--font-body)" }}>
+                              Background sounds are selected and ranked based on your session&apos;s protocol and intent.
+                            </p>
                           </div>
 
                           {/* Recommended — single default */}
