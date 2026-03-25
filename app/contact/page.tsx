@@ -95,47 +95,47 @@ export default function ContactPage() {
           </p>
         </motion.div>
 
-        {/* Reason cards */}
-        <div className="space-y-3 mb-10">
-          {reasons.map((reason, i) => (
-            <motion.a
-              key={reason.title}
-              href={`mailto:contact@launchspace.org?subject=${reason.subject}`}
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 + i * 0.08, duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-              className="flex items-start gap-4 p-5 rounded-2xl bg-white border border-[#e8e8ec] hover:border-[#d4d4d8] hover:shadow-[0_4px_20px_rgba(0,0,0,0.04)] transition-all group cursor-pointer"
-            >
-              <div
-                className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
-                style={{ background: reason.colorLight }}
-              >
-                <reason.icon className="w-5 h-5" style={{ color: reason.color }} />
-              </div>
-              <div className="flex-1 min-w-0">
-                <h3
-                  className="text-[14px] text-[#18181b] mb-0.5"
-                  style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}
+        {/* What we can help with */}
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1, duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+          className="rounded-2xl bg-white border border-[#e8e8ec] p-6 sm:p-8 mb-10"
+        >
+          <p
+            className="text-[13px] text-[#71717a] mb-4"
+            style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}
+          >
+            We can help with:
+          </p>
+          <ul className="space-y-3">
+            {reasons.map((reason) => (
+              <li key={reason.title} className="flex items-start gap-3">
+                <div
+                  className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 mt-0.5"
+                  style={{ background: reason.colorLight }}
                 >
-                  {reason.title}
-                </h3>
-                <p
-                  className="text-[13px] text-[#a1a1aa] leading-relaxed"
-                  style={{ fontFamily: "var(--font-body)" }}
-                >
-                  {reason.desc}
-                </p>
-              </div>
-              <ArrowLeft className="w-4 h-4 text-[#d4d4d8] group-hover:text-[#a1a1aa] rotate-180 shrink-0 mt-3 transition-colors" />
-            </motion.a>
-          ))}
-        </div>
+                  <reason.icon className="w-3.5 h-3.5" style={{ color: reason.color }} />
+                </div>
+                <div>
+                  <span
+                    className="text-[14px] text-[#18181b]"
+                    style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}
+                  >
+                    {reason.title}
+                  </span>
+                  <span className="text-[13px] text-[#a1a1aa]" style={{ fontFamily: "var(--font-body)" }}> — {reason.desc}</span>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </motion.div>
 
         {/* Email display */}
         <motion.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4, duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+          transition={{ delay: 0.25, duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
           className="text-center"
         >
           <div className="inline-flex items-center gap-3 px-6 py-4 rounded-2xl bg-white border border-[#e8e8ec] shadow-sm">
@@ -156,12 +156,6 @@ export default function ContactPage() {
               </a>
             </div>
           </div>
-          <p
-            className="text-[12px] text-[#d4d4d8] mt-4"
-            style={{ fontFamily: "var(--font-body)" }}
-          >
-            Clicking any card above or the email will open your mail app.
-          </p>
         </motion.div>
       </div>
     </div>
