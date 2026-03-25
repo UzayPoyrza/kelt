@@ -1040,9 +1040,10 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, onBack }: {
                             )}
                           </div>
 
-                          {/* Actions — visible on hover, hidden when editing */}
+                          {/* Actions */}
                           {!isSelected && (
-                            <div className="flex items-center gap-0.5 shrink-0 opacity-0 group-hover/row:opacity-100 transition-opacity">
+                            <div className="flex items-center gap-0.5 shrink-0">
+                              {/* Pencil — always visible */}
                               <button
                                 onClick={(e) => { e.stopPropagation(); startEditing(block.id); }}
                                 className="w-7 h-7 rounded-md flex items-center justify-center text-[#a1a1aa] hover:text-[#52525b] hover:bg-[#f4f4f5] transition-all cursor-pointer"
@@ -1050,7 +1051,8 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, onBack }: {
                               >
                                 <PenLine className="w-3.5 h-3.5" />
                               </button>
-                              <div className="flex flex-col">
+                              {/* Reorder — hover only */}
+                              <div className="flex flex-col opacity-0 group-hover/row:opacity-100 transition-opacity">
                                 <button
                                   onClick={(e) => { e.stopPropagation(); if (canMoveVoiceUp) moveBlock(block.id, "up"); }}
                                   className={`w-7 h-3.5 rounded-t flex items-center justify-center transition-all ${canMoveVoiceUp ? "text-[#a1a1aa] hover:text-[#52525b] cursor-pointer" : "text-[#e4e4e7] cursor-default"}`}
@@ -1066,9 +1068,10 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, onBack }: {
                                   <svg width="8" height="5" viewBox="0 0 10 6" fill="none"><path d="M5 6L0 1h10L5 6z" fill="currentColor"/></svg>
                                 </button>
                               </div>
+                              {/* Trash — always visible, always red */}
                               <button
                                 onClick={(e) => { e.stopPropagation(); deleteBlock(block.id); }}
-                                className="w-7 h-7 rounded-md flex items-center justify-center text-[#a1a1aa] hover:text-[#ef4444] hover:bg-red-50 transition-all cursor-pointer"
+                                className="w-7 h-7 rounded-md flex items-center justify-center text-[#ef4444] hover:text-red-600 hover:bg-red-50 transition-all cursor-pointer"
                                 title="Delete segment"
                               >
                                 <Trash2 className="w-3.5 h-3.5" />
