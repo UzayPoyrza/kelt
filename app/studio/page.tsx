@@ -658,35 +658,77 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, onBack, onTo
     setEditOriginalText(null);
   }, []);
 
+  const estimated = estimateDuration(script);
+
   // ─── Autosave (triggers on completed actions, not keystrokes) ───
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const savedFadeRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  const buildSessionPayload = useCallback(() => ({
+    sessionId: sessionId || "draft",
+    name: sessionName,
+    prompt,
+    script,
+    voice: sessionVoice,
+    sound: sessionSound,
+    soundVolume,
+    duration: estimated.minutes,
+    hasGenerated,
+  }), [sessionId, sessionName, prompt, script, sessionVoice, sessionSound, soundVolume, estimated.minutes, hasGenerated]);
+
+  // TODO: Replace with actual API call when database is ready
+  const persistSession = useCallback(async (payload: ReturnType<typeof buildSessionPayload>) => {
+    console.log("[autosave] session saved:", payload);
+    // await fetch("/api/sessions", { method: "PUT", body: JSON.stringify(payload) });
+  }, []);
+
   const triggerAutosave = useCallback(() => {
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     if (savedFadeRef.current) clearTimeout(savedFadeRef.current);
     setSaveStatus("saving");
-    saveTimerRef.current = setTimeout(() => {
+    saveTimerRef.current = setTimeout(async () => {
+      const payload = buildSessionPayload();
+      await persistSession(payload);
       setLastSavedAt(new Date());
       setSaveStatus("saved");
       savedFadeRef.current = setTimeout(() => setSaveStatus("idle"), 1500);
-    }, 600);
-  }, []);
+    }, 800);
+  }, [buildSessionPayload, persistSession]);
 
   // Keyboard shortcuts for undo/redo
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === "z" && !e.shiftKey) { e.preventDefault(); undo(); }
       if ((e.metaKey || e.ctrlKey) && e.key === "z" && e.shiftKey) { e.preventDefault(); redo(); }
-      if ((e.metaKey || e.ctrlKey) && e.key === "s") { e.preventDefault(); } // Prevent browser save dialog
+      if ((e.metaKey || e.ctrlKey) && e.key === "s") { e.preventDefault(); triggerAutosave(); }
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [undo, redo]);
+  }, [undo, redo, triggerAutosave]);
 
-  const estimated = estimateDuration(script);
+  // ─── Debounced autosave on volume change ───
+  const volumeSaveRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    if (volumeSaveRef.current) clearTimeout(volumeSaveRef.current);
+    volumeSaveRef.current = setTimeout(() => triggerAutosave(), 1000);
+    return () => { if (volumeSaveRef.current) clearTimeout(volumeSaveRef.current); };
+  }, [soundVolume, triggerAutosave]);
+
+  // ─── Flush pending save on tab close ───
+  useEffect(() => {
+    const onBeforeUnload = () => {
+      if (saveTimerRef.current) {
+        clearTimeout(saveTimerRef.current);
+        const payload = buildSessionPayload();
+        // navigator.sendBeacon("/api/sessions", JSON.stringify(payload));
+        console.log("[autosave] flushed on unload:", payload);
+      }
+    };
+    window.addEventListener("beforeunload", onBeforeUnload);
+    return () => window.removeEventListener("beforeunload", onBeforeUnload);
+  }, [buildSessionPayload]);
 
   const handleGenerateAudio = useCallback(() => {
     const emptyPauses = script.filter(b => b.type === "pause" && (!b.pauseDuration || b.pauseDuration === 0));
@@ -727,6 +769,15 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, onBack, onTo
   const selectedVoice = voices.find(v => v.id === sessionVoice) || voices[0];
 
   const markEdited = useCallback(() => { setHasGenerated(false); triggerAutosave(); }, [triggerAutosave]);
+
+  const flushAndGoBack = useCallback(() => {
+    if (saveTimerRef.current) {
+      clearTimeout(saveTimerRef.current);
+      const payload = buildSessionPayload();
+      persistSession(payload); // fire-and-forget
+    }
+    onBack();
+  }, [buildSessionPayload, persistSession, onBack]);
 
   const startEditing = useCallback((blockId: string) => {
     const block = script.find(b => b.id === blockId);
@@ -922,7 +973,7 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, onBack, onTo
                 <Menu className="w-4 h-4" />
               </button>
             )}
-            <button onClick={onBack} className="flex items-center gap-1.5 text-xs text-[#71717a] hover:text-[#18181b] transition-colors cursor-pointer" style={{ fontFamily: "var(--font-body)" }}>
+            <button onClick={flushAndGoBack} className="flex items-center gap-1.5 text-xs text-[#71717a] hover:text-[#18181b] transition-colors cursor-pointer" style={{ fontFamily: "var(--font-body)" }}>
               <ArrowLeft className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">Back</span>
             </button>
@@ -953,8 +1004,8 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, onBack, onTo
                 type="text"
                 value={sessionName}
                 onChange={(e) => setSessionName(e.target.value)}
-                onBlur={() => setIsRenamingSession(false)}
-                onKeyDown={(e) => { if (e.key === "Enter") setIsRenamingSession(false); if (e.key === "Escape") setIsRenamingSession(false); }}
+                onBlur={() => { setIsRenamingSession(false); triggerAutosave(); }}
+                onKeyDown={(e) => { if (e.key === "Enter") { setIsRenamingSession(false); triggerAutosave(); } if (e.key === "Escape") setIsRenamingSession(false); }}
                 className="text-sm text-[#18181b] bg-white border border-[#e4e4e7] rounded-md px-2 py-0.5 outline-none focus:border-[#a1a1aa] text-center w-56 max-w-full"
                 style={{ fontFamily: "var(--font-display)", fontWeight: 500 }}
                 autoFocus
@@ -1930,7 +1981,7 @@ export default function StudioPage() {
   }
 
   return (
-    <div className="min-h-screen flex" style={{ background: "var(--color-sand-50)" }}>
+    <div className="h-screen flex overflow-hidden" style={{ background: "var(--color-sand-50)" }}>
       {/* ─── Mobile sidebar overlay ─── */}
       {sidebarOpen && <div className="fixed inset-0 bg-black/40 z-40 lg:hidden" onClick={() => setSidebarOpen(false)} />}
       {/* ─── Sidebar ─── */}
@@ -2027,9 +2078,9 @@ export default function StudioPage() {
       </motion.aside>
 
       {/* ─── Main Content ─── */}
-      <main className="flex-1 min-h-screen ml-0 lg:ml-56 overflow-y-scroll">
+      <main className="flex-1 min-h-0 ml-0 lg:ml-56 flex flex-col overflow-hidden">
         <motion.header initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.15, duration: 0.3 }}
-          className="sticky top-0 z-10 backdrop-blur-xl border-b border-[#e8e8ec] py-4" style={{ background: "rgba(250,249,247,0.85)" }}>
+          className="shrink-0 z-10 border-b border-[#e8e8ec] py-4" style={{ background: "var(--color-sand-50)" }}>
           <div className="px-4 sm:px-8 flex items-center justify-between">
             <div className="flex items-center gap-3">
               <button onClick={() => setSidebarOpen(true)} className="lg:hidden w-8 h-8 rounded-lg flex items-center justify-center text-[#52525b] hover:text-[#18181b] hover:bg-[#f4f4f5] transition-colors cursor-pointer mr-1">
@@ -2056,6 +2107,7 @@ export default function StudioPage() {
           </div>
         </motion.header>
 
+        <div className="flex-1 overflow-y-auto">
         <div className={`max-w-7xl mx-auto px-4 sm:px-8 pt-6 ${nowPlayingSession ? "pb-28" : "pb-8"}`}>
           <AnimatePresence mode="wait">
             {/* All Sessions */}
@@ -2731,6 +2783,7 @@ export default function StudioPage() {
               </motion.div>
             )}
           </AnimatePresence>
+        </div>
         </div>
       </main>
 

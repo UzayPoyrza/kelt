@@ -168,7 +168,7 @@ function CheckoutModal({
   onClose,
 }: {
   plan: (typeof plans)[number] | null;
-  billing: "monthly" | "yearly";
+  billing: "monthly" | "yearly" | "single";
   creditCount?: number;
   onClose: () => void;
 }) {
@@ -431,7 +431,7 @@ function CheckoutModal({
 
 export default function UpgradePage() {
   const router = useRouter();
-  const [billing, setBilling] = useState<"monthly" | "yearly">("monthly");
+  const [billing, setBilling] = useState<"monthly" | "yearly" | "single">("monthly");
   const [checkoutPlan, setCheckoutPlan] = useState<(typeof plans)[number] | null>(null);
   const [checkoutCredits, setCheckoutCredits] = useState<number | undefined>(undefined);
   const [showCheckout, setShowCheckout] = useState(false);
@@ -621,7 +621,7 @@ export default function UpgradePage() {
           }}
           className="inline-flex items-center gap-1 p-1 rounded-full bg-[#f0eeeb] border border-[#e2dfd9]"
         >
-          {(["monthly", "yearly"] as const).map((period) => (
+          {(["monthly", "yearly", "single"] as const).map((period) => (
             <button
               key={period}
               onClick={() => setBilling(period)}
@@ -644,7 +644,7 @@ export default function UpgradePage() {
                 />
               )}
               <span className="relative z-10 flex items-center gap-1.5">
-                {period === "monthly" ? "Monthly" : "Yearly"}
+                {period === "monthly" ? "Monthly" : period === "yearly" ? "Yearly" : "Single Credits"}
                 {period === "yearly" && (
                   <span
                     className="text-[10px] px-1.5 py-0.5 rounded-full"
@@ -665,6 +665,74 @@ export default function UpgradePage() {
 
       {/* Plans */}
       <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 pb-8">
+        {billing === "single" ? (
+          <motion.div
+            key="single-credits"
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+            className="max-w-lg mx-auto"
+          >
+            <div className="rounded-2xl bg-white border border-[#e8e8ec] overflow-hidden shadow-sm">
+              <div className="px-6 sm:px-8 pt-7 pb-2">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0" style={{ background: "#faf0eb" }}>
+                    <Zap className="w-5 h-5" style={{ color: "#c4876c" }} />
+                  </div>
+                  <div>
+                    <h3 className="text-[17px] text-[#18181b]" style={{ fontFamily: "var(--font-display)" }}>Single Credits</h3>
+                    <p className="text-[13px] text-[#8a8480]" style={{ fontFamily: "var(--font-body)" }}>No subscription — buy what you need</p>
+                  </div>
+                </div>
+                <div className="flex items-baseline gap-1.5 mb-1">
+                  <span className="text-[36px] text-[#18181b] leading-none" style={{ fontFamily: "var(--font-display)" }}>$0.99</span>
+                  <span className="text-[13px] text-[#8a8480]" style={{ fontFamily: "var(--font-body)" }}>/ credit</span>
+                </div>
+                <p className="text-[12px] text-[#a1a1aa] mb-5" style={{ fontFamily: "var(--font-body)" }}>Credits never expire. Use them anytime.</p>
+              </div>
+              <div className="px-6 sm:px-8 pb-7">
+                <div className="flex items-center gap-4 mb-5">
+                  <div className="flex items-center gap-0 bg-[#f4f4f5] rounded-lg border border-[#e4e4e7]">
+                    <button
+                      onClick={() => setSingleCreditQty(Math.max(1, singleCreditQty - 1))}
+                      className="w-10 h-10 flex items-center justify-center text-[#71717a] hover:text-[#18181b] transition-colors cursor-pointer rounded-l-lg hover:bg-[#e8e8ec]"
+                    >
+                      <Minus className="w-4 h-4" />
+                    </button>
+                    <span className="w-12 text-center text-[16px] text-[#18181b] tabular-nums" style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}>
+                      {singleCreditQty}
+                    </span>
+                    <button
+                      onClick={() => setSingleCreditQty(Math.min(50, singleCreditQty + 1))}
+                      className="w-10 h-10 flex items-center justify-center text-[#71717a] hover:text-[#18181b] transition-colors cursor-pointer rounded-r-lg hover:bg-[#e8e8ec]"
+                    >
+                      <Plus className="w-4 h-4" />
+                    </button>
+                  </div>
+                  <span className="text-[13px] text-[#8a8480]" style={{ fontFamily: "var(--font-body)" }}>
+                    {singleCreditQty} credit{singleCreditQty !== 1 ? "s" : ""} = {singleCreditQty} session{singleCreditQty !== 1 ? "s" : ""}
+                  </span>
+                </div>
+                <button
+                  onClick={openCreditCheckout}
+                  className="w-full py-3 rounded-xl text-white text-[14px] transition-all cursor-pointer shadow-sm hover:shadow-md flex items-center justify-center gap-2"
+                  style={{ fontFamily: "var(--font-body)", fontWeight: 600, background: "#c4876c" }}
+                >
+                  <Zap className="w-4 h-4" />
+                  Buy for ${(singleCreditQty * 0.99).toFixed(2)}
+                </button>
+                <div className="mt-5 space-y-2.5">
+                  {["One session per credit, any length", "All voices & soundscapes included", "Commercial use rights", "Never expires"].map((f) => (
+                    <div key={f} className="flex items-center gap-2.5">
+                      <Check className="w-3.5 h-3.5 shrink-0" style={{ color: "#c4876c" }} />
+                      <span className="text-[13px] text-[#52525b]" style={{ fontFamily: "var(--font-body)" }}>{f}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           {plans.map((plan, i) => {
             const price =
@@ -893,10 +961,11 @@ export default function UpgradePage() {
             );
           })}
         </div>
+        )}
       </div>
 
-      {/* Single Credit Purchase */}
-      <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 pb-10">
+      {/* Single Credit Purchase (shown only when viewing plans) */}
+      {billing !== "single" && <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 pb-10">
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
@@ -994,7 +1063,7 @@ export default function UpgradePage() {
             — {creditsTotal} credits/month included.
           </p>
         </motion.div>
-      </div>
+      </div>}
 
       {/* Commercial use banner */}
       <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 pb-16">
