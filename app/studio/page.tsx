@@ -831,285 +831,291 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, onBack }: {
           </div>
         </div>
 
-        {/* Script blocks */}
-        <div className="flex-1 overflow-y-auto px-6 py-5 studio-scroll">
-          {script.map((block, index) => {
-            const isSelected = selectedBlock === block.id;
+        {/* Script blocks — Timeline Editor */}
+        <div className="flex-1 overflow-y-auto studio-scroll" style={{ background: "#fafaf9" }}>
+          <div className="max-w-[680px] mx-auto px-8 py-6">
+            {(() => {
+              let voiceIndex = 0;
+              return script.map((block, index) => {
+                const isSelected = selectedBlock === block.id;
 
-            if (block.type === "pause") {
-              const dur = block.pauseDuration ?? 0;
-              const isEmpty = dur === 0;
-              const hasError = errorPauseIds.has(block.id);
-              const isLong = dur >= 3;
-              const isEditingDur = editingPauseId === block.id;
-              const swapAnim = swappedUp === block.id ? "swap-up" : swappedDown === block.id ? "swap-down" : undefined;
-              // Check if reorder is possible
-              const canMoveUp = script.slice(0, index).some(b => b.type === "pause");
-              const canMoveDown = script.slice(index + 1).some(b => b.type === "pause");
-              return (
-                <div key={block.id} className="group/pause" style={{ margin: isLong ? "10px 0" : "6px 0", animation: swapAnim ? `${swapAnim} 0.35s ease` : undefined }}>
-                  <div
-                    onClick={() => setSelectedBlock(isSelected ? null : block.id)}
-                    className="relative flex items-center justify-center cursor-pointer group/row"
-                    style={{ padding: isLong ? "4px 0" : "2px 0" }}
-                  >
-                    {/* Left line — hidden for short, subtle for long */}
-                    <div className="flex-1" style={{ height: isLong ? "1.5px" : "1px", background: hasError ? "#fca5a5" : isEmpty ? "#e8e8ec" : isLong ? "#818cf8" : "#e5e5e5", opacity: hasError ? 0.6 : isEmpty ? 0.3 : isLong ? 0.3 : 0.4 }} />
+                if (block.type === "pause") {
+                  const dur = block.pauseDuration ?? 0;
+                  const isEmpty = dur === 0;
+                  const hasError = errorPauseIds.has(block.id);
+                  const isLong = dur >= 3;
+                  const isEditingDur = editingPauseId === block.id;
+                  const swapAnim = swappedUp === block.id ? "swap-up" : swappedDown === block.id ? "swap-down" : undefined;
+                  const canMoveUp = script.slice(0, index).some(b => b.type === "pause");
+                  const canMoveDown = script.slice(index + 1).some(b => b.type === "pause");
 
-                    {/* Pause pill */}
-                    <div className={`flex items-center mx-2 transition-all border ${
-                      hasError
-                        ? "border-red-400 bg-red-50 ring-1 ring-red-300/50 rounded-full px-3 py-1.5 gap-1.5"
-                        : isEmpty
-                          ? "border-dashed border-[#d4d4d8] bg-[#fafafa] rounded-full px-3 py-1.5 gap-1.5"
-                          : isSelected
-                            ? isLong
-                              ? "border-[#818cf8] bg-[#eef2ff] ring-1 ring-[#818cf8]/30 rounded-xl px-4 py-2.5 gap-2"
-                              : "border-[#f59e0b] bg-[#fffbeb] ring-1 ring-[#f59e0b]/30 rounded-full px-3 py-1 gap-1.5"
-                            : isLong
-                              ? "border-[#a5b4fc] bg-[#eef2ff] hover:bg-[#e0e7ff] rounded-xl px-4 py-2.5 gap-2"
-                              : "border-[#fcd34d] bg-[#fffbeb] hover:bg-[#fef3c7] rounded-full px-3 py-1 gap-1.5"
-                    }`}>
-                      {/* Reorder arrows — only on hover */}
-                      <div className="flex flex-col gap-px opacity-0 group-hover/pause:opacity-100 transition-opacity">
-                        <button
-                          onClick={(e) => { e.stopPropagation(); if (canMoveUp) moveBlock(block.id, "up"); }}
-                          className={`w-5 h-3.5 flex items-center justify-center rounded-sm transition-all ${
-                            canMoveUp
-                              ? isLong ? "text-[#6366f1] hover:bg-[#e0e7ff] cursor-pointer" : "text-[#d97706] hover:bg-[#fef3c7] cursor-pointer"
-                              : "text-[#d8d8dc] cursor-default"
-                          }`}
-                        >
-                          <svg width="10" height="6" viewBox="0 0 10 6" fill="none"><path d="M5 0L0 5h10L5 0z" fill="currentColor"/></svg>
-                        </button>
-                        <button
-                          onClick={(e) => { e.stopPropagation(); if (canMoveDown) moveBlock(block.id, "down"); }}
-                          className={`w-5 h-3.5 flex items-center justify-center rounded-sm transition-all ${
-                            canMoveDown
-                              ? isLong ? "text-[#6366f1] hover:bg-[#e0e7ff] cursor-pointer" : "text-[#d97706] hover:bg-[#fef3c7] cursor-pointer"
-                              : "text-[#d8d8dc] cursor-default"
-                          }`}
-                        >
-                          <svg width="10" height="6" viewBox="0 0 10 6" fill="none"><path d="M5 6L0 1h10L5 6z" fill="currentColor"/></svg>
-                        </button>
+                  return (
+                    <div key={block.id} className="relative flex items-center group/pause" style={{ height: isLong ? "52px" : "40px", animation: swapAnim ? `${swapAnim} 0.35s ease` : undefined }}>
+                      {/* Timeline connector */}
+                      <div className="absolute left-[19px] top-0 bottom-0 w-px" style={{ background: hasError ? "#fca5a5" : "rgba(122,158,126,0.15)" }} />
+                      {/* Timeline dot */}
+                      <div className="relative z-10 shrink-0" style={{ width: "39px", display: "flex", justifyContent: "center" }}>
+                        <div style={{
+                          width: isLong ? "9px" : "7px",
+                          height: isLong ? "9px" : "7px",
+                          borderRadius: "50%",
+                          background: hasError ? "#ef4444" : isEmpty ? "#d4d4d8" : isLong ? "var(--color-sage)" : "#a1a1aa",
+                          border: `2px solid ${hasError ? "#fecaca" : isEmpty ? "#e8e8ec" : isLong ? "rgba(122,158,126,0.25)" : "#e4e4e7"}`,
+                        }} />
                       </div>
 
-                      {/* Pause icon */}
-                      <svg width={isLong ? "12" : "9"} height={isLong ? "12" : "9"} viewBox="0 0 14 14" fill="none" style={{ flexShrink: 0 }}>
-                        <rect x="2" y="1" width="3.5" height="12" rx="1" fill={hasError ? "#dc2626" : isEmpty ? "#c4c4c4" : isLong ? "#6366f1" : "#d97706"} />
-                        <rect x="8.5" y="1" width="3.5" height="12" rx="1" fill={hasError ? "#dc2626" : isEmpty ? "#c4c4c4" : isLong ? "#6366f1" : "#d97706"} />
-                      </svg>
-
-                      <span style={{
-                        fontFamily: "var(--font-body)", fontWeight: 700,
-                        fontSize: isLong ? "11px" : "10px",
-                        color: hasError ? "#dc2626" : isEmpty ? "#c4c4c4" : isLong ? "#4f46e5" : "#b45309",
-                      }}>
-                        {hasError ? "Empty" : isEmpty ? "Empty" : isLong ? "Long" : "Short"}
-                      </span>
-
-                      <div className="w-px" style={{ height: isLong ? "16px" : "12px", background: isEmpty ? "#e4e4e7" : isLong ? "#c7d2fe" : "#fde68a" }} />
-
-                      <button
-                        onClick={(e) => { e.stopPropagation(); setPauseDuration(block.id, dur - 1); }}
-                        className="w-5 h-5 rounded flex items-center justify-center hover:bg-white/60 transition-all cursor-pointer text-xs font-medium"
-                        style={{ color: isEmpty ? "#d4d4d4" : isLong ? "#6366f1" : "#d97706" }}
-                      >−</button>
-                      {isEditingDur ? (
-                        <input
-                          type="text"
-                          inputMode="numeric"
-                          autoFocus
-                          value={dur || ""}
-                          onChange={(e) => {
-                            const val = e.target.value.replace(/[^0-9]/g, "");
-                            setPauseDuration(block.id, val === "" ? 0 : Math.min(99, parseInt(val)));
-                          }}
-                          onBlur={() => setEditingPauseId(null)}
-                          onKeyDown={(e) => { if (e.key === "Enter" || e.key === "Escape") setEditingPauseId(null); }}
-                          onClick={(e) => e.stopPropagation()}
-                          className="w-7 text-center text-[12px] tabular-nums bg-white rounded-md outline-none py-0.5"
-                          style={{ fontFamily: "var(--font-body)", fontWeight: 700, color: isLong ? "#4f46e5" : "#b45309", border: isLong ? "1px solid #818cf8" : "1px solid #f59e0b" }}
-                        />
-                      ) : (
-                        <button
-                          onClick={(e) => { e.stopPropagation(); setEditingPauseId(block.id); }}
-                          className={`text-[12px] w-7 text-center tabular-nums rounded-md py-0.5 transition-all cursor-text ${
-                            isEmpty ? "text-[#c4c4c4] bg-white ring-1 ring-[#d4d4d8]" : isLong ? "bg-white ring-1 ring-[#c7d2fe] hover:ring-[#818cf8]" : "bg-white ring-1 ring-[#fde68a] hover:ring-[#f59e0b]"
-                          }`}
-                          style={{ fontFamily: "var(--font-body)", fontWeight: 700, color: isEmpty ? undefined : isLong ? "#4f46e5" : "#b45309" }}
-                          title="Click to edit duration"
-                        >
-                          {isEmpty ? "—" : `${dur}s`}
-                        </button>
-                      )}
-                      <button
-                        onClick={(e) => { e.stopPropagation(); setPauseDuration(block.id, dur + 1); }}
-                        className="w-5 h-5 rounded flex items-center justify-center hover:bg-white/60 transition-all cursor-pointer text-xs font-medium"
-                        style={{ color: isEmpty ? "#d4d4d4" : isLong ? "#6366f1" : "#d97706" }}
-                      >+</button>
-                    </div>
-
-                    {/* Right line */}
-                    <div className="flex-1" style={{ height: isLong ? "1.5px" : "1px", background: hasError ? "#fca5a5" : isEmpty ? "#e8e8ec" : isLong ? "#818cf8" : "#e5e5e5", opacity: hasError ? 0.6 : isEmpty ? 0.3 : isLong ? 0.3 : 0.4 }} />
-                  </div>
-                </div>
-              );
-            }
-
-            const canMoveVoiceUp = script.slice(0, index).some(b => b.type === "voice");
-            const canMoveVoiceDown = script.slice(index + 1).some(b => b.type === "voice");
-            const voiceSwapAnim = swappedUp === block.id ? "swap-up" : swappedDown === block.id ? "swap-down" : undefined;
-
-            return (
-              <div key={block.id} className="group/row" style={{ animation: voiceSwapAnim ? `${voiceSwapAnim} 0.35s ease` : undefined }}>
-                <div
-                  onClick={() => { if (isSelected) { saveEdit(); } else { startEditing(block.id); } }}
-                  className={`relative rounded-xl cursor-pointer transition-all ${
-                    isSelected
-                      ? "shadow-[0_2px_16px_rgba(107,154,112,0.18)] ring-2 ring-[var(--color-sage)]/30"
-                      : "hover:shadow-[0_1px_6px_rgba(0,0,0,0.06)]"
-                  }`}
-                  style={{
-                    borderLeft: `4px solid ${isSelected ? "var(--color-sage)" : "rgba(122,158,126,0.3)"}`,
-                    background: isSelected ? "linear-gradient(135deg, #e8f0e9 0%, #f0f6f0 100%)" : "#fff",
-                    border: isSelected ? "1.5px solid rgba(122,158,126,0.35)" : "1.5px solid #e8e8ec",
-                    borderLeftWidth: "4px",
-                    borderLeftColor: isSelected ? "var(--color-sage)" : "rgba(122,158,126,0.3)",
-                  }}
-                >
-                  {/* Editing indicator bar */}
-                  {isSelected && (
-                    <div className="flex items-center gap-1.5 px-4 pt-2.5 pb-0">
-                      <PenLine className="w-3 h-3 text-[var(--color-sage)]" />
-                      <span className="text-[10px] font-medium text-[var(--color-sage)]" style={{ fontFamily: "var(--font-body)" }}>Editing</span>
-                    </div>
-                  )}
-                  <div className="flex items-start gap-2 pl-4 pr-3 py-3.5" style={{ paddingTop: isSelected ? "8px" : undefined }}>
-                    {/* Content */}
-                    <div className="flex-1 min-w-0">
-                      {isSelected ? (
-                        <div>
-                          <textarea
-                            value={block.text}
-                            onChange={(e) => { if (e.target.value.length <= 90) updateBlockText(block.id, e.target.value); }}
-                            onClick={(e) => e.stopPropagation()}
-                            className="w-full text-[14px] text-[#1a1614] bg-white/60 outline-none resize-none leading-[1.75] rounded-lg px-3 py-2 border border-[rgba(122,158,126,0.25)] focus:border-[var(--color-sage)] transition-colors"
-                            style={{ fontFamily: "var(--font-body)" }}
-                            rows={Math.max(2, Math.ceil(block.text.length / 60))}
-                            maxLength={90}
-                            autoFocus
-                          />
-                          <div className="flex justify-end mt-1 pr-1">
-                            <span className={`text-[10px] tabular-nums ${block.text.length >= 90 ? "text-red-500 font-semibold" : block.text.length >= 75 ? "text-amber-500" : "text-[#a1a1aa]"}`} style={{ fontFamily: "var(--font-body)" }}>
-                              {block.text.length >= 90 ? "Limit reached" : `${90 - block.text.length} left`}
-                            </span>
-                          </div>
+                      {/* Pause content row */}
+                      <div
+                        onClick={() => setSelectedBlock(isSelected ? null : block.id)}
+                        className={`flex items-center flex-1 ml-3 rounded-lg px-3 cursor-pointer transition-all ${
+                          hasError
+                            ? "bg-red-50/80 border border-red-200"
+                            : isSelected
+                              ? "bg-white border border-[#d4d4d8] shadow-[0_1px_3px_rgba(0,0,0,0.06)]"
+                              : "hover:bg-white/80 border border-transparent hover:border-[#e8e8ec]"
+                        }`}
+                        style={{ height: isLong ? "36px" : "30px" }}
+                      >
+                        {/* Pause label */}
+                        <div className="flex items-center gap-2 mr-auto">
+                          <svg width="10" height="10" viewBox="0 0 14 14" fill="none" style={{ flexShrink: 0, opacity: 0.7 }}>
+                            <rect x="2" y="1" width="3.5" height="12" rx="1" fill={hasError ? "#dc2626" : isEmpty ? "#c4c4c4" : isLong ? "#52525b" : "#a1a1aa"} />
+                            <rect x="8.5" y="1" width="3.5" height="12" rx="1" fill={hasError ? "#dc2626" : isEmpty ? "#c4c4c4" : isLong ? "#52525b" : "#a1a1aa"} />
+                          </svg>
+                          <span style={{
+                            fontFamily: "var(--font-body)", fontWeight: 500,
+                            fontSize: "11px", letterSpacing: "0.02em",
+                            color: hasError ? "#dc2626" : isEmpty ? "#a1a1aa" : "#71717a",
+                          }}>
+                            {hasError ? "Empty Pause" : isEmpty ? "Empty Pause" : isLong ? "Long Pause" : "Short Pause"}
+                          </span>
                         </div>
-                      ) : (
-                        <p className="text-[14px] text-[#2d2926] leading-[1.75]" style={{ fontFamily: "var(--font-body)" }}>
-                          {block.text}
-                        </p>
-                      )}
-                    </div>
 
-                    {/* Action icons — always visible */}
-                    <div className="flex items-center gap-1 shrink-0 mt-0.5">
-                      {isSelected ? (
-                        <>
-                          <button
-                            onClick={(e) => { e.stopPropagation(); saveEdit(); }}
-                            className="w-7 h-7 rounded-lg flex items-center justify-center text-[#22c55e] hover:text-[#16a34a] hover:bg-green-50 transition-all cursor-pointer"
-                            title="Save changes"
-                          >
-                            <Check className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={(e) => { e.stopPropagation(); discardEdit(); }}
-                            className="w-7 h-7 rounded-lg flex items-center justify-center text-[#18181b] hover:text-[#18181b] hover:bg-[#f4f4f5] transition-all cursor-pointer"
-                            title="Discard changes"
-                          >
-                            <X className="w-3.5 h-3.5" />
-                          </button>
-                        </>
-                      ) : (
-                        <>
-                          <button
-                            onClick={(e) => { e.stopPropagation(); startEditing(block.id); }}
-                            className="w-7 h-7 rounded-lg flex items-center justify-center text-[#71717a] hover:text-[var(--color-sage)] hover:bg-[var(--color-sage-light)] transition-all cursor-pointer"
-                            title="Click to edit text"
-                          >
-                            <PenLine className="w-3.5 h-3.5" />
-                          </button>
-                          <div className="flex flex-col">
+                        {/* Duration controls */}
+                        <div className="flex items-center gap-1">
+                          {/* Reorder arrows — hover only */}
+                          <div className="flex items-center gap-px opacity-0 group-hover/pause:opacity-100 transition-opacity mr-1">
                             <button
-                              onClick={(e) => { e.stopPropagation(); if (canMoveVoiceUp) moveBlock(block.id, "up"); }}
-                              className={`w-7 h-4 rounded-t-md flex items-center justify-center transition-all ${
-                                canMoveVoiceUp
-                                  ? "text-[#71717a] hover:text-[var(--color-sage)] hover:bg-[var(--color-sage-light)] cursor-pointer"
-                                  : "text-[#d4d4d8] cursor-default"
-                              }`}
-                              title={canMoveVoiceUp ? "Move segment up" : "Already at top"}
+                              onClick={(e) => { e.stopPropagation(); if (canMoveUp) moveBlock(block.id, "up"); }}
+                              className={`w-5 h-5 rounded flex items-center justify-center transition-all ${canMoveUp ? "text-[#71717a] hover:text-[#18181b] hover:bg-[#f4f4f5] cursor-pointer" : "text-[#d4d4d8] cursor-default"}`}
                             >
-                              <svg width="10" height="6" viewBox="0 0 10 6" fill="none"><path d="M5 0L0 5h10L5 0z" fill="currentColor"/></svg>
+                              <svg width="8" height="5" viewBox="0 0 10 6" fill="none"><path d="M5 0L0 5h10L5 0z" fill="currentColor"/></svg>
                             </button>
                             <button
-                              onClick={(e) => { e.stopPropagation(); if (canMoveVoiceDown) moveBlock(block.id, "down"); }}
-                              className={`w-7 h-4 rounded-b-md flex items-center justify-center transition-all ${
-                                canMoveVoiceDown
-                                  ? "text-[#71717a] hover:text-[var(--color-sage)] hover:bg-[var(--color-sage-light)] cursor-pointer"
-                                  : "text-[#d4d4d8] cursor-default"
-                              }`}
-                              title={canMoveVoiceDown ? "Move segment down" : "Already at bottom"}
+                              onClick={(e) => { e.stopPropagation(); if (canMoveDown) moveBlock(block.id, "down"); }}
+                              className={`w-5 h-5 rounded flex items-center justify-center transition-all ${canMoveDown ? "text-[#71717a] hover:text-[#18181b] hover:bg-[#f4f4f5] cursor-pointer" : "text-[#d4d4d8] cursor-default"}`}
                             >
-                              <svg width="10" height="6" viewBox="0 0 10 6" fill="none"><path d="M5 6L0 1h10L5 6z" fill="currentColor"/></svg>
+                              <svg width="8" height="5" viewBox="0 0 10 6" fill="none"><path d="M5 6L0 1h10L5 6z" fill="currentColor"/></svg>
                             </button>
                           </div>
+
                           <button
-                            onClick={(e) => { e.stopPropagation(); deleteBlock(block.id); }}
-                            className="w-7 h-7 rounded-lg flex items-center justify-center text-[#ef4444] hover:text-red-600 hover:bg-red-50 transition-all cursor-pointer"
-                            title="Delete this segment and its pause"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </>
+                            onClick={(e) => { e.stopPropagation(); setPauseDuration(block.id, dur - 1); }}
+                            className="w-5 h-5 rounded flex items-center justify-center text-[#a1a1aa] hover:text-[#52525b] hover:bg-[#f4f4f5] transition-all cursor-pointer text-xs"
+                          >−</button>
+
+                          {isEditingDur ? (
+                            <input
+                              type="text"
+                              inputMode="numeric"
+                              autoFocus
+                              value={dur || ""}
+                              onChange={(e) => {
+                                const val = e.target.value.replace(/[^0-9]/g, "");
+                                setPauseDuration(block.id, val === "" ? 0 : Math.min(99, parseInt(val)));
+                              }}
+                              onBlur={() => setEditingPauseId(null)}
+                              onKeyDown={(e) => { if (e.key === "Enter" || e.key === "Escape") setEditingPauseId(null); }}
+                              onClick={(e) => e.stopPropagation()}
+                              className="w-8 text-center text-[11px] tabular-nums bg-white rounded outline-none py-0.5 border border-[#d4d4d8] focus:border-[#a1a1aa]"
+                              style={{ fontFamily: "var(--font-body)", fontWeight: 600, color: "#18181b" }}
+                            />
+                          ) : (
+                            <button
+                              onClick={(e) => { e.stopPropagation(); setEditingPauseId(block.id); }}
+                              className="text-[11px] w-8 text-center tabular-nums rounded py-0.5 transition-all cursor-text hover:bg-[#f4f4f5]"
+                              style={{ fontFamily: "var(--font-body)", fontWeight: 600, color: isEmpty ? "#c4c4c4" : "#52525b" }}
+                              title="Click to edit duration"
+                            >
+                              {isEmpty ? "—" : `${dur}s`}
+                            </button>
+                          )}
+
+                          <button
+                            onClick={(e) => { e.stopPropagation(); setPauseDuration(block.id, dur + 1); }}
+                            className="w-5 h-5 rounded flex items-center justify-center text-[#a1a1aa] hover:text-[#52525b] hover:bg-[#f4f4f5] transition-all cursor-pointer text-xs"
+                          >+</button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                }
+
+                // Voice block
+                const currentVoiceIndex = ++voiceIndex;
+                const canMoveVoiceUp = script.slice(0, index).some(b => b.type === "voice");
+                const canMoveVoiceDown = script.slice(index + 1).some(b => b.type === "voice");
+                const voiceSwapAnim = swappedUp === block.id ? "swap-up" : swappedDown === block.id ? "swap-down" : undefined;
+                const isLastVoice = !script.slice(index + 1).some(b => b.type === "voice");
+                const isFirstVoice = !script.slice(0, index).some(b => b.type === "voice");
+
+                return (
+                  <div key={block.id} className="relative flex group/row" style={{ animation: voiceSwapAnim ? `${voiceSwapAnim} 0.35s ease` : undefined }}>
+                    {/* Timeline connector + number */}
+                    <div className="relative shrink-0" style={{ width: "39px" }}>
+                      {/* Line above */}
+                      {!isFirstVoice && (
+                        <div className="absolute left-[19px] top-0 w-px" style={{ height: "20px", background: "rgba(122,158,126,0.15)" }} />
                       )}
+                      {/* Line below */}
+                      <div className="absolute left-[19px] bottom-0 w-px" style={{ top: "20px", background: "rgba(122,158,126,0.15)" }} />
+                      {/* Number badge */}
+                      <div className="absolute left-1/2 -translate-x-1/2 top-[14px] z-10 w-[26px] h-[26px] rounded-full flex items-center justify-center text-[10px] tabular-nums transition-all"
+                        style={{
+                          fontFamily: "var(--font-body)", fontWeight: 600,
+                          background: isSelected ? "var(--color-sage)" : "#fff",
+                          color: isSelected ? "#fff" : "#71717a",
+                          border: isSelected ? "2px solid var(--color-sage)" : "2px solid #e4e4e7",
+                          boxShadow: isSelected ? "0 0 0 3px rgba(122,158,126,0.15)" : "none",
+                        }}
+                      >
+                        {currentVoiceIndex}
+                      </div>
+                    </div>
+
+                    {/* Card */}
+                    <div className="flex-1 min-w-0 ml-3 mb-0">
+                      <div
+                        onClick={() => { if (isSelected) { saveEdit(); } else { startEditing(block.id); } }}
+                        className={`relative rounded-lg cursor-pointer transition-all ${
+                          isSelected
+                            ? "bg-white shadow-[0_1px_8px_rgba(0,0,0,0.08),0_0_0_1px_rgba(122,158,126,0.3)]"
+                            : "bg-white shadow-[0_1px_2px_rgba(0,0,0,0.04)] hover:shadow-[0_1px_6px_rgba(0,0,0,0.08)] border border-[#eaeae8] hover:border-[#d4d4d2]"
+                        }`}
+                        style={{
+                          borderLeft: isSelected ? "3px solid var(--color-sage)" : undefined,
+                        }}
+                      >
+                        <div className="flex items-start gap-3" style={{ padding: isSelected ? "14px 14px 14px 13px" : "14px 14px 14px 16px" }}>
+                          {/* Content */}
+                          <div className="flex-1 min-w-0">
+                            {isSelected ? (
+                              <div>
+                                <textarea
+                                  value={block.text}
+                                  onChange={(e) => { if (e.target.value.length <= 90) updateBlockText(block.id, e.target.value); }}
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="w-full text-[13.5px] text-[#1a1614] bg-[#fafaf9] outline-none resize-none leading-[1.7] rounded-md px-3 py-2.5 border border-[#e4e4e7] focus:border-[var(--color-sage)] transition-colors"
+                                  style={{ fontFamily: "var(--font-body)" }}
+                                  rows={Math.max(2, Math.ceil(block.text.length / 55))}
+                                  maxLength={90}
+                                  autoFocus
+                                />
+                                <div className="flex items-center justify-between mt-2">
+                                  <div className="flex items-center gap-1.5">
+                                    <button
+                                      onClick={(e) => { e.stopPropagation(); saveEdit(); }}
+                                      className="flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-medium bg-[var(--color-sage)] text-white hover:opacity-90 transition-all cursor-pointer"
+                                      style={{ fontFamily: "var(--font-body)" }}
+                                    >
+                                      <Check className="w-3 h-3" /> Save
+                                    </button>
+                                    <button
+                                      onClick={(e) => { e.stopPropagation(); discardEdit(); }}
+                                      className="flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-medium text-[#71717a] hover:text-[#18181b] hover:bg-[#f4f4f5] transition-all cursor-pointer"
+                                      style={{ fontFamily: "var(--font-body)" }}
+                                    >
+                                      Cancel
+                                    </button>
+                                  </div>
+                                  <span className={`text-[10px] tabular-nums ${block.text.length >= 90 ? "text-red-500 font-semibold" : block.text.length >= 75 ? "text-amber-500" : "text-[#a1a1aa]"}`} style={{ fontFamily: "var(--font-body)" }}>
+                                    {block.text.length >= 90 ? "Limit reached" : `${90 - block.text.length}`}
+                                  </span>
+                                </div>
+                              </div>
+                            ) : (
+                              <p className="text-[13.5px] text-[#2d2926] leading-[1.7]" style={{ fontFamily: "var(--font-body)" }}>
+                                {block.text}
+                              </p>
+                            )}
+                          </div>
+
+                          {/* Actions — visible on hover, hidden when editing */}
+                          {!isSelected && (
+                            <div className="flex items-center gap-0.5 shrink-0 opacity-0 group-hover/row:opacity-100 transition-opacity">
+                              <button
+                                onClick={(e) => { e.stopPropagation(); startEditing(block.id); }}
+                                className="w-7 h-7 rounded-md flex items-center justify-center text-[#a1a1aa] hover:text-[#52525b] hover:bg-[#f4f4f5] transition-all cursor-pointer"
+                                title="Edit text"
+                              >
+                                <PenLine className="w-3.5 h-3.5" />
+                              </button>
+                              <div className="flex flex-col">
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); if (canMoveVoiceUp) moveBlock(block.id, "up"); }}
+                                  className={`w-7 h-3.5 rounded-t flex items-center justify-center transition-all ${canMoveVoiceUp ? "text-[#a1a1aa] hover:text-[#52525b] cursor-pointer" : "text-[#e4e4e7] cursor-default"}`}
+                                  title={canMoveVoiceUp ? "Move up" : "Already at top"}
+                                >
+                                  <svg width="8" height="5" viewBox="0 0 10 6" fill="none"><path d="M5 0L0 5h10L5 0z" fill="currentColor"/></svg>
+                                </button>
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); if (canMoveVoiceDown) moveBlock(block.id, "down"); }}
+                                  className={`w-7 h-3.5 rounded-b flex items-center justify-center transition-all ${canMoveVoiceDown ? "text-[#a1a1aa] hover:text-[#52525b] cursor-pointer" : "text-[#e4e4e7] cursor-default"}`}
+                                  title={canMoveVoiceDown ? "Move down" : "Already at bottom"}
+                                >
+                                  <svg width="8" height="5" viewBox="0 0 10 6" fill="none"><path d="M5 6L0 1h10L5 6z" fill="currentColor"/></svg>
+                                </button>
+                              </div>
+                              <button
+                                onClick={(e) => { e.stopPropagation(); deleteBlock(block.id); }}
+                                className="w-7 h-7 rounded-md flex items-center justify-center text-[#a1a1aa] hover:text-[#ef4444] hover:bg-red-50 transition-all cursor-pointer"
+                                title="Delete segment"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Add segment — hover zone */}
+                      <div className="flex items-center justify-center h-0 relative group/add overflow-visible">
+                        <button
+                          onClick={() => addBlockAfter(block.id, "voice")}
+                          className="absolute top-1/2 -translate-y-1/2 opacity-0 group-hover/add:opacity-100 w-5 h-5 rounded-full bg-white border border-[#e4e4e7] hover:border-[var(--color-sage)] hover:bg-[var(--color-sage-light)] flex items-center justify-center text-[#a1a1aa] hover:text-[var(--color-sage)] shadow-sm transition-all cursor-pointer z-10"
+                          title="Add segment"
+                        >
+                          <Plus className="w-3 h-3" />
+                        </button>
+                      </div>
                     </div>
                   </div>
-                </div>
+                );
+              });
+            })()}
 
-                {/* Add segment — hover zone between voice blocks */}
-                <div className="flex items-center justify-center h-0 relative group/add overflow-visible">
-                  <div className="absolute inset-x-6 top-1/2 border-t border-dashed border-transparent group-hover/add:border-[rgba(122,158,126,0.3)] transition-colors" />
+            {/* Add segment at end */}
+            {script.length > 0 && (
+              <div className="flex items-start">
+                <div className="shrink-0 flex justify-center" style={{ width: "39px" }}>
+                  <div className="w-px h-5" style={{ background: "rgba(122,158,126,0.15)" }} />
+                </div>
+                <div className="ml-3 pt-2 pb-4">
                   <button
-                    onClick={() => addBlockAfter(block.id, "voice")}
-                    className="absolute top-1/2 -translate-y-1/2 opacity-0 group-hover/add:opacity-100 w-6 h-6 rounded-full bg-white border-[1.5px] border-[rgba(122,158,126,0.3)] hover:border-[var(--color-sage)] hover:bg-[var(--color-sage-light)] flex items-center justify-center text-[var(--color-sage)] shadow-sm transition-all cursor-pointer z-10"
-                    title="Add segment"
+                    onClick={() => addBlockAfter(script[script.length - 1].id, "voice")}
+                    className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-md text-[11px] text-[#71717a] hover:text-[var(--color-sage)] bg-white hover:bg-[var(--color-sage-light)] border border-dashed border-[#d4d4d8] hover:border-[var(--color-sage)] transition-all cursor-pointer shadow-sm"
+                    style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}
                   >
-                    <Plus className="w-3.5 h-3.5" />
+                    <Plus className="w-3 h-3" /> Add segment
                   </button>
                 </div>
               </div>
-            );
-          })}
-
-          {/* Add segment at end — connected to timeline */}
-          {script.length > 0 && (
-            <div className="flex flex-col items-center pt-1 pb-4">
-              <div className="w-px h-4" style={{ background: "rgba(122,158,126,0.2)" }} />
-              <button
-                onClick={() => addBlockAfter(script[script.length - 1].id, "voice")}
-                className="flex items-center gap-1.5 px-4 py-2 rounded-full text-[11px] text-[var(--color-sage)] hover:bg-[var(--color-sage-light)] border-[1.5px] border-dashed border-[rgba(122,158,126,0.3)] hover:border-[var(--color-sage)] transition-all cursor-pointer"
-                style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}
-              >
-                <Plus className="w-3 h-3" /> Add segment
-              </button>
-            </div>
-          )}
+            )}
+          </div>
         </div>
 
         {/* Bottom bar */}
-        <div className="flex items-center justify-between px-6 py-3 border-t border-[#e4e4e7]" style={{ background: "#fafafa" }}>
+        <div className="flex items-center justify-between px-6 py-4 border-t border-[#e4e4e7]" style={{ background: "#fafafa" }}>
           <div className="flex items-center gap-4">
             <span className="text-[10px] text-[#a1a1aa]" style={{ fontFamily: "var(--font-body)" }}>
               3 credits remaining
