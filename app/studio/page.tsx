@@ -2024,6 +2024,7 @@ function StudioPageContent() {
   const [genStep, setGenStep] = useState<"input" | "choose" | "studio">("input");
   const [genConfig, setGenConfig] = useState({ prompt: "", voice: "aria", duration: 10, sound: "Sanctuary", sessionId: null as string | null, script: null as ScriptBlock[] | null, title: null as string | null, soundVolume: 70 });
   const [showGenAdvanced, setShowGenAdvanced] = useState(false);
+  const genAdvancedRef = useRef<HTMLDivElement>(null);
   const [selectedGenProtocol, setSelectedGenProtocol] = useState<string | null>(null);
   const [showGenProtocolInfo, setShowGenProtocolInfo] = useState(false);
   const [historyFilter, setHistoryFilter] = useState<HistoryFilter>("all");
@@ -2736,8 +2737,9 @@ function StudioPageContent() {
                   <div className="absolute -inset-[2px] rounded-xl bg-[length:300%_300%] animate-[border-glow_4s_ease_infinite] opacity-80 group-focus-within:opacity-100 transition-opacity duration-300 blur-[0.5px]"
                     style={{ background: "linear-gradient(135deg, var(--color-sage), var(--color-ocean), var(--color-dusk), var(--color-ember), var(--color-sage))", backgroundSize: "300% 300%" }} />
                   <div className="relative bg-white rounded-xl p-3 flex items-center gap-3">
-                    <input type="text" value={generatePrompt} onChange={(e) => setGeneratePrompt(e.target.value)}
+                    <input type="text" value={generatePrompt} onChange={(e) => setGeneratePrompt(e.target.value.slice(0, 50))}
                       onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handlePromptSubmit(generatePrompt); } }}
+                      maxLength={50}
                       placeholder="Create a guided meditation on..."
                       className="flex-1 outline-none text-sm text-[var(--color-sand-900)] placeholder:text-[var(--color-sand-400)] placeholder:opacity-50 bg-transparent" style={{ fontFamily: "var(--font-body)" }} />
                     <button onClick={() => handlePromptSubmit(generatePrompt)} disabled={!generatePrompt.trim()}
@@ -2800,7 +2802,23 @@ function StudioPageContent() {
                     <span
                       contentEditable
                       suppressContentEditableWarning
-                      onBlur={(e) => setGenConfig(prev => ({ ...prev, prompt: e.currentTarget.textContent || "" }))}
+                      onBlur={(e) => {
+                        const text = (e.currentTarget.textContent || "").slice(0, 50);
+                        e.currentTarget.textContent = text;
+                        setGenConfig(prev => ({ ...prev, prompt: text }));
+                      }}
+                      onInput={(e) => {
+                        const text = e.currentTarget.textContent || "";
+                        if (text.length > 50) {
+                          e.currentTarget.textContent = text.slice(0, 50);
+                          const range = document.createRange();
+                          const sel = window.getSelection();
+                          range.selectNodeContents(e.currentTarget);
+                          range.collapse(false);
+                          sel?.removeAllRanges();
+                          sel?.addRange(range);
+                        }
+                      }}
                       onKeyDown={(e) => { if (e.key === "Enter") e.preventDefault(); }}
                       className="outline-none border-b border-transparent focus:border-[var(--color-sand-300)] transition-colors"
                     >{genConfig.prompt}</span>
@@ -2865,9 +2883,9 @@ function StudioPageContent() {
                 </motion.div>
 
                 {/* Advanced — Protocol selection */}
-                <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="mb-10">
+                <motion.div ref={genAdvancedRef} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="mb-10">
                   <button
-                    onClick={() => setShowGenAdvanced(!showGenAdvanced)}
+                    onClick={() => { setShowGenAdvanced(!showGenAdvanced); setTimeout(() => genAdvancedRef.current?.scrollIntoView({ behavior: "smooth", block: "center" }), 100); }}
                     className="flex items-center gap-3 w-full px-4 py-3 rounded-xl bg-white/60 border border-[var(--color-sand-200)] hover:border-[var(--color-sand-300)] hover:bg-white transition-all cursor-pointer"
                     style={{ fontFamily: "var(--font-body)" }}
                   >
@@ -3144,6 +3162,36 @@ function StudioPageContent() {
                           />
                         </button>
                       </div>
+                    </div>
+                  </div>
+
+                  {/* Support */}
+                  <div className="bg-white rounded-2xl border border-[#e7e5e4] shadow-sm">
+                    <div className="px-4 sm:px-6 py-4 border-b border-[#e7e5e4] bg-[#f5f3f0]">
+                      <h3 className="text-[11px] uppercase tracking-wide text-[var(--color-sand-900)]" style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}>Support</h3>
+                    </div>
+                    <div className="divide-y divide-[var(--color-sand-100)]">
+                      <a href="mailto:contact@launchspace.org?subject=Bug%20Report" className="flex items-center justify-between px-4 sm:px-6 py-4 hover:bg-[var(--color-sand-50)]/50 transition-colors group">
+                        <div>
+                          <span className="text-[13px] text-[var(--color-sand-900)] block leading-none" style={{ fontFamily: "var(--font-body)", fontWeight: 450 }}>Report a Bug</span>
+                          <span className="text-[11px] text-[var(--color-sand-400)] block mt-1 leading-none" style={{ fontFamily: "var(--font-body)" }}>Something not working? Let us know</span>
+                        </div>
+                        <ArrowRight className="w-3.5 h-3.5 text-[var(--color-sand-300)] group-hover:text-[var(--color-sand-500)] transition-colors" />
+                      </a>
+                      <a href="mailto:contact@launchspace.org?subject=Feature%20Request" className="flex items-center justify-between px-4 sm:px-6 py-4 hover:bg-[var(--color-sand-50)]/50 transition-colors group">
+                        <div>
+                          <span className="text-[13px] text-[var(--color-sand-900)] block leading-none" style={{ fontFamily: "var(--font-body)", fontWeight: 450 }}>Feature Request</span>
+                          <span className="text-[11px] text-[var(--color-sand-400)] block mt-1 leading-none" style={{ fontFamily: "var(--font-body)" }}>Suggest an improvement or new feature</span>
+                        </div>
+                        <ArrowRight className="w-3.5 h-3.5 text-[var(--color-sand-300)] group-hover:text-[var(--color-sand-500)] transition-colors" />
+                      </a>
+                      <a href="mailto:contact@launchspace.org" className="flex items-center justify-between px-4 sm:px-6 py-4 hover:bg-[var(--color-sand-50)]/50 transition-colors group">
+                        <div>
+                          <span className="text-[13px] text-[var(--color-sand-900)] block leading-none" style={{ fontFamily: "var(--font-body)", fontWeight: 450 }}>Customer Support</span>
+                          <span className="text-[11px] text-[var(--color-sand-400)] block mt-1 leading-none" style={{ fontFamily: "var(--font-body)" }}>Billing, account, or general questions</span>
+                        </div>
+                        <ArrowRight className="w-3.5 h-3.5 text-[var(--color-sand-300)] group-hover:text-[var(--color-sand-500)] transition-colors" />
+                      </a>
                     </div>
                   </div>
                 </div>

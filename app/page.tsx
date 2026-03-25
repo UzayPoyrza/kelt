@@ -380,7 +380,7 @@ export default function HomePage() {
             </h1>
 
             <p className="text-center text-sm text-[var(--color-sand-500)] -mt-3 mb-8" style={{ fontFamily: "var(--font-body)" }}>
-              Enter a prompt to create a fully voiced, pause-aware meditation session
+              Describe what you need — a sentence or two is perfect
             </p>
 
             {/* Input */}
@@ -390,13 +390,14 @@ export default function HomePage() {
                 <input
                   type="text"
                   value={prompt}
-                  onChange={(e) => setPrompt(e.target.value)}
+                  onChange={(e) => setPrompt(e.target.value.slice(0, 50))}
                   onKeyDown={(e) => {
                     if (e.key === "Enter" && !e.shiftKey) {
                       e.preventDefault();
                       handleSubmitPrompt(prompt);
                     }
                   }}
+                  maxLength={50}
                   placeholder="Create a guided meditation on..."
                   className="flex-1 outline-none text-sm text-[var(--color-sand-900)] placeholder:text-[var(--color-sand-400)] placeholder:opacity-50 bg-transparent"
                   style={{ fontFamily: "var(--font-body)" }}
@@ -411,6 +412,16 @@ export default function HomePage() {
                 </button>
               </div>
             </div>
+
+            {/* Step hint */}
+            <p className="text-[11px] text-[var(--color-sand-400)] -mt-4 mb-6 flex items-center gap-1.5" style={{ fontFamily: "var(--font-body)" }}>
+              <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-[var(--color-sand-900)] text-[var(--color-sand-50)] text-[9px] font-medium leading-none pt-px">1</span>
+              <span>Prompt</span>
+              <span className="text-[var(--color-sand-300)]">→</span>
+              <span className="text-[var(--color-sand-300)]">Customize</span>
+              <span className="text-[var(--color-sand-300)]">→</span>
+              <span className="text-[var(--color-sand-300)]">Generate</span>
+            </p>
 
             {/* Suggestions */}
             <div className="w-full flex flex-col items-center gap-3">
@@ -482,8 +493,8 @@ export default function HomePage() {
               const isActive = playing === s.id;
               const pct = sampleProgress[s.id] || 0;
               return (
-                <FadeIn key={s.id} delay={idx * 0.06}>
-                  <div onClick={() => handleSamplePlay(s.id, s.duration)} className="relative bg-white/[0.03] border border-white/[0.08] rounded-xl overflow-hidden hover:bg-white/[0.06] hover:border-white/15 transition-all cursor-pointer">
+                <FadeIn key={s.id} delay={idx * 0.06} className="h-full">
+                  <div onClick={() => handleSamplePlay(s.id, s.duration)} className="relative h-full bg-white/[0.03] border border-white/[0.08] rounded-xl overflow-hidden hover:bg-white/[0.06] hover:border-white/15 transition-all cursor-pointer">
                     {isActive && (
                       <motion.div
                         className="absolute inset-y-0 left-0 bg-white/[0.04]"
@@ -896,10 +907,15 @@ export default function HomePage() {
 
       {/* Footer */}
       <footer className="border-t border-white/10 py-8 sm:py-10 px-4 sm:px-6" style={{ background: "var(--color-sand-900)" }}>
-        <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
+        <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2 text-[var(--color-sand-50)]">
             <Logo />
             <span className="text-sm" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>MindFlow</span>
+          </div>
+          <div className="flex items-center gap-4 sm:gap-6">
+            <a href="mailto:contact@launchspace.org" className="text-[12px] text-white/50 hover:text-white/80 transition-colors" style={{ fontFamily: "var(--font-body)" }}>Support</a>
+            <a href="mailto:contact@launchspace.org?subject=Bug%20Report" className="text-[12px] text-white/50 hover:text-white/80 transition-colors" style={{ fontFamily: "var(--font-body)" }}>Report a Bug</a>
+            <a href="mailto:contact@launchspace.org?subject=Feature%20Request" className="text-[12px] text-white/50 hover:text-white/80 transition-colors" style={{ fontFamily: "var(--font-body)" }}>Feature Request</a>
           </div>
           <p className="text-xs text-white/40" style={{ fontFamily: "var(--font-body)" }}>
             &copy; 2026 MindFlow. All rights reserved.
