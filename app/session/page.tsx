@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect, Suspense } from "react";
+import { useState, useRef, useEffect, useCallback, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "motion/react";
 import {
@@ -50,25 +50,35 @@ function SessionContent() {
   const [bgVolume, setBgVolume] = useState(50);
 
   // Load persisted session by ID
+  const fetchSession = useCallback(async () => {
+    if (!sessionId) return;
+    try {
+      const res = await fetch(`/api/sessions/${sessionId}`);
+      if (res.ok) {
+        const session = await res.json();
+        setParamPrompt(session.prompt || "");
+        setParamVoice(session.voice || "aria");
+        setParamDuration(session.duration || 10);
+        setParamIntent(session.intent || session.category || "default");
+        if (session.soundscape) setSoundscape(session.soundscape);
+        setStage("ready");
+      }
+    } catch {
+      // Fall through to URL params behavior
+    }
+  }, [sessionId]);
+
+  useEffect(() => { fetchSession(); }, [fetchSession]);
+
+  // Refresh session data when tab regains focus
   useEffect(() => {
     if (!sessionId) return;
-    (async () => {
-      try {
-        const res = await fetch(`/api/sessions/${sessionId}`);
-        if (res.ok) {
-          const session = await res.json();
-          setParamPrompt(session.prompt || "");
-          setParamVoice(session.voice || "aria");
-          setParamDuration(session.duration || 10);
-          setParamIntent(session.intent || session.category || "default");
-          if (session.soundscape) setSoundscape(session.soundscape);
-          setStage("ready");
-        }
-      } catch {
-        // Fall through to URL params behavior
-      }
-    })();
-  }, [sessionId]);
+    const onVisible = () => {
+      if (document.visibilityState === "visible") fetchSession();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
+  }, [sessionId, fetchSession]);
 
   // Auto-select recommended soundscape
   useEffect(() => {

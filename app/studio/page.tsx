@@ -117,6 +117,32 @@ const categoryColors: Record<string, { accent: string; bg: string }> = {
   stress: { accent: "#c4876c", bg: "rgba(196,135,108,0.08)" },
 };
 
+/* ─── Sessions Loading State ─── */
+function SessionsLoadingIcon() {
+  return (
+    <div className="flex flex-col items-center justify-center min-h-[calc(100vh-12rem)]">
+      <div className="animate-[breathe_6s_ease-in-out_infinite]">
+        <svg
+          width={36}
+          height={38}
+          fill="none"
+          viewBox="0 0 36 37.8281"
+          className="text-[var(--color-sand-300)]"
+        >
+          <path d={svgPaths.p1c4d2300} fill="currentColor" />
+          <path d={svgPaths.p2128f680} fill="currentColor" />
+          <path d={svgPaths.p1c2ff500} fill="currentColor" />
+        </svg>
+      </div>
+      <div className="flex gap-1.5 mt-4">
+        <span className="w-2 h-2 rounded-full animate-[dot-bounce_1.4s_ease-in-out_infinite]" style={{ backgroundColor: "#c9a96e", animationDelay: "0s" }} />
+        <span className="w-2 h-2 rounded-full animate-[dot-bounce_1.4s_ease-in-out_infinite]" style={{ backgroundColor: "#c9a96e", animationDelay: "0.2s" }} />
+        <span className="w-2 h-2 rounded-full animate-[dot-bounce_1.4s_ease-in-out_infinite]" style={{ backgroundColor: "#c9a96e", animationDelay: "0.4s" }} />
+      </div>
+    </div>
+  );
+}
+
 /* ─── Google Docs-style Session Card ─── */
 function SessionCard({ session, delay, isNowPlaying, onPlay, onOpenStudio, onDelete, onRegen, onGenerate }: {
   session: SessionItem; delay: number;
@@ -950,7 +976,7 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, onBack, onTo
         {/* Script toolbar */}
         <div className="flex items-center gap-2 sm:gap-3 px-3 sm:px-6 py-3 border-b border-[#e4e4e7]" style={{ background: "#fafafa" }}>
           {/* Left: Hamburger (mobile) + Back + Undo/Redo */}
-          <div className="flex items-center gap-1 shrink-0">
+          <div className="flex items-center gap-1 shrink-0 w-[200px]">
             {onToggleSidebar && (
               <button onClick={onToggleSidebar} className="lg:hidden w-7 h-7 rounded-md flex items-center justify-center text-[#52525b] hover:text-[#18181b] hover:bg-[#f4f4f5] transition-colors cursor-pointer mr-1">
                 <Menu className="w-4 h-4" />
@@ -1006,8 +1032,8 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, onBack, onTo
           </div>
 
           {/* Right: Autosave status + stats */}
-          <div className="flex items-center gap-2 shrink-0">
-            <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-2 shrink-0 w-[200px] justify-end">
+            <div className="flex items-center gap-1.5 min-w-[120px] justify-end">
               <AnimatePresence mode="wait">
                 {saveStatus === "saving" ? (
                   <motion.span
@@ -1880,6 +1906,19 @@ function StudioPageContent() {
   useEffect(() => { fetchSessions(); }, [fetchSessions]);
   useEffect(() => { fetchGenerations(); }, [fetchGenerations]);
 
+  // Refresh all data when browser tab regains focus (e.g. after Stripe checkout, switching tabs)
+  useEffect(() => {
+    const onVisible = () => {
+      if (document.visibilityState === "visible") {
+        refetchProfile();
+        fetchSessions();
+        fetchGenerations();
+      }
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
+  }, [refetchProfile, fetchSessions, fetchGenerations]);
+
   // Handle checkout return
   useEffect(() => {
     if (searchParams.get("checkout") === "success") {
@@ -2007,6 +2046,10 @@ function StudioPageContent() {
   const navigateTo = (id: NavId) => {
     setActiveNav(id);
     setGenStep("input");
+    // Refresh data when navigating to each tab
+    if (id === "sessions") fetchSessions();
+    if (id === "history") fetchGenerations();
+    if (id === "sessions" || id === "history") refetchProfile();
   };
 
   const filteredSessions = sessions;
@@ -2085,7 +2128,7 @@ function StudioPageContent() {
             duration={genConfig.duration}
             sound={genConfig.sound}
             sessionId={genConfig.sessionId}
-            onBack={() => { setActiveNav("sessions"); setGenStep("input"); }}
+            onBack={() => { setActiveNav("sessions"); setGenStep("input"); fetchSessions(); refetchProfile(); }}
             onToggleSidebar={() => setSidebarOpen(true)}
           />
         </div>
@@ -2101,7 +2144,7 @@ function StudioPageContent() {
       <motion.aside initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.35 }}
         className={`w-56 shrink-0 border-r border-[var(--color-sand-200)] bg-white flex flex-col fixed top-0 left-0 h-screen z-50 transition-transform duration-200 ${sidebarOpen ? "translate-x-0" : "-translate-x-full"} lg:translate-x-0`}>
         <div className="px-5 pt-6 pb-5 flex items-center justify-between">
-          <button onClick={() => { setActiveNav("sessions" as NavId); setSidebarOpen(false); }} className="flex items-center gap-2 text-[var(--color-sand-900)] cursor-pointer">
+          <button onClick={() => { setActiveNav("sessions" as NavId); setSidebarOpen(false); fetchSessions(); refetchProfile(); }} className="flex items-center gap-2 text-[var(--color-sand-900)] cursor-pointer">
             <Logo />
             <div className="text-left">
               <span className="text-sm tracking-tight block" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>Kilt Studio</span>
@@ -2230,7 +2273,9 @@ function StudioPageContent() {
             {/* All Sessions */}
             {activeNav === "sessions" && (
               <motion.div key="sessions" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
-                {filteredSessions.length > 0 ? (
+                {sessionsLoading ? (
+                  <SessionsLoadingIcon />
+                ) : filteredSessions.length > 0 ? (
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
                     {filteredSessions.map((session, i) => (
                       <SessionCard
@@ -2241,6 +2286,8 @@ function StudioPageContent() {
                         onPlay={() => handlePlaySession(session.id)}
                         onOpenStudio={async () => {
                           try {
+                            // Touch updated_at so this session appears as most recent
+                            fetch(`/api/sessions/${session.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({}) });
                             const res = await fetch(`/api/sessions/${session.id}`);
                             if (res.ok) {
                               const full = await res.json();
@@ -2990,6 +3037,7 @@ function StudioPageContent() {
                     if (confirmDialog.type === "delete") {
                       await fetch(`/api/sessions/${confirmDialog.sessionId}`, { method: "DELETE" });
                       setSessions(prev => prev.filter(s => s.id !== confirmDialog.sessionId));
+                      fetchGenerations();
                     } else if (confirmDialog.type === "generate" || confirmDialog.type === "regenerate") {
                       const session = sessions.find(s => s.id === confirmDialog.sessionId);
                       if (session) {

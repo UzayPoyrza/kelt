@@ -106,13 +106,15 @@ export async function POST(request: NextRequest) {
   // Generate script (mock)
   const script = generateScript(prompt);
 
-  // Update session with script
+  // Update session with script (only set title if it was a new session)
+  const sessionUpdate: Record<string, unknown> = { script };
+  if (!sessionId) {
+    // New session — title was already set during insert, but update with derived name
+    sessionUpdate.title = deriveSessionName(prompt);
+  }
   const { data: session } = await supabase
     .from("sessions")
-    .update({
-      script,
-      title: deriveSessionName(prompt),
-    })
+    .update(sessionUpdate)
     .eq("id", activeSessionId)
     .select()
     .single();

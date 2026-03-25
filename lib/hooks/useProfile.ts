@@ -46,6 +46,15 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
     refetch();
   }, [refetch]);
 
+  // Refresh profile when browser tab regains focus
+  useEffect(() => {
+    const onVisible = () => {
+      if (document.visibilityState === "visible") refetch();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
+  }, [refetch]);
+
   return React.createElement(
     ProfileContext.Provider,
     { value: { profile, loading, error, refetch } },

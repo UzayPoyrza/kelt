@@ -10,6 +10,7 @@ import {
   Shield,
   History,
   Wand2,
+  Loader2,
 } from "lucide-react";
 import svgPaths from "@/lib/svg-paths";
 import { createClient } from "@/lib/supabase/client";
@@ -232,8 +233,10 @@ function StudioPreview() {
 
 export default function LoginPage() {
   const [isHovered, setIsHovered] = useState(false);
+  const [loadingProvider, setLoadingProvider] = useState<"google" | "apple" | null>(null);
 
   const handleOAuthLogin = async (provider: "google" | "apple") => {
+    setLoadingProvider(provider);
     const supabase = createClient();
     await supabase.auth.signInWithOAuth({
       provider,
@@ -381,32 +384,46 @@ export default function LoginPage() {
             {/* Google Button */}
             <motion.button
               onClick={() => handleOAuthLogin("google")}
+              disabled={loadingProvider !== null}
               onHoverStart={() => setIsHovered(true)}
               onHoverEnd={() => setIsHovered(false)}
-              whileHover={{ y: -1 }}
-              whileTap={{ scale: 0.98 }}
-              className="w-full flex items-center justify-center gap-3 py-3.5 px-6 rounded-xl bg-[var(--color-sand-900)] text-[var(--color-sand-50)] hover:bg-[var(--color-sand-800)] transition-colors cursor-pointer shadow-sm"
+              whileHover={loadingProvider ? {} : { y: -1 }}
+              whileTap={loadingProvider ? {} : { scale: 0.98 }}
+              className="w-full flex items-center justify-center gap-3 py-3.5 px-6 rounded-xl bg-[var(--color-sand-900)] text-[var(--color-sand-50)] hover:bg-[var(--color-sand-800)] transition-colors cursor-pointer shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
               style={{ fontFamily: "var(--font-body)" }}
             >
-              <motion.div
-                animate={{ rotate: isHovered ? 360 : 0 }}
-                transition={{ duration: 0.5, ease: "easeInOut" }}
-              >
-                <GoogleIcon />
-              </motion.div>
-              <span className="text-sm font-medium">Continue with Google</span>
+              {loadingProvider === "google" ? (
+                <Loader2 className="w-[18px] h-[18px] animate-spin" />
+              ) : (
+                <motion.div
+                  animate={{ rotate: isHovered ? 360 : 0 }}
+                  transition={{ duration: 0.5, ease: "easeInOut" }}
+                >
+                  <GoogleIcon />
+                </motion.div>
+              )}
+              <span className="text-sm font-medium">
+                {loadingProvider === "google" ? "Connecting..." : "Continue with Google"}
+              </span>
             </motion.button>
 
             {/* Apple Button */}
             <motion.button
               onClick={() => handleOAuthLogin("apple")}
-              whileHover={{ y: -1 }}
-              whileTap={{ scale: 0.98 }}
-              className="w-full flex items-center justify-center gap-3 py-3.5 px-6 rounded-xl bg-white/60 text-[var(--color-sand-900)] border border-[var(--color-sand-200)] hover:bg-white hover:shadow-sm transition-all cursor-pointer mt-3"
+              disabled={loadingProvider !== null}
+              whileHover={loadingProvider ? {} : { y: -1 }}
+              whileTap={loadingProvider ? {} : { scale: 0.98 }}
+              className="w-full flex items-center justify-center gap-3 py-3.5 px-6 rounded-xl bg-white/60 text-[var(--color-sand-900)] border border-[var(--color-sand-200)] hover:bg-white hover:shadow-sm transition-all cursor-pointer mt-3 disabled:opacity-60 disabled:cursor-not-allowed"
               style={{ fontFamily: "var(--font-body)" }}
             >
-              <AppleIcon />
-              <span className="text-sm font-medium">Continue with Apple</span>
+              {loadingProvider === "apple" ? (
+                <Loader2 className="w-[18px] h-[18px] animate-spin" />
+              ) : (
+                <AppleIcon />
+              )}
+              <span className="text-sm font-medium">
+                {loadingProvider === "apple" ? "Connecting..." : "Continue with Apple"}
+              </span>
             </motion.button>
 
             {/* Terms */}

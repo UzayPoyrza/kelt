@@ -31,7 +31,9 @@ export async function PATCH(
   if (error) return error;
 
   const body = await request.json();
-  const updates: Record<string, unknown> = {};
+  const updates: Record<string, unknown> = {
+    updated_at: new Date().toISOString(),
+  };
 
   if (body.title !== undefined) updates.title = body.title;
   if (body.script !== undefined) updates.script = body.script;

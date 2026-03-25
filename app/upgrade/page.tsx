@@ -479,6 +479,7 @@ export default function UpgradePage() {
   const [checkoutCredits, setCheckoutCredits] = useState<number | undefined>(undefined);
   const [showCheckout, setShowCheckout] = useState(false);
   const [singleCreditQty, setSingleCreditQty] = useState(5);
+  const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
 
   // Mock user data
   const creditsUsed = 2;
@@ -486,16 +487,22 @@ export default function UpgradePage() {
   const creditsRemaining = creditsTotal - creditsUsed;
   const currentPlan = "Free";
 
-  const openPlanCheckout = (plan: (typeof plans)[number]) => {
+  const openPlanCheckout = async (plan: (typeof plans)[number]) => {
+    setLoadingPlan(plan.id);
+    await new Promise((r) => setTimeout(r, 600));
     setCheckoutPlan(plan);
     setCheckoutCredits(undefined);
     setShowCheckout(true);
+    setLoadingPlan(null);
   };
 
-  const openCreditCheckout = () => {
+  const openCreditCheckout = async () => {
+    setLoadingPlan("single");
+    await new Promise((r) => setTimeout(r, 600));
     setCheckoutPlan(null);
     setCheckoutCredits(singleCreditQty);
     setShowCheckout(true);
+    setLoadingPlan(null);
   };
 
   return (
@@ -758,11 +765,26 @@ export default function UpgradePage() {
                 </div>
                 <button
                   onClick={openCreditCheckout}
-                  className="w-full py-3 rounded-xl text-white text-[14px] transition-all cursor-pointer shadow-sm hover:shadow-md flex items-center justify-center gap-2"
+                  disabled={loadingPlan === "single"}
+                  className="w-full py-3 rounded-xl text-white text-[14px] transition-all cursor-pointer shadow-sm hover:shadow-md flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
                   style={{ fontFamily: "var(--font-body)", fontWeight: 600, background: "#c4876c" }}
                 >
-                  <Zap className="w-4 h-4" />
-                  Buy for ${(singleCreditQty * 0.99).toFixed(2)}
+                  {loadingPlan === "single" ? (
+                    <>
+                      <motion.div
+                        animate={{ rotate: 360 }}
+                        transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                      >
+                        <Sparkles className="w-4 h-4" />
+                      </motion.div>
+                      Processing...
+                    </>
+                  ) : (
+                    <>
+                      <Zap className="w-4 h-4" />
+                      Buy for ${(singleCreditQty * 0.99).toFixed(2)}
+                    </>
+                  )}
                 </button>
                 <div className="mt-5 space-y-2.5">
                   {["One session per credit, any length", "All voices & soundscapes included", "Commercial use rights", "Never expires"].map((f) => (
@@ -935,7 +957,8 @@ export default function UpgradePage() {
                     {/* CTA */}
                     <button
                       onClick={() => openPlanCheckout(plan)}
-                      className="w-full py-3 rounded-xl text-[13px] transition-all cursor-pointer flex items-center justify-center gap-2 shadow-sm hover:shadow-md"
+                      disabled={loadingPlan === plan.id}
+                      className="w-full py-3 rounded-xl text-[13px] transition-all cursor-pointer flex items-center justify-center gap-2 shadow-sm hover:shadow-md disabled:opacity-60 disabled:cursor-not-allowed"
                       style={{
                         fontFamily: "var(--font-body)",
                         fontWeight: 600,
@@ -945,7 +968,19 @@ export default function UpgradePage() {
                         color: "#fff",
                       }}
                     >
-                      Get {plan.name} Plan
+                      {loadingPlan === plan.id ? (
+                        <>
+                          <motion.div
+                            animate={{ rotate: 360 }}
+                            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                          >
+                            <Sparkles className="w-4 h-4" />
+                          </motion.div>
+                          Processing...
+                        </>
+                      ) : (
+                        <>Get {plan.name} Plan</>
+                      )}
                     </button>
 
                     {/* Features */}
@@ -1068,14 +1103,27 @@ export default function UpgradePage() {
 
               <button
                 onClick={openCreditCheckout}
-                className="px-5 py-2.5 rounded-xl text-white text-[13px] transition-all cursor-pointer shadow-sm hover:shadow-md flex items-center justify-center gap-2 shrink-0 flex-1 md:flex-none"
+                disabled={loadingPlan === "single"}
+                className="px-5 py-2.5 rounded-xl text-white text-[13px] transition-all cursor-pointer shadow-sm hover:shadow-md flex items-center justify-center gap-2 shrink-0 flex-1 md:flex-none disabled:opacity-60 disabled:cursor-not-allowed"
                 style={{
                   fontFamily: "var(--font-body)",
                   fontWeight: 600,
                   background: "#c4876c",
                 }}
               >
-                Buy for ${(singleCreditQty * 0.99).toFixed(2)}
+                {loadingPlan === "single" ? (
+                  <>
+                    <motion.div
+                      animate={{ rotate: 360 }}
+                      transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                    >
+                      <Sparkles className="w-4 h-4" />
+                    </motion.div>
+                    Processing...
+                  </>
+                ) : (
+                  <>Buy for ${(singleCreditQty * 0.99).toFixed(2)}</>
+                )}
               </button>
             </div>
           </div>
