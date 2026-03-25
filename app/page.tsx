@@ -231,6 +231,8 @@ export default function HomePage() {
       bg.play().catch(() => {});
     }
 
+    const SAMPLE_LIMIT = 30; // seconds
+
     voice.play().catch(() => {});
     voice.addEventListener("ended", () => {
       stopAudio();
@@ -240,12 +242,17 @@ export default function HomePage() {
     setPlaying(id);
     setSampleProgress((p) => ({ ...p, [id]: 0 }));
 
-    // Progress tracking from actual audio time
+    // Progress tracking capped at 30s
     const tick = 100;
     sampleIntervalRef.current = setInterval(() => {
-      if (voiceAudioRef.current && voiceAudioRef.current.duration) {
-        const pct = voiceAudioRef.current.currentTime / voiceAudioRef.current.duration;
-        setSampleProgress((p) => ({ ...p, [id]: pct }));
+      if (voiceAudioRef.current) {
+        const t = voiceAudioRef.current.currentTime;
+        if (t >= SAMPLE_LIMIT) {
+          stopAudio();
+          setPlaying(null);
+          return;
+        }
+        setSampleProgress((p) => ({ ...p, [id]: t / SAMPLE_LIMIT }));
       }
     }, tick);
   }, [playing, sampleSound, bgVolume, stopAudio]);
@@ -611,8 +618,8 @@ export default function HomePage() {
                                   transition={{ duration: 1, delay: 0.2 + i * 0.06, ease: "easeOut" }}
                                 />
                               </div>
-                              <span className="text-[10px] text-[var(--color-sand-400)] shrink-0" style={{ fontFamily: "var(--font-body)" }}>
-                                {step.label} · {step.seconds}s
+                              <span className="text-[11px] text-[var(--color-sand-700)] font-medium shrink-0" style={{ fontFamily: "var(--font-body)" }}>
+                                {step.label} · AI pauses {step.seconds}s
                               </span>
                             </div>
                           )}
