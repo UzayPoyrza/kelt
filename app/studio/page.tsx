@@ -1334,9 +1334,9 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, savedScript,
                       <div className="absolute left-1/2 -translate-x-1/2 top-[14px] z-10 w-[26px] h-[26px] rounded-full flex items-center justify-center text-[10px] tabular-nums transition-all"
                         style={{
                           fontFamily: "var(--font-body)", fontWeight: 600,
-                          background: isSelected ? "var(--color-sage)" : "rgba(122,158,126,0.08)",
-                          color: isSelected ? "#fff" : "#52525b",
-                          border: isSelected ? "2px solid var(--color-sage)" : "2px solid rgba(122,158,126,0.2)",
+                          background: isSelected ? "var(--color-sage)" : "#eee8f3",
+                          color: isSelected ? "#fff" : "#6b5b7b",
+                          border: isSelected ? "2px solid var(--color-sage)" : "2px solid #ddd4e8",
                           boxShadow: isSelected ? "0 0 0 3px rgba(122,158,126,0.15)" : "none",
                         }}
                       >
@@ -1823,9 +1823,9 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, savedScript,
               <div className="border-t border-[#f0f0f3]" />
               <div>
                 <div className="flex items-center gap-2.5 mb-1.5">
-                  <div className="w-2.5 h-2.5 rounded-full shrink-0 border-2" style={{ background: "var(--color-dusk-light)", borderColor: "var(--color-dusk)" }} />
-                  <span className="text-[12px]" style={{ fontFamily: "var(--font-body)", fontWeight: 600, color: "var(--color-dusk)" }}>Long</span>
-                  <span className="text-[10px] bg-[var(--color-dusk-light)] px-1.5 py-0.5 rounded" style={{ fontFamily: "var(--font-body)", color: "var(--color-dusk)" }}>4s or more</span>
+                  <div className="w-2.5 h-2.5 rounded-full shrink-0 border-2" style={{ background: "var(--color-sage-light)", borderColor: "var(--color-sage)" }} />
+                  <span className="text-[12px]" style={{ fontFamily: "var(--font-body)", fontWeight: 600, color: "var(--color-sage)" }}>Long</span>
+                  <span className="text-[10px] bg-[var(--color-sage-light)] px-1.5 py-0.5 rounded" style={{ fontFamily: "var(--font-body)", color: "var(--color-sage)" }}>4s or more</span>
                 </div>
                 <p className="text-[11.5px] text-[#71717a] leading-relaxed pl-5" style={{ fontFamily: "var(--font-body)" }}>Creates a distinct break, voice re-entry is slightly more deliberate</p>
               </div>
