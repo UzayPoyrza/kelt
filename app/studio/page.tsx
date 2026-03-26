@@ -1198,8 +1198,8 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, savedScript,
                           width: isLong ? "9px" : "7px",
                           height: isLong ? "9px" : "7px",
                           borderRadius: "50%",
-                          background: hasError ? "#ef4444" : isEmpty ? "#d4d4d8" : isLong ? "var(--color-sage)" : "#a1a1aa",
-                          border: `2px solid ${hasError ? "#fecaca" : isEmpty ? "#e8e8ec" : isLong ? "rgba(122,158,126,0.25)" : "#e4e4e7"}`,
+                          background: hasError ? "#ef4444" : isEmpty ? "#d4d4d8" : isLong ? "var(--color-dusk)" : "#a1a1aa",
+                          border: `2px solid ${hasError ? "#fecaca" : isEmpty ? "#e8e8ec" : isLong ? "rgba(139,126,166,0.25)" : "#e4e4e7"}`,
                         }} />
                       </div>
 
@@ -1816,7 +1816,7 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, savedScript,
                 <div className="flex items-center gap-2.5 mb-1.5">
                   <div className="w-2.5 h-2.5 rounded-full shrink-0 border-2 border-[#a1a1aa]" style={{ background: "#d4d4d8" }} />
                   <span className="text-[12px] text-[#3f3f46]" style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}>Short</span>
-                  <span className="text-[10px] text-[#a1a1aa] bg-[#f4f4f5] px-1.5 py-0.5 rounded" style={{ fontFamily: "var(--font-body)" }}>under 3s</span>
+                  <span className="text-[10px] text-[#a1a1aa] bg-[#f4f4f5] px-1.5 py-0.5 rounded" style={{ fontFamily: "var(--font-body)" }}>up to 3s</span>
                 </div>
                 <p className="text-[11.5px] text-[#71717a] leading-relaxed pl-5" style={{ fontFamily: "var(--font-body)" }}>Voice continues naturally, like a brief breath between sentences</p>
               </div>
@@ -1825,7 +1825,7 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, savedScript,
                 <div className="flex items-center gap-2.5 mb-1.5">
                   <div className="w-2.5 h-2.5 rounded-full shrink-0 border-2" style={{ background: "var(--color-dusk-light)", borderColor: "var(--color-dusk)" }} />
                   <span className="text-[12px]" style={{ fontFamily: "var(--font-body)", fontWeight: 600, color: "var(--color-dusk)" }}>Long</span>
-                  <span className="text-[10px] bg-[var(--color-dusk-light)] px-1.5 py-0.5 rounded" style={{ fontFamily: "var(--font-body)", color: "var(--color-dusk)" }}>3s or more</span>
+                  <span className="text-[10px] bg-[var(--color-dusk-light)] px-1.5 py-0.5 rounded" style={{ fontFamily: "var(--font-body)", color: "var(--color-dusk)" }}>4s or more</span>
                 </div>
                 <p className="text-[11.5px] text-[#71717a] leading-relaxed pl-5" style={{ fontFamily: "var(--font-body)" }}>Creates a distinct break, voice re-entry is slightly more deliberate</p>
               </div>
