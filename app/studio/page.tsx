@@ -908,7 +908,7 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, savedScript,
   const discardEdit = useCallback(() => {
     if (selectedBlock) {
       const block = script.find(b => b.id === selectedBlock);
-      if (block && block.text === "New text segment...") {
+      if (block && block.text.trim() === "") {
         deleteBlock(selectedBlock);
       } else if (editOriginalText !== null) {
         setScript(prev => prev.map(b => b.id === selectedBlock ? { ...b, text: editOriginalText } : b));
@@ -922,7 +922,7 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, savedScript,
     if (!selectedBlock) return;
     const block = script.find(b => b.id === selectedBlock);
     if (block && block.type === "voice") {
-      if (block.text === "New text segment..." || block.text.trim() === "") {
+      if (block.text.trim() === "" || block.text.trim() === "") {
         deleteBlock(selectedBlock);
       } else {
         saveEdit();
@@ -942,7 +942,7 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, savedScript,
     const voiceBlock: ScriptBlock = {
       id: String(nextId.current++),
       type: "voice",
-      text: "New text segment...",
+      text: "",
     };
     const pauseBlock: ScriptBlock = {
       id: String(nextId.current++),
@@ -966,7 +966,7 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, savedScript,
     const voiceBlock: ScriptBlock = {
       id: String(nextId.current++),
       type: "voice",
-      text: "New text segment...",
+      text: "",
     };
     const pauseBlock: ScriptBlock = {
       id: String(nextId.current++),
@@ -1366,9 +1366,10 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, savedScript,
                                   value={block.text}
                                   onChange={(e) => { if (e.target.value.length <= 90) updateBlockText(block.id, e.target.value); }}
                                   onClick={(e) => e.stopPropagation()}
-                                  className="w-full text-[13.5px] text-[#1a1614] bg-[#fafaf9] outline-none resize-none leading-[1.7] rounded-md px-3 py-2.5 border border-[#e4e4e7] focus:border-[var(--color-sage)] transition-colors"
+                                  placeholder="Enter text..."
+                                  className="w-full text-[13.5px] text-[#1a1614] bg-[#fafaf9] outline-none resize-none leading-[1.7] rounded-md px-3 py-2.5 border border-[#e4e4e7] focus:border-[var(--color-sage)] transition-colors placeholder:text-[#c4c4c4]"
                                   style={{ fontFamily: "var(--font-body)" }}
-                                  rows={Math.max(2, Math.ceil(block.text.length / 55))}
+                                  rows={Math.max(2, Math.ceil((block.text.length || 15) / 55))}
                                   maxLength={90}
                                   autoFocus
                                 />
@@ -1395,8 +1396,8 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, savedScript,
                                 </div>
                               </div>
                             ) : (
-                              <p className="text-[13.5px] text-[#2d2926] leading-[1.7]" style={{ fontFamily: "var(--font-body)" }}>
-                                {block.text}
+                              <p className={`text-[13.5px] leading-[1.7] ${block.text.trim() ? "text-[#2d2926]" : "text-[#c4c4c4]"}`} style={{ fontFamily: "var(--font-body)" }}>
+                                {block.text.trim() || "Enter text..."}
                               </p>
                             )}
                           </div>

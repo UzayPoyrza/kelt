@@ -123,5 +123,5 @@ export function estimateDuration(script: ScriptBlock[]): { minutes: number; seco
       totalSeconds += block.pauseDuration ?? 0;
     }
   }
-  return { minutes: Math.floor(totalSeconds / 60), seconds: totalSeconds % 60 };
+  return { minutes: Math.floor(totalSeconds / 60), seconds: Math.round(totalSeconds % 60) };
 }
