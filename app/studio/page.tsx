@@ -708,9 +708,11 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, savedScript,
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [undo, redo, triggerAutosave]);
 
-  // ─── Debounced autosave on volume change ───
+  // ─── Debounced autosave on volume change (skip initial mount) ───
   const volumeSaveRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const volumeMountedRef = useRef(false);
   useEffect(() => {
+    if (!volumeMountedRef.current) { volumeMountedRef.current = true; return; }
     if (volumeSaveRef.current) clearTimeout(volumeSaveRef.current);
     volumeSaveRef.current = setTimeout(() => triggerAutosave(), 1000);
     return () => { if (volumeSaveRef.current) clearTimeout(volumeSaveRef.current); };
@@ -752,6 +754,8 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, savedScript,
       setErrorPauseIds(new Set(emptyPauses.map(b => b.id)));
       return;
     }
+    // Cancel any pending autosave to prevent race condition
+    if (saveTimerRef.current) { clearTimeout(saveTimerRef.current); saveTimerRef.current = null; }
     setGenerateWarning(null);
     setErrorPauseIds(new Set());
     setIsGenerating(true);
@@ -2319,6 +2323,33 @@ function StudioPageContent() {
     }
   }, [searchParams, refetchProfile]);
 
+  // Open a specific session from URL param (e.g. from /session "Open in Studio")
+  useEffect(() => {
+    const urlSessionId = searchParams.get("sessionId");
+    if (!urlSessionId) return;
+    (async () => {
+      try {
+        const res = await fetch(`/api/sessions/${urlSessionId}`);
+        if (!res.ok) return;
+        const full = await res.json();
+        setGenConfig({
+          prompt: full.prompt || full.title || "",
+          voice: (full.voice || "aria").toLowerCase(),
+          duration: full.duration || 10,
+          sound: full.soundscape || "Sanctuary",
+          sessionId: full.id,
+          script: full.script || null,
+          title: full.title || null,
+          soundVolume: full.sound_volume ?? 70,
+        });
+        setActiveNav("generate" as NavId);
+        setGenStep("studio");
+        window.history.replaceState({}, "", "/studio");
+      } catch { /* ignore */ }
+    })();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Rotating phrases for generate heading
   const [phraseIndex, setPhraseIndex] = useState(0);
   const [phraseWidth, setPhraseWidth] = useState<number | null>(null);
@@ -2720,6 +2751,19 @@ function StudioPageContent() {
                   <SessionsLoadingIcon />
                 ) : filteredSessions.length > 0 ? (
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                    {/* New Session card — always pinned first */}
+                    <motion.div
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.02, duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+                      className="group rounded-xl border-2 border-dashed border-[#d4d0ca] hover:border-[var(--color-sand-400)] bg-[#faf9f7] hover:bg-[#f5f3f0] transition-all duration-200 cursor-pointer flex flex-col items-center justify-center min-h-[236px]"
+                      onClick={() => { setActiveNav("generate" as NavId); setGenStep("input"); }}
+                    >
+                      <div className="w-12 h-12 rounded-full bg-[#ece9e3] group-hover:bg-[#e2dfd8] flex items-center justify-center transition-colors mb-3">
+                        <Plus className="w-5 h-5 text-[var(--color-sand-500)] group-hover:text-[var(--color-sand-700)] transition-colors" />
+                      </div>
+                      <span className="text-[13px] text-[var(--color-sand-500)] group-hover:text-[var(--color-sand-700)] transition-colors" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>New Session</span>
+                    </motion.div>
                     {filteredSessions.map((session, i) => (
                       <SessionCard
                         key={session.id}
@@ -2760,7 +2804,22 @@ function StudioPageContent() {
                     ))}
                   </div>
                 ) : (
-                  <EmptyState label={searchQuery ? "No sessions found" : "No sessions yet"} />
+                  <div className="flex flex-col items-center">
+                    <EmptyState label={searchQuery ? "No sessions found" : "No sessions yet"} />
+                    {!searchQuery && (
+                      <motion.button
+                        initial={{ opacity: 0, y: 8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.15 }}
+                        onClick={() => { setActiveNav("generate" as NavId); setGenStep("input"); }}
+                        className="mt-4 flex items-center gap-2 px-5 py-2.5 rounded-full bg-[var(--color-sand-900)] text-[var(--color-sand-50)] hover:bg-[var(--color-sand-800)] transition-colors cursor-pointer text-sm"
+                        style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}
+                      >
+                        <Plus className="w-4 h-4" />
+                        Create your first session
+                      </motion.button>
+                    )}
+                  </div>
                 )}
               </motion.div>
             )}

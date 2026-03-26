@@ -152,7 +152,7 @@ function SessionContent() {
                     <ChevronLeft className="w-4 h-4" />Back
                   </button>
                   {showBgPicker && (
-                    <a href="/login" className="relative rounded-lg group">
+                    <a href={sessionId ? `/login?next=/studio?sessionId=${sessionId}` : "/login"} className="relative rounded-lg group">
                       <div className="absolute -inset-[2px] rounded-lg bg-[length:300%_300%] animate-[border-glow_4s_ease_infinite] opacity-80 group-hover:opacity-100 transition-opacity duration-300 blur-[0.5px]" style={{ background: "linear-gradient(135deg, var(--color-sage), var(--color-ocean), var(--color-dusk), var(--color-ember), var(--color-sage))", backgroundSize: "300% 300%" }} />
                       <span
                         className="relative flex items-center gap-2 px-4 py-1.5 rounded-lg bg-[var(--color-sand-900)] text-[var(--color-sand-50)] text-sm cursor-pointer hover:bg-[var(--color-sand-800)] transition-colors"
@@ -345,7 +345,7 @@ function SessionContent() {
                 {/* Edit in Kilt Studio — slim CTA with hover demo */}
                 {!showBgPicker && (
                   <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }} className="mt-4">
-                    <a href="/login" className="block relative rounded-xl group">
+                    <a href={sessionId ? `/login?next=/studio?sessionId=${sessionId}` : "/login"} className="block relative rounded-xl group">
                       <div className="absolute -inset-[1.5px] rounded-xl bg-[length:300%_300%] animate-[border-glow_4s_ease_infinite] opacity-70 group-hover:opacity-100 transition-opacity duration-300" style={{ background: "linear-gradient(135deg, var(--color-sage), var(--color-ocean), var(--color-dusk), var(--color-ember), var(--color-sage))", backgroundSize: "300% 300%" }} />
                       <div className="relative bg-[var(--color-sand-900)] rounded-xl overflow-hidden cursor-pointer">
                         {/* Main bar */}

@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "motion/react";
 import {
   Sparkles,
@@ -234,7 +234,17 @@ function StudioPreview() {
 /* ─── Login Page ─── */
 
 export default function LoginPage() {
+  return (
+    <Suspense fallback={null}>
+      <LoginContent />
+    </Suspense>
+  );
+}
+
+function LoginContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const next = searchParams.get("next") || "/studio";
   const [isHovered, setIsHovered] = useState(false);
   const [loadingProvider, setLoadingProvider] = useState<"google" | "apple" | null>(null);
 
@@ -243,10 +253,10 @@ export default function LoginPage() {
     const checkAuth = async () => {
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
-      if (user) router.replace("/studio");
+      if (user) router.replace(next);
     };
     checkAuth();
-  }, [router]);
+  }, [router, next]);
 
   const handleOAuthLogin = async (provider: "google" | "apple") => {
     setLoadingProvider(provider);
@@ -254,7 +264,7 @@ export default function LoginPage() {
     await supabase.auth.signInWithOAuth({
       provider,
       options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
+        redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`,
       },
     });
   };

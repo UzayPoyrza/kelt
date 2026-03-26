@@ -36,6 +36,16 @@ export async function POST(request: NextRequest) {
       const userId = session.metadata?.userId;
       if (!userId) break;
 
+      // Idempotency: skip if already processed (e.g. by verify-checkout)
+      const { data: alreadyProcessed } = await supabase
+        .from("credit_ledger")
+        .select("id")
+        .eq("user_id", userId)
+        .eq("stripe_session_id", session.id)
+        .maybeSingle();
+
+      if (alreadyProcessed) break;
+
       if (session.mode === "subscription") {
         const subscriptionId = session.subscription as string;
         const sub = await stripe.subscriptions.retrieve(subscriptionId);
@@ -74,6 +84,7 @@ export async function POST(request: NextRequest) {
           user_id: userId,
           amount: credits,
           reason: `${plan}_subscription`,
+          stripe_session_id: session.id,
         });
       } else if (session.mode === "payment") {
         // Single credit purchase
@@ -95,6 +106,7 @@ export async function POST(request: NextRequest) {
           user_id: userId,
           amount: credits,
           reason: "credit_purchase",
+          stripe_session_id: session.id,
         });
       }
       break;

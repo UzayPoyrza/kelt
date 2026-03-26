@@ -7,7 +7,7 @@ export async function POST(request: NextRequest) {
   if (error) return error;
 
   const body = await request.json();
-  const { priceId, mode } = body;
+  const { priceId, mode, quantity } = body;
 
   if (!priceId || !mode) {
     return NextResponse.json({ error: "priceId and mode are required" }, { status: 400 });
@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
   const session = await stripe.checkout.sessions.create({
     customer: customerId,
     mode: mode as "subscription" | "payment",
-    line_items: [{ price: priceId, quantity: 1 }],
+    line_items: [{ price: priceId, quantity: quantity || 1 }],
     success_url: `${origin}/studio?checkout=success`,
     cancel_url: `${origin}/upgrade?checkout=canceled`,
     metadata: { userId: user!.id },

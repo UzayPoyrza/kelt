@@ -263,11 +263,12 @@ export function FadeIn({ children, className = "", delay = 0 }: { children: Reac
 
 /* ─── Shared Header ─── */
 
-export function Header({ showNavLinks = false, onScrollToInfo, onScrollToHow, onGenerate }: { showNavLinks?: boolean; onScrollToInfo?: () => void; onScrollToHow?: () => void; onGenerate?: () => void }) {
+export function Header({ showNavLinks = false, hideFloatingNav = false, onScrollToInfo, onScrollToHow, onGenerate }: { showNavLinks?: boolean; hideFloatingNav?: boolean; onScrollToInfo?: () => void; onScrollToHow?: () => void; onGenerate?: () => void }) {
   const [showBlob, setShowBlob] = useState(false);
   const lastScrollY = useRef(0);
 
   useEffect(() => {
+    if (hideFloatingNav) return;
     const handleScroll = () => {
       const y = window.scrollY;
       const goingUp = y < lastScrollY.current;
@@ -281,7 +282,7 @@ export function Header({ showNavLinks = false, onScrollToInfo, onScrollToHow, on
     };
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
+  }, [hideFloatingNav]);
 
   return (
     <>

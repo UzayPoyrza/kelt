@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "motion/react";
 import { Suspense } from "react";
@@ -32,6 +32,7 @@ import {
   Sparkles,
   Info,
   FlaskConical,
+  Pencil,
 } from "lucide-react";
 import {
   AmbientBackground,
@@ -46,13 +47,15 @@ import { createClient } from "@/lib/supabase/client";
 function CreateContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const prompt = searchParams.get("prompt") || "";
+  const initialPrompt = searchParams.get("prompt") || "";
+  const [prompt, setPrompt] = useState(initialPrompt);
   const detectedIntent = detectIntent(prompt);
 
   const [duration, setDuration] = useState<number>(10);
   const [voice, setVoice] = useState<string>("aria");
   const [voicePlaying, setVoicePlaying] = useState<string | null>(null);
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const generateRef = useRef<HTMLDivElement>(null);
   const [selectedProtocol, setSelectedProtocol] = useState<string | null>(null);
   const [showProtocolInfo, setShowProtocolInfo] = useState(false);
 
@@ -60,8 +63,14 @@ function CreateContent() {
   const recommendedProtocol = detectedIntent === "sleep" ? "CBT-I" : detectedIntent === "focus" ? "MBSR" : detectedIntent === "stress" ? "PMR" : "MBSR";
 
   const [isGenerating, setIsGenerating] = useState(false);
+  const [promptError, setPromptError] = useState(false);
 
   const handleGenerate = useCallback(async () => {
+    if (!prompt.trim()) {
+      setPromptError(true);
+      return;
+    }
+    setPromptError(false);
     // Check if user is authenticated
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
@@ -103,7 +112,7 @@ function CreateContent() {
     router.push(`/session?${params.toString()}`);
   }, [router, prompt, voice, duration, detectedIntent, selectedProtocol, recommendedProtocol]);
 
-  if (!prompt) {
+  if (!initialPrompt) {
     router.push("/");
     return null;
   }
@@ -113,7 +122,7 @@ function CreateContent() {
       <section className="relative min-h-screen flex flex-col overflow-hidden" onClick={() => voicePlaying && setVoicePlaying(null)}>
         <AmbientBackground />
 
-        <Header />
+        <Header hideFloatingNav />
 
         <div className="relative z-10 flex-1 flex items-start justify-center px-4 sm:px-6 pt-6 sm:pt-8 pb-8 sm:pb-10">
           <motion.div
@@ -135,9 +144,60 @@ function CreateContent() {
               <ChevronLeft className="w-4 h-4" />Back
             </motion.button>
 
-            {/* Prompt display */}
-            <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="mb-8 sm:mb-10 text-center">
-              <p className="text-xl sm:text-2xl text-[var(--color-sand-900)] max-w-md mx-auto leading-snug" style={{ fontFamily: "var(--font-display)" }}>&ldquo;{prompt}&rdquo;</p>
+            {/* Step indicator */}
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.05 }} className="flex items-center justify-center gap-1.5 mb-6 sm:mb-8 text-[11px]" style={{ fontFamily: "var(--font-body)" }}>
+              <span className="text-[var(--color-sand-400)] flex items-center gap-1">
+                <span className="inline-flex items-center justify-center w-[18px] h-[18px] rounded-full text-[10px] !leading-[0] border border-[var(--color-sand-300)] text-[var(--color-sand-400)] font-medium">1</span>
+                Prompt
+              </span>
+              <span className="text-[var(--color-sand-300)]">→</span>
+              <span className="text-[var(--color-sand-900)] flex items-center gap-1 font-medium">
+                <span className="inline-flex items-center justify-center w-[18px] h-[18px] rounded-full text-[10px] !leading-[0] bg-[var(--color-sand-900)] text-[var(--color-sand-50)] font-medium">2</span>
+                Customize
+              </span>
+              <span className="text-[var(--color-sand-300)]">→</span>
+              <span className="text-[var(--color-sand-300)] flex items-center gap-1">
+                <span className="inline-flex items-center justify-center w-[18px] h-[18px] rounded-full text-[10px] !leading-[0] border border-[var(--color-sand-300)] text-[var(--color-sand-300)] font-medium">3</span>
+                Generate
+              </span>
+            </motion.div>
+
+            {/* Editable prompt */}
+            <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="mb-8 sm:mb-10 text-center max-w-md mx-auto">
+              <p className="text-xl sm:text-2xl text-[var(--color-sand-900)] leading-snug inline" style={{ fontFamily: "var(--font-display)" }}>
+                <span className="text-[var(--color-sand-400)] select-none">&ldquo;</span>
+                <span
+                  contentEditable
+                  suppressContentEditableWarning
+                  onBlur={(e) => {
+                    const text = (e.currentTarget.textContent || "").slice(0, 50);
+                    e.currentTarget.textContent = text;
+                    setPrompt(text);
+                  }}
+                  onInput={(e) => {
+                    const text = e.currentTarget.textContent || "";
+                    if (text.length > 50) {
+                      e.currentTarget.textContent = text.slice(0, 50);
+                      const range = document.createRange();
+                      const sel = window.getSelection();
+                      range.selectNodeContents(e.currentTarget);
+                      range.collapse(false);
+                      sel?.removeAllRanges();
+                      sel?.addRange(range);
+                    }
+                  }}
+                  onKeyDown={(e) => { if (e.key === "Enter") e.preventDefault(); }}
+                  onFocus={() => setPromptError(false)}
+                  className={`outline-none border-b transition-colors ${promptError ? "border-[var(--color-ember)]" : "border-transparent focus:border-[var(--color-sand-300)]"}`}
+                >{prompt}</span>
+                <span className="text-[var(--color-sand-400)] select-none">&rdquo;</span>
+                <Pencil className="w-3 h-3 text-[var(--color-sand-400)] inline-block ml-1.5 mb-1" />
+              </p>
+              {promptError && (
+                <p className="text-xs text-[var(--color-ember)] mt-2 block" style={{ fontFamily: "var(--font-body)" }}>
+                  Write something to describe your meditation
+                </p>
+              )}
             </motion.div>
 
             {/* Duration */}
@@ -198,7 +258,7 @@ function CreateContent() {
             {/* Advanced — Protocol selection */}
             <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="mb-10">
               <button
-                onClick={() => setShowAdvanced(!showAdvanced)}
+                onClick={() => { setShowAdvanced(!showAdvanced); setTimeout(() => generateRef.current?.scrollIntoView({ behavior: "smooth", block: "end" }), 300); }}
                 className="flex items-center gap-3 w-full px-4 py-3 rounded-xl bg-white/60 border border-[var(--color-sand-200)] hover:border-[var(--color-sand-300)] hover:bg-white transition-all cursor-pointer"
                 style={{ fontFamily: "var(--font-body)" }}
               >
@@ -274,7 +334,7 @@ function CreateContent() {
             </motion.div>
 
             {/* Generate button */}
-            <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }} className="flex justify-center">
+            <motion.div ref={generateRef} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }} className="flex justify-center">
               <div className="relative rounded-2xl group w-full sm:w-auto">
                 <div className="absolute -inset-[2.5px] rounded-2xl bg-[length:300%_300%] animate-[border-glow_4s_ease_infinite] opacity-90 group-hover:opacity-100 transition-opacity duration-300" style={{ background: "linear-gradient(135deg, var(--color-sage), var(--color-ocean), var(--color-dusk), var(--color-ember), var(--color-sage))", backgroundSize: "300% 300%" }} />
                 <motion.button

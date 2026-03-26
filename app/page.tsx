@@ -48,7 +48,7 @@ function CinematicTransition() {
   return (
     <div
       ref={ref}
-      className="relative py-16 sm:py-24 md:py-32 px-4 sm:px-6 overflow-hidden"
+      className="relative pt-16 pb-8 sm:pt-24 sm:pb-12 md:pt-32 md:pb-14 px-4 sm:px-6 overflow-hidden"
       style={{ background: "var(--color-sand-800)" }}
     >
       {/* Giant ghost text — slow drift */}
@@ -148,6 +148,23 @@ function CinematicTransition() {
           </motion.div>
         ))}
       </div>
+
+      {/* Scroll indicator */}
+      <motion.div
+        className="relative z-10 flex flex-col items-center gap-2 mt-12 sm:mt-16 cursor-pointer"
+        initial={{ opacity: 0 }}
+        animate={inView ? { opacity: 1 } : {}}
+        transition={{ duration: 0.6, delay: 1.5 }}
+        onClick={() => {
+          const next = ref.current?.nextElementSibling;
+          if (next) next.scrollIntoView({ behavior: "smooth" });
+        }}
+      >
+        <span className="text-xs uppercase tracking-[0.2em] text-white/60 font-medium" style={{ fontFamily: "var(--font-body)" }}>Explanation</span>
+        <motion.div animate={{ y: [0, 8, 0] }} transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}>
+          <ChevronDown className="w-6 h-6 text-white/60" />
+        </motion.div>
+      </motion.div>
     </div>
   );
 }
@@ -476,8 +493,8 @@ export default function HomePage() {
       {/* ════════════════════════════════════════════
           SECTION 0 — AUDIO SAMPLES
          ════════════════════════════════════════════ */}
-      <section ref={infoRef} className="relative min-h-screen pb-24 sm:pb-24 px-4 sm:px-6 scroll-mt-0" style={{ background: "var(--color-sand-900)" }}>
-        <div className="max-w-6xl mx-auto w-full pt-12 sm:pt-24 md:pt-32">
+      <section ref={infoRef} className="relative pb-10 sm:pb-12 px-4 sm:px-6 scroll-mt-0" style={{ background: "var(--color-sand-900)" }}>
+        <div className="max-w-6xl mx-auto w-full pt-10 sm:pt-16 md:pt-20">
           <FadeIn className="text-center mb-10">
             <h2 className="text-[1.75rem] sm:text-[2.5rem] md:text-[3.5rem] text-[var(--color-sand-50)] leading-tight mb-4">
               Don&apos;t take our word for it.<br /><span className="bg-clip-text text-transparent bg-[length:300%_300%] animate-[border-glow_4s_ease_infinite]" style={{ backgroundImage: "linear-gradient(135deg, var(--color-sage), var(--color-ocean), var(--color-dusk), var(--color-ember), var(--color-sage))", backgroundSize: "300% 300%" }}>Listen.</span>
@@ -488,7 +505,7 @@ export default function HomePage() {
             </p>
           </FadeIn>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 lg:gap-3">
             {samples.map((s, idx) => {
               const isActive = playing === s.id;
               const pct = sampleProgress[s.id] || 0;
@@ -502,28 +519,28 @@ export default function HomePage() {
                       />
                     )}
 
-                    <div className="relative z-10 p-4">
-                      <div className="flex items-center justify-between mb-3">
-                        <span className="text-base text-white/90 font-medium" style={{ fontFamily: "var(--font-display)" }}>
+                    <div className="relative z-10 p-3 lg:p-4">
+                      <div className="flex items-center justify-between mb-2 lg:mb-3">
+                        <span className="text-sm lg:text-base text-white/90 font-medium" style={{ fontFamily: "var(--font-display)" }}>
                           {s.label}
-                          {s.sampleStart ? <span className="text-[11px] text-white/60 font-normal ml-2" style={{ fontFamily: "var(--font-body)" }}>· from mid-session</span> : null}
+                          {s.sampleStart ? <span className="text-[10px] lg:text-[11px] text-white/60 font-normal ml-2" style={{ fontFamily: "var(--font-body)" }}>· from mid-session</span> : null}
                         </span>
-                        <div className={`shrink-0 w-9 h-9 rounded-full flex items-center justify-center transition-all ${isActive ? "bg-white text-[var(--color-sand-900)]" : "bg-white/10 text-white/60"}`}>
-                          {isActive ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5 ml-0.5" />}
+                        <div className={`shrink-0 w-8 h-8 lg:w-9 lg:h-9 rounded-full flex items-center justify-center transition-all ${isActive ? "bg-white text-[var(--color-sand-900)]" : "bg-white/10 text-white/60"}`}>
+                          {isActive ? <Pause className="w-3 h-3 lg:w-3.5 lg:h-3.5" /> : <Play className="w-3 h-3 lg:w-3.5 lg:h-3.5 ml-0.5" />}
                         </div>
                       </div>
 
-                      <div className="space-y-2 mb-3" style={{ fontFamily: "var(--font-body)" }}>
-                        <div className="flex items-baseline gap-2 sm:gap-3">
-                          <span className="text-[10px] uppercase tracking-wider text-white/25 w-14 sm:w-16 shrink-0">Prompt</span>
-                          <span className="text-xs text-white/50 italic">&ldquo;{s.prompt}&rdquo;</span>
+                      <div className="space-y-1 lg:space-y-2 mb-2 lg:mb-3" style={{ fontFamily: "var(--font-body)" }}>
+                        <div className="flex items-baseline gap-2 lg:gap-3">
+                          <span className="text-[9px] lg:text-[10px] uppercase tracking-wider text-white/25 w-12 lg:w-16 shrink-0">Prompt</span>
+                          <span className="text-[11px] lg:text-xs text-white/50 italic">&ldquo;{s.prompt}&rdquo;</span>
                         </div>
-                        <div className="flex items-baseline gap-2 sm:gap-3">
-                          <span className="text-[10px] uppercase tracking-wider text-white/25 w-14 sm:w-16 shrink-0">Voice</span>
-                          <span className="text-xs text-white/50">{s.voice}</span>
+                        <div className="flex items-baseline gap-2 lg:gap-3">
+                          <span className="text-[9px] lg:text-[10px] uppercase tracking-wider text-white/25 w-12 lg:w-16 shrink-0">Voice</span>
+                          <span className="text-[11px] lg:text-xs text-white/50">{s.voice}</span>
                         </div>
-                        <div className="flex items-center gap-2 sm:gap-3">
-                          <span className="text-[10px] uppercase tracking-wider text-white/25 w-14 sm:w-16 shrink-0">Sound</span>
+                        <div className="flex items-center gap-2 lg:gap-3">
+                          <span className="text-[9px] lg:text-[10px] uppercase tracking-wider text-white/25 w-12 lg:w-16 shrink-0">Sound</span>
                           <div className="flex flex-wrap gap-1">
                             {s.sounds.map((sound) => {
                               const isSelected = sampleSound[s.id] === sound.label;
@@ -531,7 +548,7 @@ export default function HomePage() {
                                 <button
                                   key={sound.label}
                                   onClick={(e) => { e.stopPropagation(); setSampleSound((prev) => ({ ...prev, [s.id]: sound.label })); }}
-                                  className={`px-2 py-0.5 rounded-full text-[10px] transition-all cursor-pointer ${isSelected ? "bg-white/20 text-white/90" : "bg-white/[0.04] text-white/35 hover:bg-white/10 hover:text-white/60"}`}
+                                  className={`px-1.5 lg:px-2 py-0.5 rounded-full text-[9px] lg:text-[10px] transition-all cursor-pointer ${isSelected ? "bg-white/20 text-white/90" : "bg-white/[0.04] text-white/35 hover:bg-white/10 hover:text-white/60"}`}
                                 >
                                   {sound.label}
                                 </button>
@@ -539,8 +556,8 @@ export default function HomePage() {
                             })}
                           </div>
                         </div>
-                        <div className="flex items-center gap-2 sm:gap-3">
-                          <span className="text-[10px] uppercase tracking-wider text-white/25 w-14 sm:w-16 shrink-0">BG Vol</span>
+                        <div className="flex items-center gap-2 lg:gap-3">
+                          <span className="text-[9px] lg:text-[10px] uppercase tracking-wider text-white/25 w-12 lg:w-16 shrink-0">BG Vol</span>
                           <div className="flex items-center gap-2 flex-1" onClick={(e) => e.stopPropagation()}>
                             <Volume2 className="w-3 h-3 text-white/25 shrink-0" />
                             <input
@@ -550,15 +567,15 @@ export default function HomePage() {
                               step={0.01}
                               value={bgVolume[s.id] ?? 0.3}
                               onChange={(e) => setBgVolume((prev) => ({ ...prev, [s.id]: parseFloat(e.target.value) }))}
-                              className="w-20 sm:w-28 accent-white/60"
+                              className="w-16 lg:w-28 accent-white/60"
                               style={{ height: "2px" }}
                             />
-                            <span className="text-[10px] text-white/35 tabular-nums w-7 text-right">{Math.round((bgVolume[s.id] ?? 0.3) * 100)}%</span>
+                            <span className="text-[9px] lg:text-[10px] text-white/35 tabular-nums w-7 text-right">{Math.round((bgVolume[s.id] ?? 0.3) * 100)}%</span>
                           </div>
                         </div>
-                        <div className="flex items-baseline gap-2 sm:gap-3">
-                          <span className="text-[10px] uppercase tracking-wider text-white/25 w-14 sm:w-16 shrink-0">Protocol</span>
-                          <span className="text-xs text-white/50">{s.protocol}</span>
+                        <div className="flex items-baseline gap-2 lg:gap-3">
+                          <span className="text-[9px] lg:text-[10px] uppercase tracking-wider text-white/25 w-12 lg:w-16 shrink-0">Protocol</span>
+                          <span className="text-[11px] lg:text-xs text-white/50">{s.protocol}</span>
                         </div>
                       </div>
 
@@ -570,7 +587,7 @@ export default function HomePage() {
           </div>
         </div>
 
-        <motion.div className="absolute bottom-6 sm:bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1 }}>
+        <motion.div className="flex flex-col items-center gap-2 mt-12 sm:mt-16" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1 }}>
           <span className="text-xs uppercase tracking-[0.2em] text-white/60 font-medium" style={{ fontFamily: "var(--font-body)" }}>Scroll</span>
           <motion.div animate={{ y: [0, 8, 0] }} transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}>
             <ChevronDown className="w-6 h-6 text-white/60" />
@@ -838,7 +855,7 @@ export default function HomePage() {
                           {example.protocols.map((p, pi) => (
                             <motion.span
                               key={p.label}
-                              className="px-2.5 py-1 rounded-full text-xs font-medium"
+                              className="px-2.5 py-1 rounded-full text-xs font-medium whitespace-nowrap"
                               style={{ fontFamily: "var(--font-body)", background: p.bg, color: p.color }}
                               initial={{ opacity: 0, scale: 0.8 }}
                               whileInView={{ opacity: 1, scale: 1 }}

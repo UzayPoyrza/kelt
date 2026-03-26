@@ -7,7 +7,9 @@
     "dev:clean": "rm -rf .next && next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@radix-ui/react-accordion": "1.2.3",
@@ -64,7 +66,9 @@
     "@types/node": "22.15.0",
     "@types/react": "18.3.20",
     "@types/react-dom": "18.3.7",
+    "@vitejs/plugin-react": "^6.0.1",
     "tailwindcss": "4.1.12",
-    "typescript": "5.8.3"
+    "typescript": "5.8.3",
+    "vitest": "^4.1.1"
   }
 }
