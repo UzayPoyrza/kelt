@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthUser } from "@/app/api/_lib/auth";
-import { generateScript, deriveSessionName } from "@/lib/generateScript";
+import { generateScript, deriveSessionName, serializeScript } from "@/lib/generateScript";
 
 export async function POST(request: NextRequest) {
   const { user, supabase, error } = await getAuthUser();
   if (error) return error;
 
   const body = await request.json();
-  const { prompt, voice, duration, protocol, soundscape, sessionId } = body;
+  const { prompt, voice, duration, protocol, soundscape, sessionId, script: serializedScript } = body;
 
   if (!prompt) {
     return NextResponse.json({ error: "Prompt is required" }, { status: 400 });
@@ -103,8 +103,8 @@ export async function POST(request: NextRequest) {
     generation_id: generation.id,
   });
 
-  // Generate script (mock)
-  const script = generateScript(prompt);
+  // Use serialized script from editor if provided, otherwise fall back to mock
+  const script = serializedScript || serializeScript(generateScript(prompt));
 
   // Update session with script (only set title if it was a new session)
   const sessionUpdate: Record<string, unknown> = { script };

@@ -54,7 +54,7 @@ import {
 import svgPaths from "@/lib/svg-paths";
 import { suggestions, voices as sharedVoices, durations as sharedDurations, detectIntent, rotatingPhrases, protocols } from "@/lib/shared";
 import { ProfileProvider, useProfile } from "@/lib/hooks/useProfile";
-import { generateScript as generateScriptFn, deriveSessionName, estimateDuration, type ScriptBlock } from "@/lib/generateScript";
+import { generateScript as generateScriptFn, deriveSessionName, estimateDuration, serializeScript, parseRawScript, type ScriptBlock } from "@/lib/generateScript";
 import { useSearchParams } from "next/navigation";
 import { Suspense } from "react";
 
@@ -769,6 +769,7 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, savedScript,
           duration: estimated.minutes,
           soundscape: sessionSound,
           sessionId: sessionIdState,
+          script: serializeScript(script),
         }),
       });
       if (res.status === 402) {
@@ -810,6 +811,12 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, savedScript,
       setIsGenerating(false);
     }
   }, [script, prompt, sessionVoice, estimated.minutes, sessionSound, sessionIdState, onGenerated]);
+
+  const handlePreviewScript = useCallback(() => {
+    const serialized = serializeScript(script);
+    sessionStorage.setItem("script-preview", serialized);
+    window.open("/script-preview", "_blank");
+  }, [script]);
 
   // Build a mock session for the player
   const intent = prompt.toLowerCase().includes("sleep") ? "sleep" : prompt.toLowerCase().includes("focus") ? "focus" : prompt.toLowerCase().includes("stress") || prompt.toLowerCase().includes("anxi") ? "stress" : "focus";
@@ -1167,7 +1174,7 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, savedScript,
                   const dur = block.pauseDuration ?? 0;
                   const isEmpty = dur === 0;
                   const hasError = errorPauseIds.has(block.id);
-                  const isLong = dur >= 3;
+                  const isLong = dur >= 4;
                   const isEditingDur = editingPauseId === block.id;
                   const swapAnim = swappedUp === block.id ? "swap-up" : swappedDown === block.id ? "swap-down" : undefined;
                   const canMoveUp = script.slice(0, index).some(b => b.type === "pause");
@@ -1526,6 +1533,13 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, savedScript,
               )}
             </button>
           </div>
+          <button
+            onClick={handlePreviewScript}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-[#e4e4e7] bg-white text-[#52525b] hover:bg-[#f4f4f5] transition-colors text-xs cursor-pointer"
+            style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}
+          >
+            Preview .txt
+          </button>
           </div>
         </div>
 
