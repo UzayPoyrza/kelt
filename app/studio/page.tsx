@@ -1198,8 +1198,8 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, savedScript,
                           width: isLong ? "9px" : "7px",
                           height: isLong ? "9px" : "7px",
                           borderRadius: "50%",
-                          background: hasError ? "#ef4444" : isEmpty ? "#d4d4d8" : isLong ? "var(--color-dusk)" : "#a1a1aa",
-                          border: `2px solid ${hasError ? "#fecaca" : isEmpty ? "#e8e8ec" : isLong ? "rgba(139,126,166,0.25)" : "#e4e4e7"}`,
+                          background: hasError ? "#ef4444" : isEmpty ? "#d4d4d8" : isLong ? "var(--color-sage)" : "#a1a1aa",
+                          border: `2px solid ${hasError ? "#fecaca" : isEmpty ? "#e8e8ec" : isLong ? "rgba(122,158,126,0.25)" : "#e4e4e7"}`,
                         }} />
                       </div>
 
@@ -1334,9 +1334,9 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, savedScript,
                       <div className="absolute left-1/2 -translate-x-1/2 top-[14px] z-10 w-[26px] h-[26px] rounded-full flex items-center justify-center text-[10px] tabular-nums transition-all"
                         style={{
                           fontFamily: "var(--font-body)", fontWeight: 600,
-                          background: isSelected ? "var(--color-sage)" : "#fff",
-                          color: isSelected ? "#fff" : "#71717a",
-                          border: isSelected ? "2px solid var(--color-sage)" : "2px solid #e4e4e7",
+                          background: isSelected ? "var(--color-sage)" : "rgba(122,158,126,0.08)",
+                          color: isSelected ? "#fff" : "#52525b",
+                          border: isSelected ? "2px solid var(--color-sage)" : "2px solid rgba(122,158,126,0.2)",
                           boxShadow: isSelected ? "0 0 0 3px rgba(122,158,126,0.15)" : "none",
                         }}
                       >
