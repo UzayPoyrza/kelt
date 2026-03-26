@@ -1039,7 +1039,7 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, savedScript,
         {/* Script toolbar */}
         <div className="flex items-center gap-2 sm:gap-3 px-3 sm:px-6 py-3 border-b border-[#e4e4e7]" style={{ background: "#fafafa" }}>
           {/* Left: Hamburger (mobile) + Back + Undo/Redo */}
-          <div className="flex items-center gap-1 shrink-0 w-auto sm:w-[200px]">
+          <div className="flex items-center gap-1 shrink-0">
             {onToggleSidebar && (
               <button onClick={onToggleSidebar} className="lg:hidden w-7 h-7 rounded-md flex items-center justify-center text-[#52525b] hover:text-[#18181b] hover:bg-[#f4f4f5] transition-colors cursor-pointer mr-1">
                 <Menu className="w-4 h-4" />
@@ -1084,7 +1084,7 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, savedScript,
               />
             ) : (
               <h2
-                className="text-sm text-[#18181b] cursor-text px-2 py-0.5 rounded-md studio-title-hover truncate"
+                className="text-sm text-[#18181b] cursor-text px-2 py-0.5 rounded-md studio-title-hover truncate whitespace-nowrap"
                 style={{ fontFamily: "var(--font-display)", fontWeight: 500, border: "1px solid transparent" }}
                 onClick={() => { setIsRenamingSession(true); setTimeout(() => renameInputRef.current?.select(), 0); }}
                 title="Click to rename"
@@ -1095,7 +1095,7 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, savedScript,
           </div>
 
           {/* Right: Autosave status + stats */}
-          <div className="flex items-center gap-2 shrink-0 justify-end w-auto sm:w-[200px]">
+          <div className="flex items-center gap-2 shrink-0 justify-end">
             <div className="flex items-center gap-1.5 justify-end">
               <AnimatePresence mode="wait">
                 {saveStatus === "saving" ? (
