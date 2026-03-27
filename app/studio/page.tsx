@@ -541,8 +541,8 @@ function EmptyState({ label }: { label: string }) {
 
 /* ─── Studio Session View ─── */
 
-function StudioSession({ prompt, voice, duration, sound, sessionId, savedScript, savedTitle, savedVolume, onBack, onToggleSidebar, onGenerated }: {
-  prompt: string; voice: string; duration: number; sound: string; sessionId: string | null; savedScript?: ScriptBlock[] | null; savedTitle?: string | null; savedVolume?: number; onBack: () => void; onToggleSidebar?: () => void; onGenerated?: () => void;
+function StudioSession({ prompt, voice, duration, sound, sessionId, savedScript, savedTitle, savedVolume, onBack, onToggleSidebar, onGenerated, onSessionCreated }: {
+  prompt: string; voice: string; duration: number; sound: string; sessionId: string | null; savedScript?: ScriptBlock[] | null; savedTitle?: string | null; savedVolume?: number; onBack: () => void; onToggleSidebar?: () => void; onGenerated?: () => void; onSessionCreated?: (id: string) => void;
 }) {
   const { profile } = useProfile();
   const [script, setScript] = useState<ScriptBlock[]>(() => savedScript && savedScript.length > 0 ? savedScript : generateScript(prompt));
@@ -572,6 +572,8 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, savedScript,
   const [hasGenerated, setHasGenerated] = useState(!!(savedScript && savedScript.length > 0));
   const [sessionName, setSessionName] = useState(() => savedTitle || deriveSessionName(prompt));
   const [sessionIdState, setSessionIdState] = useState<string | null>(sessionId);
+  const onSessionCreatedRef = useRef(onSessionCreated);
+  onSessionCreatedRef.current = onSessionCreated;
   const [isRenamingSession, setIsRenamingSession] = useState(false);
 
   // Session generations history
@@ -677,6 +679,7 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, savedScript,
       if (res.ok) {
         const data = await res.json();
         setSessionIdState(data.id);
+        onSessionCreatedRef.current?.(data.id);
       }
     } else {
       await fetch(`/api/sessions/${payload.sessionId}`, {
@@ -830,6 +833,7 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, savedScript,
       const data = await res.json();
       if (data.session) {
         setSessionIdState(data.session.id);
+        onSessionCreatedRef.current?.(data.session.id);
       }
       // Instantly add the new generation to session history
       if (data.generation) {
@@ -918,7 +922,9 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, savedScript,
     markEdited();
   }, [markEdited, selectedBlock, script]);
 
-  const nextId = useRef(100);
+  const nextId = useRef(
+    Math.max(100, ...((savedScript && savedScript.length > 0 ? savedScript : generateScript(prompt)).map(b => { const n = Number(b.id); return isNaN(n) ? 0 : n + 1; })))
+  );
   const addingBlock = useRef(false);
 
   const setPauseDuration = useCallback((id: string, seconds: number) => {
@@ -2404,9 +2410,9 @@ function StudioPageContent() {
     }
   }, [searchParams, refetchProfile]);
 
-  // Open a specific session from URL param (e.g. from /session "Open in Studio")
+  // Open a specific session from URL param (e.g. from /session "Open in Studio", or ?session= deep link)
   useEffect(() => {
-    const urlSessionId = searchParams.get("sessionId");
+    const urlSessionId = searchParams.get("sessionId") || searchParams.get("session");
     if (!urlSessionId) return;
     (async () => {
       try {
@@ -2425,7 +2431,10 @@ function StudioPageContent() {
         });
         setActiveNav("generate" as NavId);
         setGenStep("studio");
-        window.history.replaceState({}, "", "/studio");
+        // Normalize legacy ?sessionId= to ?session=
+        if (searchParams.get("sessionId")) {
+          router.replace(`/studio?session=${full.id}`, { scroll: false });
+        }
       } catch { /* ignore */ }
     })();
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -2560,7 +2569,18 @@ function StudioPageContent() {
     if (id === "sessions") fetchSessions();
     if (id === "history") fetchGenerations();
     if (id === "sessions" || id === "history") refetchProfile();
+    // Clear session param when navigating away from a session
+    router.replace("/studio", { scroll: false });
   };
+
+  // Update URL to reflect the active session (or clear it)
+  const updateSessionUrl = useCallback((sessionId: string | null) => {
+    if (sessionId) {
+      router.replace(`/studio?session=${sessionId}`, { scroll: false });
+    } else {
+      router.replace("/studio", { scroll: false });
+    }
+  }, [router]);
 
   const filteredSessions = sessions;
 
@@ -2662,9 +2682,10 @@ function StudioPageContent() {
             savedScript={genConfig.script}
             savedTitle={genConfig.title}
             savedVolume={genConfig.soundVolume}
-            onBack={() => { setActiveNav("sessions"); setGenStep("input"); fetchSessions(); refetchProfile(); }}
+            onBack={() => { setActiveNav("sessions"); setGenStep("input"); fetchSessions(); refetchProfile(); updateSessionUrl(null); }}
             onToggleSidebar={() => setSidebarOpen(true)}
             onGenerated={() => { fetchGenerations(); fetchSessions(); refetchProfile(); }}
+            onSessionCreated={(id) => updateSessionUrl(id)}
           />
         </div>
       </div>
@@ -2679,7 +2700,7 @@ function StudioPageContent() {
       <motion.aside initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.35 }}
         className={`w-56 shrink-0 border-r border-[var(--color-sand-200)] bg-white flex flex-col fixed top-0 left-0 h-screen z-50 transition-transform duration-200 ${sidebarOpen ? "translate-x-0" : "-translate-x-full"} lg:translate-x-0`}>
         <div className="px-5 pt-6 pb-5 flex items-center justify-between">
-          <button onClick={() => { setActiveNav("sessions" as NavId); setSidebarOpen(false); fetchSessions(); refetchProfile(); }} className="flex items-center gap-2 text-[var(--color-sand-900)] cursor-pointer">
+          <button onClick={() => { setActiveNav("sessions" as NavId); setSidebarOpen(false); fetchSessions(); refetchProfile(); updateSessionUrl(null); }} className="flex items-center gap-2 text-[var(--color-sand-900)] cursor-pointer">
             <Logo />
             <div className="text-left">
               <span className="text-sm tracking-tight block" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>Kilt Studio</span>
@@ -2877,6 +2898,7 @@ function StudioPageContent() {
                           }
                           setActiveNav("generate" as NavId);
                           setGenStep("studio");
+                          updateSessionUrl(session.id);
                         }}
                         onRegen={() => setConfirmDialog({ type: "regenerate", sessionId: session.id, sessionTitle: session.title })}
                         onGenerate={() => setConfirmDialog({ type: "generate", sessionId: session.id, sessionTitle: session.title })}
@@ -3082,6 +3104,7 @@ function StudioPageContent() {
                               setGenConfig({ prompt: session.title, voice: session.voice.toLowerCase(), duration: parseInt(session.duration), sound: session.sound, sessionId: session.id, script: null, title: session.title, soundVolume: 70 });
                               setActiveNav("generate" as NavId);
                               setGenStep("studio");
+                              updateSessionUrl(session.id);
                             }}
                             className="group grid grid-cols-[1fr_60px_70px_80px] sm:grid-cols-[1fr_100px_80px_80px_140px_130px] gap-2 sm:gap-4 items-center px-3 sm:px-5 py-3.5 border-b border-[#f4f4f5] last:border-b-0 hover:bg-[#fafafa] transition-colors cursor-pointer"
                           >
@@ -3099,7 +3122,7 @@ function StudioPageContent() {
                             <div className="flex items-center justify-end gap-1">
                               <div className="relative group/tip">
                                 <button
-                                  onClick={(e) => { e.stopPropagation(); setGenConfig({ prompt: session.title, voice: session.voice.toLowerCase(), duration: parseInt(session.duration), sound: session.sound, sessionId: session.id, script: null, title: session.title, soundVolume: 70 }); setActiveNav("generate" as NavId); setGenStep("studio"); }}
+                                  onClick={(e) => { e.stopPropagation(); setGenConfig({ prompt: session.title, voice: session.voice.toLowerCase(), duration: parseInt(session.duration), sound: session.sound, sessionId: session.id, script: null, title: session.title, soundVolume: 70 }); setActiveNav("generate" as NavId); setGenStep("studio"); updateSessionUrl(session.id); }}
                                   className="w-8 h-8 rounded-lg hover:bg-[#ededfc] flex items-center justify-center text-[#3f3f46] hover:text-[#18181b] transition-colors cursor-pointer"
                                 >
                                   <PenLine className="w-4 h-4" />
@@ -3442,7 +3465,7 @@ function StudioPageContent() {
                   {/* Open in Studio — primary CTA with border glow */}
                   <div className="relative rounded-full group w-full">
                     <div className="absolute -inset-[2.5px] rounded-full bg-[length:300%_300%] animate-[border-glow_4s_ease_infinite] opacity-90 group-hover:opacity-100 transition-opacity duration-300" style={{ background: "linear-gradient(135deg, var(--color-sage), var(--color-ocean), var(--color-dusk), var(--color-ember), var(--color-sage))", backgroundSize: "300% 300%" }} />
-                    <button onClick={() => { if (!genConfig.prompt.trim()) { setGenPromptError(true); return; } setGenPromptError(false); setGenStep("studio"); }}
+                    <button onClick={() => { if (!genConfig.prompt.trim()) { setGenPromptError(true); return; } setGenPromptError(false); setGenStep("studio"); if (genConfig.sessionId) updateSessionUrl(genConfig.sessionId); }}
                       className="relative w-full flex items-center justify-center gap-2.5 py-4 rounded-full bg-[var(--color-sand-900)] text-[var(--color-sand-50)] hover:bg-[var(--color-sand-800)] transition-all shadow-lg cursor-pointer text-sm"
                       style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>
                       <PenLine className="w-4 h-4" />
