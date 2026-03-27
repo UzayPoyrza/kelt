@@ -245,6 +245,7 @@ function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const next = searchParams.get("next") || "/studio";
+  const reason = searchParams.get("reason");
   const [isHovered, setIsHovered] = useState(false);
   const [loadingProvider, setLoadingProvider] = useState<"google" | "apple" | null>(null);
 
@@ -299,7 +300,7 @@ function LoginContent() {
         >
           <Logo />
           <span className="text-lg tracking-tight" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>
-            MindFlow
+            Incraft
           </span>
         </motion.a>
 
@@ -363,7 +364,7 @@ function LoginContent() {
         >
           <Logo />
           <span className="text-lg tracking-tight" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>
-            MindFlow
+            Incraft
           </span>
         </motion.a>
 
@@ -383,7 +384,7 @@ function LoginContent() {
             <h1 className="text-[1.75rem] sm:text-[2.25rem] md:text-[2.75rem] lg:text-[2rem] xl:text-[2.5rem] text-[var(--color-sand-900)] leading-tight mb-3">
               Welcome to
               <br />
-              <span className="italic whitespace-nowrap bg-clip-text text-transparent bg-[length:300%_300%] animate-[border-glow_4s_ease_infinite]" style={{ backgroundImage: "linear-gradient(135deg, var(--color-sage), var(--color-ocean), var(--color-dusk), var(--color-ember), var(--color-sage))", backgroundSize: "300% 300%" }}>Kelt Studio</span>
+              <span className="italic whitespace-nowrap bg-clip-text text-transparent bg-[length:300%_300%] animate-[border-glow_4s_ease_infinite]" style={{ backgroundImage: "linear-gradient(135deg, var(--color-sage), var(--color-ocean), var(--color-dusk), var(--color-ember), var(--color-sage))", backgroundSize: "300% 300%" }}>Incraft Studio</span>
             </h1>
             <p className="text-[var(--color-sand-500)] text-sm leading-relaxed" style={{ fontFamily: "var(--font-body)" }}>
               Sign in to edit, remix, and perfect your AI-generated meditations.
@@ -397,6 +398,17 @@ function LoginContent() {
             transition={{ delay: 0.2, duration: 0.4 }}
             className="w-full"
           >
+            {reason === "credits" && (
+              <div className="mb-5 px-4 py-3 rounded-xl border border-[var(--color-ember)]/30 bg-[var(--color-ember)]/5">
+                <p className="text-sm text-[var(--color-sand-900)]" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>
+                  You&apos;ve used your free trial.
+                </p>
+                <p className="text-xs text-[var(--color-sand-500)] mt-0.5" style={{ fontFamily: "var(--font-body)" }}>
+                  Sign up to get 3 credits — free.
+                </p>
+              </div>
+            )}
+
             <p
               className="text-xs uppercase tracking-widest text-[var(--color-sand-500)] mb-4 font-medium"
               style={{ fontFamily: "var(--font-body)" }}

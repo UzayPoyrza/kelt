@@ -501,7 +501,7 @@ export default function HomePage() {
             </h2>
             <p className="text-base text-white/50 max-w-xl mx-auto leading-relaxed" style={{ fontFamily: "var(--font-body)" }}>
               Zero editing. Zero post-production. Every session below was generated
-              in one shot — entirely using Kelt.
+              in one shot — entirely using Incraft.
             </p>
           </FadeIn>
 
@@ -625,7 +625,7 @@ export default function HomePage() {
                   <div className="w-2 h-2 rounded-full bg-[var(--color-sand-300)]" />
                   <div className="w-2 h-2 rounded-full bg-[var(--color-sand-300)]" />
                 </div>
-                <span className="text-[10px] text-[var(--color-sand-400)] ml-1" style={{ fontFamily: "var(--font-body)" }}>MindFlow Session — First 24 seconds</span>
+                <span className="text-[10px] text-[var(--color-sand-400)] ml-1" style={{ fontFamily: "var(--font-body)" }}>Incraft Session — First 24 seconds</span>
               </div>
 
               <div className="p-5 md:p-7">
@@ -927,11 +927,11 @@ export default function HomePage() {
         <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2 text-[var(--color-sand-50)]">
             <Logo />
-            <span className="text-sm" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>MindFlow</span>
+            <span className="text-sm" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>Incraft</span>
           </div>
           <a href="/contact" className="text-[12px] text-white/50 hover:text-white/80 transition-colors" style={{ fontFamily: "var(--font-body)" }}>Contact</a>
           <p className="text-xs text-white/40" style={{ fontFamily: "var(--font-body)" }}>
-            &copy; 2026 MindFlow. All rights reserved.
+            &copy; 2026 Incraft. All rights reserved.
           </p>
         </div>
       </footer>

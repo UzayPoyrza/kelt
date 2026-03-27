@@ -142,7 +142,7 @@ function SessionContent() {
             {/* ─── Ready ─── */}
             {stage === "ready" && (
               <motion.div key="ready" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="w-full max-w-xl mx-auto">
-                {/* Top row: Back + (Edit in Kilt Studio (Free) when picker is open) */}
+                {/* Top row: Back + (Edit in Incraft Studio (Free) when picker is open) */}
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-center justify-between mb-3">
                   <button
                     onClick={() => router.push(`/create?prompt=${encodeURIComponent(prompt)}`)}
@@ -159,7 +159,7 @@ function SessionContent() {
                         style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}
                       >
                         <Sparkles className="w-3.5 h-3.5" />
-                        Edit in Kilt Studio (Free)
+                        Edit in Incraft Studio (Free)
                       </span>
                     </a>
                   )}
@@ -342,7 +342,7 @@ function SessionContent() {
                   </AnimatePresence>
                 </motion.div>
 
-                {/* Edit in Kilt Studio — slim CTA with hover demo */}
+                {/* Edit in Incraft Studio — slim CTA with hover demo */}
                 {!showBgPicker && (
                   <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }} className="mt-4">
                     <a href={sessionId ? `/login?next=/studio?sessionId=${sessionId}` : "/login"} className="block relative rounded-xl group">
@@ -354,7 +354,7 @@ function SessionContent() {
                             <div className="flex items-center gap-2 shrink-0">
                               <PenLine className="w-4 h-4 text-[var(--color-sand-50)]" />
                               <span className="text-[var(--color-sand-50)] text-xs sm:text-sm" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>
-                                Edit in Kilt Studio
+                                Edit in Incraft Studio
                               </span>
                             </div>
                             <div className="w-[1px] h-4 bg-white/10 hidden sm:block" />

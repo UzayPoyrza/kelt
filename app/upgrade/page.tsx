@@ -104,7 +104,7 @@ const faqs = [
   },
   {
     q: "Is there a free tier?",
-    a: "Yes. The free plan includes 3 credits per month so you can experience Kelt before committing. Free sessions also include commercial rights.",
+    a: "Yes. The free plan includes 3 credits per month so you can experience Incraft before committing. Free sessions also include commercial rights.",
   },
   {
     q: "How do single credits work?",
@@ -517,7 +517,7 @@ export default function UpgradePage() {
             className="text-[15px]"
             style={{ fontFamily: "var(--font-display)" }}
           >
-            Kelt
+            Incraft
           </span>
         </div>
         <div className="w-[60px] sm:w-[120px]" />
@@ -1312,7 +1312,7 @@ export default function UpgradePage() {
                 className="text-[13px]"
                 style={{ fontFamily: "var(--font-display)" }}
               >
-                Kelt
+                Incraft
               </span>
             </div>
             <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6">
@@ -1342,7 +1342,7 @@ export default function UpgradePage() {
               className="text-[11px] text-[#d4d4d8]"
               style={{ fontFamily: "var(--font-body)" }}
             >
-              &copy; {new Date().getFullYear()} Kelt. All rights reserved.
+              &copy; {new Date().getFullYear()} Incraft. All rights reserved.
             </p>
           </div>
         </div>

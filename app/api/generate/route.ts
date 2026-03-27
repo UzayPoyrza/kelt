@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthUser } from "@/app/api/_lib/auth";
-import { generateScript, deriveSessionName, serializeScript } from "@/lib/generateScript";
+import { deriveSessionName } from "@/lib/generateScript";
 
 export async function POST(request: NextRequest) {
   const { user, supabase, error } = await getAuthUser();
@@ -103,13 +103,49 @@ export async function POST(request: NextRequest) {
     generation_id: generation.id,
   });
 
-  // Use serialized script from editor if provided, otherwise fall back to mock
-  const script = serializedScript || serializeScript(generateScript(prompt));
+  // Generate script: use editor script if provided, otherwise call Incraft API
+  let script: unknown;
+
+  if (serializedScript) {
+    script = serializedScript;
+  } else {
+    const category = detectCategory(prompt);
+    const scriptResponse = await fetch(
+      "https://j6w7gkn6x7.execute-api.us-east-1.amazonaws.com/v1/sessions/generate",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          prompt,
+          support_choice: category === "default" ? "auto_detect" : category,
+          duration_min: duration || 7,
+          mode: "still",
+          extra_gentle: false,
+          preferred_approach: "auto",
+        }),
+      }
+    );
+
+    if (!scriptResponse.ok) {
+      // Mark generation failed and refund
+      await supabase
+        .from("generations")
+        .update({ status: "failed" })
+        .eq("id", generation.id);
+
+      return NextResponse.json(
+        { error: "Script generation failed" },
+        { status: 502 }
+      );
+    }
+
+    const scriptResult = await scriptResponse.json();
+    script = { raw: scriptResult.script, final: scriptResult.final_script };
+  }
 
   // Update session with script (only set title if it was a new session)
   const sessionUpdate: Record<string, unknown> = { script };
   if (!sessionId) {
-    // New session — title was already set during insert, but update with derived name
     sessionUpdate.title = deriveSessionName(prompt);
   }
   const { data: session } = await supabase

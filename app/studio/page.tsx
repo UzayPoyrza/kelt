@@ -76,8 +76,8 @@ function Logo() {
 const voices = [
   { id: "aria", name: "Aria", desc: "Warm, calm, nurturing", color: "var(--color-sage)" },
   { id: "james", name: "James", desc: "Deep, grounding, steady", color: "var(--color-ocean)" },
-  { id: "luna", name: "Luna", desc: "Soft, dreamy, gentle", color: "var(--color-dusk)" },
-  { id: "kai", name: "Kai", desc: "Clear, focused, present", color: "var(--color-ember)" },
+  { id: "lin", name: "Lin", desc: "Soft, dreamy, gentle", color: "var(--color-dusk)" },
+  { id: "aditya", name: "Aditya", desc: "Clear, focused, present", color: "var(--color-ember)" },
 ];
 
 const durations = [
@@ -643,6 +643,8 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, savedScript,
 
   // ─── Autosave (triggers on completed actions, not keystrokes) ───
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
+  const [ready, setReady] = useState(false);
+  useEffect(() => { requestAnimationFrame(() => setReady(true)); }, []);
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const savedFadeRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -1081,7 +1083,7 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, savedScript,
   }, [markEdited]);
 
   return (
-    <div className="flex flex-col lg:flex-row flex-1 min-h-0 relative" style={{ background: "#ffffff" }}>
+    <div className="flex flex-col lg:flex-row flex-1 min-h-0 relative transition-opacity duration-200" style={{ background: "#ffffff", opacity: ready ? 1 : 0 }}>
       {/* Toast notification */}
       <AnimatePresence>
         {generateWarning && (
@@ -2303,6 +2305,7 @@ function StudioPageContent() {
   const [generations, setGenerations] = useState<GenerationItem[]>([]);
   const [sessionsLoading, setSessionsLoading] = useState(true);
   const { profile, loading: profileLoading, refetch: refetchProfile } = useProfile();
+  const [anonBannerDismissed, setAnonBannerDismissed] = useState(false);
   const [voicePlaying, setVoicePlaying] = useState<string | null>(null);
 
   // Bottom player state
@@ -2414,10 +2417,11 @@ function StudioPageContent() {
   useEffect(() => {
     const urlSessionId = searchParams.get("sessionId") || searchParams.get("session");
     if (!urlSessionId) return;
+    setLoadingSession(true);
     (async () => {
       try {
         const res = await fetch(`/api/sessions/${urlSessionId}`);
-        if (!res.ok) return;
+        if (!res.ok) { setLoadingSession(false); return; }
         const full = await res.json();
         setGenConfig({
           prompt: full.prompt || full.title || "",
@@ -2431,14 +2435,25 @@ function StudioPageContent() {
         });
         setActiveNav("generate" as NavId);
         setGenStep("studio");
-        // Normalize legacy ?sessionId= to ?session=
         if (searchParams.get("sessionId")) {
           router.replace(`/studio?session=${full.id}`, { scroll: false });
         }
       } catch { /* ignore */ }
+      setLoadingSession(false);
     })();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Handle browser back/forward: if URL loses ?session= while in studio, go back to sessions list
+  useEffect(() => {
+    const sessionParam = searchParams.get("session") || searchParams.get("sessionId");
+    if (!sessionParam && activeNav === "generate" && genStep === "studio") {
+      setActiveNav("sessions" as NavId);
+      setGenStep("input");
+      fetchSessions();
+      refetchProfile();
+    }
+  }, [searchParams]);
 
   // Rotating phrases for generate heading
   const [phraseIndex, setPhraseIndex] = useState(0);
@@ -2469,6 +2484,7 @@ function StudioPageContent() {
 
   // Generate flow: "input" → "choose" → "studio"
   const [genStep, setGenStep] = useState<"input" | "choose" | "studio">("input");
+  const [loadingSession, setLoadingSession] = useState(false);
   const [genConfig, setGenConfig] = useState({ prompt: "", voice: "aria", duration: 10, sound: "Sanctuary", sessionId: null as string | null, script: null as ScriptBlock[] | null, title: null as string | null, soundVolume: 70 });
   const [showGenAdvanced, setShowGenAdvanced] = useState(false);
   const genGenerateRef = useRef<HTMLDivElement>(null);
@@ -2576,7 +2592,7 @@ function StudioPageContent() {
   // Update URL to reflect the active session (or clear it)
   const updateSessionUrl = useCallback((sessionId: string | null) => {
     if (sessionId) {
-      router.replace(`/studio?session=${sessionId}`, { scroll: false });
+      router.push(`/studio?session=${sessionId}`, { scroll: false });
     } else {
       router.replace("/studio", { scroll: false });
     }
@@ -2596,8 +2612,7 @@ function StudioPageContent() {
             <button onClick={() => { navigateTo("sessions" as NavId); setSidebarOpen(false); }} className="flex items-center gap-2 text-[var(--color-sand-900)] cursor-pointer">
               <Logo />
               <div className="text-left">
-                <span className="text-sm tracking-tight block" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>Kilt Studio</span>
-                <span className="text-[10px] text-[var(--color-sand-400)] block -mt-0.5" style={{ fontFamily: "var(--font-body)" }}>by MindFlow</span>
+                <span className="text-sm tracking-tight block" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>Incraft Studio</span>
               </div>
             </button>
             <button onClick={() => setSidebarOpen(false)} className="lg:hidden w-7 h-7 rounded-md flex items-center justify-center text-[var(--color-sand-500)] hover:text-[var(--color-sand-900)] hover:bg-[var(--color-sand-100)] transition-colors cursor-pointer">
@@ -2694,6 +2709,26 @@ function StudioPageContent() {
 
   return (
     <div className="h-screen flex overflow-hidden" style={{ background: "var(--color-sand-50)" }}>
+      {/* Loading overlay */}
+      <AnimatePresence>
+        {loadingSession && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.15 }}
+            className="fixed inset-0 z-[600] flex items-center justify-center"
+            style={{ background: "var(--color-sand-50)" }}
+          >
+            <div className="flex flex-col items-center gap-4">
+              <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }}>
+                <RotateCw className="w-5 h-5 text-[var(--color-sand-400)]" />
+              </motion.div>
+              <span className="text-[13px] text-[var(--color-sand-500)]" style={{ fontFamily: "var(--font-body)" }}>Loading session...</span>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
       {/* ─── Mobile sidebar overlay ─── */}
       {sidebarOpen && <div className="fixed inset-0 bg-black/40 z-40 lg:hidden" onClick={() => setSidebarOpen(false)} />}
       {/* ─── Sidebar ─── */}
@@ -2703,8 +2738,7 @@ function StudioPageContent() {
           <button onClick={() => { setActiveNav("sessions" as NavId); setSidebarOpen(false); fetchSessions(); refetchProfile(); updateSessionUrl(null); }} className="flex items-center gap-2 text-[var(--color-sand-900)] cursor-pointer">
             <Logo />
             <div className="text-left">
-              <span className="text-sm tracking-tight block" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>Kilt Studio</span>
-              <span className="text-[10px] text-[var(--color-sand-400)] block -mt-0.5" style={{ fontFamily: "var(--font-body)" }}>by MindFlow</span>
+              <span className="text-sm tracking-tight block" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>Incraft Studio</span>
             </div>
           </button>
           <button onClick={() => setSidebarOpen(false)} className="lg:hidden w-7 h-7 rounded-md flex items-center justify-center text-[var(--color-sand-500)] hover:text-[var(--color-sand-900)] hover:bg-[var(--color-sand-100)] transition-colors cursor-pointer">
@@ -2843,6 +2877,35 @@ function StudioPageContent() {
           </div>
         </motion.header>
 
+        {/* Anonymous user banner */}
+        {profile?.is_anonymous && !anonBannerDismissed && (
+          <div className="shrink-0 px-4 sm:px-8 pt-3">
+            <div className="flex items-center justify-between gap-3 px-4 py-3 rounded-xl border border-[var(--color-dusk)]/25 bg-[var(--color-dusk)]/5">
+              <div className="flex-1 min-w-0">
+                <p className="text-sm text-[var(--color-sand-900)]" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>
+                  You&apos;re using Incraft as a guest.
+                </p>
+                <p className="text-xs text-[var(--color-sand-500)] mt-0.5" style={{ fontFamily: "var(--font-body)" }}>
+                  Sign up to save your sessions and unlock 3 free credits.
+                </p>
+              </div>
+              <a
+                href="/login"
+                className="shrink-0 px-3 py-1.5 rounded-lg text-xs text-white bg-[var(--color-dusk)] hover:opacity-90 transition-opacity"
+                style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}
+              >
+                Sign up
+              </a>
+              <button
+                onClick={() => setAnonBannerDismissed(true)}
+                className="shrink-0 w-6 h-6 rounded-md flex items-center justify-center text-[var(--color-sand-400)] hover:text-[var(--color-sand-700)] hover:bg-white/60 transition-colors cursor-pointer"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
+        )}
+
         <div className={`flex-1 ${activeNav === ("generate" as NavId) && genStep === "input" ? "overflow-hidden" : "overflow-y-auto"}`}>
         <div className={`max-w-7xl mx-auto px-4 sm:px-8 pt-6 ${nowPlayingSession ? "pb-28" : "pb-8"}`}>
           <AnimatePresence mode="wait">
@@ -2874,8 +2937,8 @@ function StudioPageContent() {
                         isNowPlaying={nowPlayingId === session.id && playerPlaying}
                         onPlay={() => handlePlaySession(session.id)}
                         onOpenStudio={async () => {
+                          setLoadingSession(true);
                           try {
-                            // Touch updated_at so this session appears as most recent
                             fetch(`/api/sessions/${session.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({}) });
                             const res = await fetch(`/api/sessions/${session.id}`);
                             if (res.ok) {
@@ -2898,6 +2961,7 @@ function StudioPageContent() {
                           }
                           setActiveNav("generate" as NavId);
                           setGenStep("studio");
+                          setLoadingSession(false);
                           updateSessionUrl(session.id);
                         }}
                         onRegen={() => setConfirmDialog({ type: "regenerate", sessionId: session.id, sessionTitle: session.title })}
@@ -3100,10 +3164,22 @@ function StudioPageContent() {
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                             transition={{ delay: i * 0.04, duration: 0.25 }}
-                            onClick={() => {
-                              setGenConfig({ prompt: session.title, voice: session.voice.toLowerCase(), duration: parseInt(session.duration), sound: session.sound, sessionId: session.id, script: null, title: session.title, soundVolume: 70 });
+                            onClick={async () => {
+                              setLoadingSession(true);
+                              try {
+                                const res = await fetch(`/api/sessions/${session.id}`);
+                                if (res.ok) {
+                                  const full = await res.json();
+                                  setGenConfig({ prompt: full.prompt || session.title, voice: (full.voice || session.voice).toLowerCase(), duration: full.duration || parseInt(session.duration), sound: full.soundscape || session.sound, sessionId: session.id, script: full.script || null, title: full.title || session.title, soundVolume: full.sound_volume ?? 70 });
+                                } else {
+                                  setGenConfig({ prompt: session.title, voice: session.voice.toLowerCase(), duration: parseInt(session.duration), sound: session.sound, sessionId: session.id, script: null, title: session.title, soundVolume: 70 });
+                                }
+                              } catch {
+                                setGenConfig({ prompt: session.title, voice: session.voice.toLowerCase(), duration: parseInt(session.duration), sound: session.sound, sessionId: session.id, script: null, title: session.title, soundVolume: 70 });
+                              }
                               setActiveNav("generate" as NavId);
                               setGenStep("studio");
+                              setLoadingSession(false);
                               updateSessionUrl(session.id);
                             }}
                             className="group grid grid-cols-[1fr_60px_70px_80px] sm:grid-cols-[1fr_100px_80px_80px_140px_130px] gap-2 sm:gap-4 items-center px-3 sm:px-5 py-3.5 border-b border-[#f4f4f5] last:border-b-0 hover:bg-[#fafafa] transition-colors cursor-pointer"
@@ -3122,7 +3198,7 @@ function StudioPageContent() {
                             <div className="flex items-center justify-end gap-1">
                               <div className="relative group/tip">
                                 <button
-                                  onClick={(e) => { e.stopPropagation(); setGenConfig({ prompt: session.title, voice: session.voice.toLowerCase(), duration: parseInt(session.duration), sound: session.sound, sessionId: session.id, script: null, title: session.title, soundVolume: 70 }); setActiveNav("generate" as NavId); setGenStep("studio"); updateSessionUrl(session.id); }}
+                                  onClick={async (e) => { e.stopPropagation(); setLoadingSession(true); try { const res = await fetch(`/api/sessions/${session.id}`); if (res.ok) { const full = await res.json(); setGenConfig({ prompt: full.prompt || session.title, voice: (full.voice || session.voice).toLowerCase(), duration: full.duration || parseInt(session.duration), sound: full.soundscape || session.sound, sessionId: session.id, script: full.script || null, title: full.title || session.title, soundVolume: full.sound_volume ?? 70 }); } else { setGenConfig({ prompt: session.title, voice: session.voice.toLowerCase(), duration: parseInt(session.duration), sound: session.sound, sessionId: session.id, script: null, title: session.title, soundVolume: 70 }); } } catch { setGenConfig({ prompt: session.title, voice: session.voice.toLowerCase(), duration: parseInt(session.duration), sound: session.sound, sessionId: session.id, script: null, title: session.title, soundVolume: 70 }); } setActiveNav("generate" as NavId); setGenStep("studio"); setLoadingSession(false); updateSessionUrl(session.id); }}
                                   className="w-8 h-8 rounded-lg hover:bg-[#ededfc] flex items-center justify-center text-[#3f3f46] hover:text-[#18181b] transition-colors cursor-pointer"
                                 >
                                   <PenLine className="w-4 h-4" />

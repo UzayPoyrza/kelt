@@ -3,7 +3,7 @@ import "./globals.css";
 import { NavigationRemount } from "./navigation-remount";
 
 export const metadata: Metadata = {
-  title: "MindFlow — AI Guided Meditation",
+  title: "Incraft — AI Guided Meditation",
   description:
     "AI-generated meditations with natural pauses, studio-quality audio, and adaptive guidance that evolves with you.",
 };

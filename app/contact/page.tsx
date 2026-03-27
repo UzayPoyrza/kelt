@@ -27,7 +27,7 @@ const reasons = [
   {
     icon: Lightbulb,
     title: "Feature Request",
-    desc: "Have an idea that would make Kelt better? We'd love to hear it.",
+    desc: "Have an idea that would make Incraft better? We'd love to hear it.",
     subject: "Feature%20Request",
     color: "#7a9e7e",
     colorLight: "#e8f0e9",
@@ -62,7 +62,7 @@ export default function ContactPage() {
         <div className="flex items-center gap-2.5 text-[#18181b]">
           <Logo />
           <span className="text-[15px]" style={{ fontFamily: "var(--font-display)" }}>
-            Kelt
+            Incraft
           </span>
         </div>
         <div className="w-[60px]" />

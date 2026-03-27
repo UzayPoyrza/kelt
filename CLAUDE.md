@@ -13,7 +13,7 @@ npm run lint         # Next.js linter
 
 ## Architecture
 
-**Kelt** (branded as MindFlow) is an AI-guided meditation generator. Users enter a prompt, configure voice/duration/protocol, and generate a meditation session with script, ambient soundscapes, and playback.
+**Incraft** (incraft.io) is an AI-guided meditation generator. Users enter a prompt, configure voice/duration/protocol, and generate a meditation session with script, ambient soundscapes, and playback.
 
 ### Routes
 

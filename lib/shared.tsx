@@ -19,8 +19,8 @@ export const durations = [3, 5, 10, 15];
 export const voices = [
   { id: "aria", label: "Aria", description: "Calm, gentle female" },
   { id: "james", label: "James", description: "Grounded, steady male" },
-  { id: "luna", label: "Luna", description: "Soft, intimate tone" },
-  { id: "kai", label: "Kai", description: "Deep, spacious" },
+  { id: "lin", label: "Lin", description: "Soft, intimate tone" },
+  { id: "aditya", label: "Aditya", description: "Deep, spacious" },
 ];
 
 const AUDIO_BASE = "https://audio.neurotypeapp.com/faded";
@@ -292,7 +292,7 @@ export function Header({ showNavLinks = false, hideFloatingNav = false, onScroll
           <a href="/" className="flex items-center gap-2 text-[var(--color-sand-900)] cursor-pointer">
             <Logo />
             <span className="text-lg tracking-tight" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>
-              MindFlow
+              Incraft
             </span>
           </a>
           <div className="flex items-center gap-3 sm:gap-5">
@@ -324,7 +324,7 @@ export function Header({ showNavLinks = false, hideFloatingNav = false, onScroll
                 className="bg-clip-text text-transparent bg-[length:300%_300%] animate-[border-glow_4s_ease_infinite]"
                 style={{ backgroundImage: "linear-gradient(135deg, var(--color-sage), var(--color-ocean), var(--color-dusk), var(--color-ember), var(--color-sage))", backgroundSize: "300% 300%" }}
               >
-                Kelt Studio
+                Incraft Studio
               </span>
             </a>
           </div>
@@ -345,7 +345,7 @@ export function Header({ showNavLinks = false, hideFloatingNav = false, onScroll
               <a href="/" className="flex items-center gap-2 text-[var(--color-sand-50)] pl-1 cursor-pointer">
                 <Logo />
                 <span className="text-sm tracking-tight hidden sm:inline" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>
-                  MindFlow
+                  Incraft
                 </span>
               </a>
 
