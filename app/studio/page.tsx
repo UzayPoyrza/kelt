@@ -24,6 +24,7 @@ import {
   Wind,
   Heart,
   ChevronDown,
+  ChevronUp,
   Timer,
   Music,
   Check,
@@ -559,6 +560,8 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, savedScript,
   const [generateWarning, setGenerateWarning] = useState<string | null>(null);
   const [errorPauseIds, setErrorPauseIds] = useState<Set<string>>(new Set());
   const [newBlockIds, setNewBlockIds] = useState<Set<string>>(new Set());
+  const [editingOffScreen, setEditingOffScreen] = useState<"above" | "below" | null>(null);
+  const scriptScrollRef = useRef<HTMLDivElement>(null);
   const [swappedUp, setSwappedUp] = useState<string | null>(null);
   const [swappedDown, setSwappedDown] = useState<string | null>(null);
   const [rightTab, setRightTab] = useState<"settings" | "history">("settings");
@@ -747,7 +750,49 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, savedScript,
     return () => window.removeEventListener("beforeunload", onBeforeUnload);
   }, [buildSessionPayload]);
 
+  // Track whether the editing block is scrolled out of view
+  useEffect(() => {
+    if (!selectedBlock || !scriptScrollRef.current) { setEditingOffScreen(null); return; }
+    const container = scriptScrollRef.current;
+    const check = () => {
+      const el = container.querySelector(`[data-block-id="${selectedBlock}"]`) as HTMLElement | null;
+      if (!el) { setEditingOffScreen(null); return; }
+      const containerRect = container.getBoundingClientRect();
+      const elRect = el.getBoundingClientRect();
+      if (elRect.bottom < containerRect.top + 10) {
+        setEditingOffScreen("above");
+      } else if (elRect.top > containerRect.bottom - 10) {
+        setEditingOffScreen("below");
+      } else {
+        setEditingOffScreen(null);
+      }
+    };
+    check();
+    container.addEventListener("scroll", check, { passive: true });
+    return () => container.removeEventListener("scroll", check);
+  }, [selectedBlock, script]);
+
+  const scrollToEditingBlock = useCallback(() => {
+    if (!selectedBlock || !scriptScrollRef.current) return;
+    const el = scriptScrollRef.current.querySelector(`[data-block-id="${selectedBlock}"]`) as HTMLElement | null;
+    if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, [selectedBlock]);
+
   const handleGenerateAudio = useCallback(async () => {
+    // Check for empty voice blocks
+    const emptyVoice = script.find(b => b.type === "voice" && b.text.trim() === "");
+    if (emptyVoice) {
+      setGenerateWarning("All text fields must have content before generating.");
+      setTimeout(() => setGenerateWarning(null), 3000);
+      setSelectedBlock(emptyVoice.id);
+      setEditOriginalText(emptyVoice.text);
+      return;
+    }
+    // If editing a block with text, save it before generating
+    if (selectedBlock) {
+      setEditOriginalText(null);
+      setSelectedBlock(null);
+    }
     const emptyPauses = script.filter(b => b.type === "pause" && (!b.pauseDuration || b.pauseDuration === 0));
     if (emptyPauses.length > 0) {
       setGenerateWarning(`${emptyPauses.length} pause${emptyPauses.length > 1 ? "s have" : " has"} no duration set. Set a value or remove the segment.`);
@@ -810,7 +855,7 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, savedScript,
       setGenerateWarning("Generation failed. Please try again.");
       setIsGenerating(false);
     }
-  }, [script, prompt, sessionVoice, estimated.minutes, sessionSound, sessionIdState, onGenerated]);
+  }, [script, prompt, sessionVoice, estimated.minutes, sessionSound, sessionIdState, onGenerated, selectedBlock]);
 
   const handlePreviewScript = useCallback(() => {
     const serialized = serializeScript(script);
@@ -860,12 +905,21 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, savedScript,
   }, [script]);
 
   const saveEdit = useCallback(() => {
+    if (selectedBlock) {
+      const block = script.find(b => b.id === selectedBlock);
+      if (block && block.text.trim() === "") {
+        setGenerateWarning("Write something before saving.");
+        setTimeout(() => setGenerateWarning(null), 3000);
+        return;
+      }
+    }
     setEditOriginalText(null);
     setSelectedBlock(null);
     markEdited();
-  }, [markEdited]);
+  }, [markEdited, selectedBlock, script]);
 
   const nextId = useRef(100);
+  const addingBlock = useRef(false);
 
   const setPauseDuration = useCallback((id: string, seconds: number) => {
     setScript(prev => prev.map(b =>
@@ -884,20 +938,19 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, savedScript,
   }, [markEdited]);
 
 
-  // Only voice blocks can be deleted — the associated pause is removed with it
+  // Delete voice block + its paired pause
   const deleteBlock = useCallback((id: string) => {
     setScript(prev => {
       const idx = prev.findIndex(b => b.id === id);
       if (idx === -1 || prev[idx].type !== "voice") return prev;
       const next = [...prev];
-      // Remove the voice block and its following pause (if exists)
+      // Voice always has a pause after it (except last voice)
       if (idx + 1 < next.length && next[idx + 1].type === "pause") {
-        next.splice(idx, 2);
+        next.splice(idx, 2); // remove voice + its pause
       } else if (idx - 1 >= 0 && next[idx - 1].type === "pause") {
-        // Or the preceding pause if no following one
-        next.splice(idx - 1, 2);
+        next.splice(idx - 1, 2); // last voice: remove preceding pause + voice
       } else {
-        next.splice(idx, 1);
+        next.splice(idx, 1); // solo voice
       }
       return next;
     });
@@ -908,7 +961,7 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, savedScript,
   const discardEdit = useCallback(() => {
     if (selectedBlock) {
       const block = script.find(b => b.id === selectedBlock);
-      if (block && block.text.trim() === "") {
+      if (block && block.text.trim() === "" && (editOriginalText === null || editOriginalText.trim() === "")) {
         deleteBlock(selectedBlock);
       } else if (editOriginalText !== null) {
         setScript(prev => prev.map(b => b.id === selectedBlock ? { ...b, text: editOriginalText } : b));
@@ -922,13 +975,12 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, savedScript,
     if (!selectedBlock) return;
     const block = script.find(b => b.id === selectedBlock);
     if (block && block.type === "voice") {
-      if (block.text.trim() === "" || block.text.trim() === "") {
+      if (block.text.trim() === "") {
         deleteBlock(selectedBlock);
       } else {
         saveEdit();
       }
     } else {
-      // Pause block — just deselect
       setSelectedBlock(null);
     }
   }, [selectedBlock, script, deleteBlock, saveEdit]);
@@ -938,59 +990,49 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, savedScript,
     setTimeout(() => setNewBlockIds(new Set()), 500);
   }, []);
 
-  const addBlockBefore = useCallback((beforeId: string) => {
-    const voiceBlock: ScriptBlock = {
-      id: String(nextId.current++),
-      type: "voice",
-      text: "",
-    };
-    const pauseBlock: ScriptBlock = {
-      id: String(nextId.current++),
-      type: "pause",
-      text: "Pause",
-      pauseDuration: 3,
-    };
-    setScript(prev => {
-      const idx = prev.findIndex(b => b.id === beforeId);
-      const next = [...prev];
-      next.splice(idx, 0, voiceBlock, pauseBlock);
-      setSelectedBlock(voiceBlock.id);
-      setEditOriginalText(voiceBlock.text);
-      return next;
-    });
-    markNewBlocks([voiceBlock.id, pauseBlock.id]);
-    markEdited();
-  }, [markEdited, markNewBlocks]);
-
-  const addBlockAfter = useCallback((afterId: string, type: "voice" | "pause") => {
-    const voiceBlock: ScriptBlock = {
-      id: String(nextId.current++),
-      type: "voice",
-      text: "",
-    };
-    const pauseBlock: ScriptBlock = {
-      id: String(nextId.current++),
-      type: "pause",
-      text: "Pause",
-      pauseDuration: 3,
-    };
-    setScript(prev => {
-      const idx = prev.findIndex(b => b.id === afterId);
-      const next = [...prev];
-      const currentBlock = prev[idx];
-      if (currentBlock.type === "voice") {
-        next.splice(idx + 1, 0, pauseBlock, voiceBlock);
-        setSelectedBlock(voiceBlock.id);
-      } else {
-        next.splice(idx + 1, 0, voiceBlock, pauseBlock);
-        setSelectedBlock(voiceBlock.id);
+  // Add voice+pause. Always inserts: newVoice, newPause (voice first, pause after).
+  const addBlock = useCallback((referenceId: string, position: "before" | "after") => {
+    if (addingBlock.current) return;
+    // If currently editing a block, handle it first
+    if (selectedBlock) {
+      const currentBlock = script.find(b => b.id === selectedBlock);
+      if (currentBlock && currentBlock.type === "voice") {
+        if (currentBlock.text.trim() === "") {
+          // Empty block — show error, don't add
+          setGenerateWarning("Write something or cancel the current block first.");
+          setTimeout(() => setGenerateWarning(null), 3000);
+          return;
+        } else {
+          // Has text — save it first, then continue adding
+          saveEdit();
+        }
       }
-      setEditOriginalText(voiceBlock.text);
+    }
+    addingBlock.current = true;
+    const voiceId = String(nextId.current++);
+    const pauseId = String(nextId.current++);
+    const newVoice: ScriptBlock = { id: voiceId, type: "voice", text: "" };
+    const newPause: ScriptBlock = { id: pauseId, type: "pause", text: "Pause", pauseDuration: 3 };
+    setScript(prev => {
+      if (prev.some(b => b.id === voiceId)) return prev;
+      const idx = prev.findIndex(b => b.id === referenceId);
+      if (idx === -1) return prev;
+      const next = [...prev];
+      if (position === "before") {
+        // Insert voice+pause before the reference block
+        next.splice(idx, 0, newVoice, newPause);
+      } else {
+        // Insert voice+pause after the reference block
+        next.splice(idx + 1, 0, newVoice, newPause);
+      }
       return next;
     });
-    markNewBlocks([voiceBlock.id, pauseBlock.id]);
+    setSelectedBlock(voiceId);
+    setEditOriginalText("");
+    markNewBlocks([voiceId, pauseId]);
     markEdited();
-  }, [markEdited, markNewBlocks]);
+    setTimeout(() => { addingBlock.current = false; }, 300);
+  }, [markEdited, markNewBlocks, selectedBlock, script, saveEdit]);
 
   // Swap with the nearest same-type block in the given direction
   const moveBlock = useCallback((id: string, direction: "up" | "down") => {
@@ -1033,7 +1075,40 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, savedScript,
   }, [markEdited]);
 
   return (
-    <div className="flex flex-col lg:flex-row flex-1 min-h-0" style={{ background: "#ffffff" }}>
+    <div className="flex flex-col lg:flex-row flex-1 min-h-0 relative" style={{ background: "#ffffff" }}>
+      {/* Toast notification */}
+      <AnimatePresence>
+        {generateWarning && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            transition={{ duration: 0.2 }}
+            className="fixed top-16 left-1/2 -translate-x-1/2 z-[500] flex items-center gap-2 text-[12px] text-amber-700 bg-amber-50 border border-amber-200 rounded-xl px-4 py-2.5 shadow-lg"
+            style={{ fontFamily: "var(--font-body)" }}
+          >
+            <AlertCircle className="w-4 h-4 shrink-0" />
+            {generateWarning}
+          </motion.div>
+        )}
+      </AnimatePresence>
+      {/* Scroll-to-editing floating button */}
+      <AnimatePresence>
+        {editingOffScreen && (
+          <motion.button
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.8 }}
+            transition={{ duration: 0.15 }}
+            onClick={(e) => { e.stopPropagation(); scrollToEditingBlock(); }}
+            className="fixed left-1/2 -translate-x-1/2 z-[400] w-10 h-10 rounded-full bg-[#18181b] text-white shadow-lg flex items-center justify-center cursor-pointer hover:bg-[#27272a] transition-colors"
+            style={editingOffScreen === "above" ? { top: 80 } : { bottom: 100 }}
+            title="Scroll to editing block"
+          >
+            {editingOffScreen === "above" ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+          </motion.button>
+        )}
+      </AnimatePresence>
       {/* ─── Script Editor (left) ─── */}
       <div className="flex-1 flex flex-col min-w-0 min-h-0">
         {/* Script toolbar */}
@@ -1148,15 +1223,15 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, savedScript,
         </div>
 
         {/* Script blocks — Timeline Editor */}
-        <div className="flex-1 overflow-y-auto studio-scroll" style={{ background: "#fafaf9" }} onClick={handleBackgroundClick}>
+        <div ref={scriptScrollRef} className="flex-1 overflow-y-auto studio-scroll relative" style={{ background: "#fafaf9" }} onClick={handleBackgroundClick}>
           <div className="max-w-[680px] mx-auto px-8 py-6">
             {/* Add segment at top */}
             {script.length > 0 && (
               <div className="relative flex items-center justify-center group/addtop" style={{ height: "32px", marginLeft: "51px" }}>
-                <div className="absolute inset-x-0 top-1/2 border-t border-dashed border-transparent group-hover/addtop:border-[rgba(122,158,126,0.35)] transition-colors" />
+                <div className="absolute inset-x-0 top-1/2 border-t border-dashed border-[rgba(122,158,126,0.35)] lg:border-transparent lg:group-hover/addtop:border-[rgba(122,158,126,0.35)] transition-colors" />
                 <button
-                  onClick={(e) => { e.stopPropagation(); addBlockBefore(script[0].id); }}
-                  className="relative opacity-0 group-hover/addtop:opacity-100 w-5 h-5 rounded-full bg-white border border-[#e4e4e7] hover:border-[var(--color-sage)] hover:bg-[var(--color-sage-light)] flex items-center justify-center text-[#a1a1aa] hover:text-[var(--color-sage)] shadow-sm transition-all cursor-pointer z-10"
+                  onClick={(e) => { e.stopPropagation(); addBlock(script[0].id, "before"); }}
+                  className="relative opacity-100 lg:opacity-0 lg:group-hover/addtop:opacity-100 w-5 h-5 rounded-full bg-white border border-[#e4e4e7] hover:border-[var(--color-sage)] hover:bg-[var(--color-sage-light)] flex items-center justify-center text-[#a1a1aa] hover:text-[var(--color-sage)] shadow-sm transition-all cursor-pointer z-10"
                   title="Add segment above"
                 >
                   <Plus className="w-3 h-3" />
@@ -1290,10 +1365,10 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, savedScript,
 
                     {/* Add segment — hover zone below pause */}
                     <div className="relative flex items-center justify-center group/addpause" style={{ height: "32px", marginLeft: "51px" }}>
-                      <div className="absolute inset-x-0 top-1/2 border-t border-dashed border-transparent group-hover/addpause:border-[rgba(122,158,126,0.35)] transition-colors" />
+                      <div className="absolute inset-x-0 top-1/2 border-t border-dashed border-[rgba(122,158,126,0.35)] lg:border-transparent lg:group-hover/addpause:border-[rgba(122,158,126,0.35)] transition-colors" />
                       <button
-                        onClick={(e) => { e.stopPropagation(); addBlockAfter(block.id, "voice"); }}
-                        className="relative opacity-0 group-hover/addpause:opacity-100 w-5 h-5 rounded-full bg-white border border-[#e4e4e7] hover:border-[var(--color-sage)] hover:bg-[var(--color-sage-light)] flex items-center justify-center text-[#a1a1aa] hover:text-[var(--color-sage)] shadow-sm transition-all cursor-pointer z-10"
+                        onClick={(e) => { e.stopPropagation(); addBlock(block.id, "after"); }}
+                        className="relative opacity-100 lg:opacity-0 lg:group-hover/addpause:opacity-100 w-5 h-5 rounded-full bg-white border border-[#e4e4e7] hover:border-[var(--color-sage)] hover:bg-[var(--color-sage-light)] flex items-center justify-center text-[#a1a1aa] hover:text-[var(--color-sage)] shadow-sm transition-all cursor-pointer z-10"
                         title="Add segment"
                       >
                         <Plus className="w-3 h-3" />
@@ -1314,6 +1389,7 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, savedScript,
                 return (
                   <motion.div
                     key={block.id}
+                    data-block-id={block.id}
                     layout
                     className="relative flex group/row"
                     style={{ animation: voiceSwapAnim ? `${voiceSwapAnim} 0.35s ease` : undefined }}
@@ -1443,17 +1519,6 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, savedScript,
                         </div>
                       </div>
 
-                      {/* Add segment — hover zone below */}
-                      <div className="relative flex items-center justify-center group/add" style={{ height: "32px" }}>
-                        <div className="absolute inset-x-0 top-1/2 border-t border-dashed border-transparent group-hover/add:border-[rgba(122,158,126,0.35)] transition-colors" />
-                        <button
-                          onClick={(e) => { e.stopPropagation(); addBlockAfter(block.id, "voice"); }}
-                          className="relative opacity-0 group-hover/add:opacity-100 w-5 h-5 rounded-full bg-white border border-[#e4e4e7] hover:border-[var(--color-sage)] hover:bg-[var(--color-sage-light)] flex items-center justify-center text-[#a1a1aa] hover:text-[var(--color-sage)] shadow-sm transition-all cursor-pointer z-10"
-                          title="Add segment below"
-                        >
-                          <Plus className="w-3 h-3" />
-                        </button>
-                      </div>
                     </div>
                   </motion.div>
                 );
@@ -1469,7 +1534,7 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, savedScript,
                 </div>
                 <div className="ml-3 pt-2 pb-4">
                   <button
-                    onClick={(e) => { e.stopPropagation(); addBlockAfter(script[script.length - 1].id, "voice"); }}
+                    onClick={(e) => { e.stopPropagation(); addBlock(script[script.length - 1].id, "after"); }}
                     className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-md text-[11px] text-[#71717a] hover:text-[var(--color-sage)] bg-white hover:bg-[var(--color-sage-light)] border border-dashed border-[#d4d4d8] hover:border-[var(--color-sage)] transition-all cursor-pointer shadow-sm"
                     style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}
                   >
@@ -1479,7 +1544,8 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, savedScript,
               </div>
             )}
           </div>
-        </div>
+
+          </div>
 
         {/* Bottom bar — desktop */}
         <div className="hidden lg:flex items-center justify-between px-6 py-3.5 border-t border-[#e8e8e8]" style={{ background: "#ffffff" }}>
@@ -1965,7 +2031,7 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, savedScript,
             {/* Sheet */}
             <motion.div
               className="absolute bottom-0 left-0 right-0 bg-white rounded-t-2xl shadow-2xl flex flex-col"
-              style={{ maxHeight: "75vh" }}
+              style={{ height: "70vh" }}
               initial={{ y: "100%" }}
               animate={{ y: 0 }}
               exit={{ y: "100%" }}
@@ -2027,7 +2093,7 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, savedScript,
                       {showVoiceDropdown && (
                         <>
                           <div className="fixed inset-0 z-[310]" onClick={() => setShowVoiceDropdown(false)} />
-                          <div className="absolute bottom-full left-0 right-0 mb-1 bg-white rounded-lg border border-[#e4e4e7] shadow-lg z-[320] max-h-48 overflow-y-auto">
+                          <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-lg border border-[#e4e4e7] shadow-lg z-[320] max-h-48 overflow-y-auto">
                             {voices.map((v, i) => (
                               <button key={v.id} onClick={() => { setSessionVoice(v.id); setShowVoiceDropdown(false); markEdited(); }}
                                 className={`w-full flex items-center gap-2.5 px-3 py-2.5 hover:bg-[#f4f4f5] transition-colors cursor-pointer text-left ${i > 0 ? "border-t border-[#f0f0f3]" : ""}`}>
@@ -2068,7 +2134,7 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, savedScript,
                       {showSoundDropdown && (
                         <>
                           <div className="fixed inset-0 z-[310]" onClick={() => setShowSoundDropdown(false)} />
-                          <div className="absolute bottom-full left-0 right-0 mb-1 bg-white rounded-lg border border-[#e4e4e7] shadow-lg z-[320] max-h-48 overflow-y-auto">
+                          <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-lg border border-[#e4e4e7] shadow-lg z-[320] max-h-48 overflow-y-auto">
                             {Object.entries(soundCategories).map(([key, cat], catIdx) => (
                               <div key={key}>
                                 <div className={`px-3 py-1.5 bg-[#f7f7f8] ${catIdx > 0 ? "border-t border-[#e4e4e7]" : ""}`}>
