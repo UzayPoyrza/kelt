@@ -21,12 +21,16 @@ import {
   Layers,
   ArrowRight,
   Info,
+  Loader2,
 } from "lucide-react";
 import {
   AmbientBackground,
   Header,
   voices,
+  voiceLabel,
   soundscapePresets,
+  soundIdToUrl,
+  soundIdToLabel,
 } from "@/lib/shared";
 
 function SessionContent() {
@@ -48,8 +52,24 @@ function SessionContent() {
   const [playbackPct, setPlaybackPct] = useState(0);
   const progressRef = useRef<HTMLDivElement>(null);
   const [soundscape, setSoundscape] = useState<string | null>(null);
+  const [soundOptions, setSoundOptions] = useState<{ recommended: string[]; other: string[] } | null>(null);
   const [showBgPicker, setShowBgPicker] = useState(false);
   const [bgVolume, setBgVolume] = useState(50);
+  const bgAudioRef = useRef<HTMLAudioElement>(null);
+
+  // Audio playback state
+  const audioRef = useRef<HTMLAudioElement>(null);
+  const [audioUrl, setAudioUrl] = useState<string | null>(null);
+  const [renderLoading, setRenderLoading] = useState(false);
+  const [renderError, setRenderError] = useState<string | null>(null);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [audioDuration, setAudioDuration] = useState(0);
+
+  const formatTime = (seconds: number): string => {
+    const m = Math.floor(seconds / 60);
+    const s = Math.floor(seconds % 60);
+    return `${m}:${String(s).padStart(2, "0")}`;
+  };
 
   // Load persisted session by ID
   const fetchSession = useCallback(async () => {
@@ -63,6 +83,7 @@ function SessionContent() {
         setParamDuration(session.duration || 10);
         setParamIntent(session.intent || session.category || "default");
         if (session.soundscape) setSoundscape(session.soundscape);
+        if (session.sound_options) setSoundOptions(session.sound_options);
         setStage("ready");
       }
     } catch {
@@ -71,6 +92,115 @@ function SessionContent() {
   }, [sessionId]);
 
   useEffect(() => { fetchSession(); }, [fetchSession]);
+
+  // Fetch audio URL from latest generation, or trigger render if none exists
+  useEffect(() => {
+    if (!sessionId) return;
+    let cancelled = false;
+
+    const fetchAudio = async () => {
+      try {
+        const genRes = await fetch(`/api/generations?session_id=${sessionId}&limit=1`);
+        if (!genRes.ok) throw new Error("Failed to fetch generations");
+        const gens = await genRes.json();
+        if (gens.length > 0 && gens[0].audio_url) {
+          if (!cancelled) setAudioUrl(gens[0].audio_url);
+          return;
+        }
+
+        // No audio yet — trigger render
+        if (!cancelled) setRenderLoading(true);
+        const renderRes = await fetch("/api/render", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ session_id: sessionId }),
+        });
+        if (!renderRes.ok) throw new Error("Render failed");
+        const renderResult = await renderRes.json();
+        if (!cancelled) {
+          if (renderResult.audio_url) {
+            setAudioUrl(renderResult.audio_url);
+          } else {
+            setRenderError("Render completed but no audio URL was returned.");
+          }
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setRenderError(err instanceof Error ? err.message : "Failed to load audio");
+        }
+      } finally {
+        if (!cancelled) setRenderLoading(false);
+      }
+    };
+
+    fetchAudio();
+    return () => { cancelled = true; };
+  }, [sessionId]);
+
+  // Audio element event listeners
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    const handleTimeUpdate = () => {
+      if (audio.duration) {
+        setCurrentTime(audio.currentTime);
+        setPlaybackPct((audio.currentTime / audio.duration) * 100);
+      }
+    };
+    const handleLoadedMetadata = () => {
+      setAudioDuration(audio.duration);
+    };
+    const handleEnded = () => {
+      setIsPlaying(false);
+      setPlaybackPct(0);
+      setCurrentTime(0);
+    };
+    audio.addEventListener("timeupdate", handleTimeUpdate);
+    audio.addEventListener("loadedmetadata", handleLoadedMetadata);
+    audio.addEventListener("ended", handleEnded);
+    return () => {
+      audio.removeEventListener("timeupdate", handleTimeUpdate);
+      audio.removeEventListener("loadedmetadata", handleLoadedMetadata);
+      audio.removeEventListener("ended", handleEnded);
+    };
+  }, [audioUrl]);
+
+  // Clean up audio on unmount
+  useEffect(() => {
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.src = "";
+      }
+    };
+  }, []);
+
+  const togglePlay = () => {
+    if (!audioRef.current || !audioUrl) return;
+    if (isPlaying) {
+      audioRef.current.pause();
+    } else {
+      audioRef.current.play();
+    }
+    setIsPlaying(!isPlaying);
+  };
+
+  const handleSeek = (e: React.MouseEvent<HTMLDivElement>) => {
+    const audio = audioRef.current;
+    if (!audio || !audio.duration) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+    audio.currentTime = pct * audio.duration;
+    setPlaybackPct(pct * 100);
+    setCurrentTime(audio.currentTime);
+  };
+
+  const handleVolumeChange = (value: number) => {
+    setBgVolume(value);
+    if (audioRef.current) {
+      audioRef.current.volume = value / 100;
+    }
+  };
 
   // Refresh session data when tab regains focus
   useEffect(() => {
@@ -98,12 +228,60 @@ function SessionContent() {
     return () => clearTimeout(timer);
   }, [sessionId]);
 
+  // Resolve background sound URL from soundscape (sound ID or preset label)
+  const bgSoundUrl = (() => {
+    if (!soundscape) return null;
+    // Check if it's a sound ID (e.g. "S04")
+    const idUrl = soundIdToUrl(soundscape);
+    if (idUrl) return idUrl;
+    // Fall back to preset label lookup
+    const allPresets = Object.values(soundscapePresets).flat();
+    const preset = allPresets.find(p => p.label === soundscape);
+    return preset?.src || null;
+  })();
+
+  const [bgSoundLoading, setBgSoundLoading] = useState(false);
+
+  // Play/control background sound
+  useEffect(() => {
+    const audio = bgAudioRef.current;
+    if (!audio) return;
+    if (bgSoundUrl && isPlaying) {
+      if (audio.src !== bgSoundUrl) {
+        setBgSoundLoading(true);
+        audio.src = bgSoundUrl;
+        audio.loop = true;
+        audio.oncanplaythrough = () => setBgSoundLoading(false);
+        audio.onerror = () => setBgSoundLoading(false);
+      }
+      audio.volume = bgVolume / 100;
+      audio.play().catch(() => {});
+    } else {
+      audio.pause();
+    }
+  }, [bgSoundUrl, isPlaying, bgVolume]);
+
+  // Clean up bg audio on unmount
+  useEffect(() => {
+    return () => {
+      const audio = bgAudioRef.current;
+      if (audio) { audio.pause(); audio.src = ""; }
+    };
+  }, []);
+
   if (!prompt && !sessionId) {
     router.push("/");
     return null;
   }
 
-  // Build soundscape lists: recommended (1 default), alternatives (rest from same intent), others (from other intents, deduplicated)
+  // Build soundscape lists from API sound_options (preferred) or fallback to hardcoded presets
+  const hasSoundOptions = soundOptions && (soundOptions.recommended.length > 0 || soundOptions.other.length > 0);
+
+  // Sound ID-based lists (from API)
+  const soundIdRecommended = soundOptions?.recommended || [];
+  const soundIdOther = soundOptions?.other || [];
+
+  // Legacy preset-based lists (fallback)
   const intentPresets = soundscapePresets[detectedIntent] || soundscapePresets.default;
   const recommendedPresets = intentPresets.slice(0, 1);
   const alternativePresets = intentPresets.slice(1);
@@ -142,6 +320,10 @@ function SessionContent() {
             {/* ─── Ready ─── */}
             {stage === "ready" && (
               <motion.div key="ready" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="w-full max-w-xl mx-auto">
+                {/* Hidden audio element */}
+                {audioUrl && <audio ref={audioRef} src={audioUrl} preload="metadata" />}
+                <audio ref={bgAudioRef} loop preload="none" />
+
                 {/* Top row: Back + (Edit in Incraft Studio (Free) when picker is open) */}
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-center justify-between mb-3">
                   <button
@@ -171,7 +353,7 @@ function SessionContent() {
                   <motion.h1 initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="text-lg sm:text-xl text-[var(--color-sand-900)] mb-2 px-2 sm:px-0" style={{ fontFamily: "var(--font-display)" }}>&ldquo;{prompt}&rdquo;</motion.h1>
                   <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }} className="flex items-center justify-center gap-2 flex-wrap">
                     <span className="px-2.5 py-1 rounded-full bg-[var(--color-sand-100)] text-[var(--color-sand-700)] text-xs" style={{ fontFamily: "var(--font-body)" }}>{duration} min</span>
-                    <span className="px-2.5 py-1 rounded-full bg-[var(--color-sand-100)] text-[var(--color-sand-700)] text-xs" style={{ fontFamily: "var(--font-body)" }}>{voices.find((v) => v.id === voice)?.label}</span>
+                    <span className="px-2.5 py-1 rounded-full bg-[var(--color-sand-100)] text-[var(--color-sand-700)] text-xs" style={{ fontFamily: "var(--font-body)" }}>{voiceLabel(voice)}</span>
                     <span className="px-2.5 py-1 rounded-full bg-[var(--color-sage-light)] text-[var(--color-sage)] text-xs font-medium" style={{ fontFamily: "var(--font-body)" }}>
                       <BrainCircuit className="w-3 h-3 inline mr-1" />
                       {detectedIntent === "sleep" ? "CBT-I + NSDR" : detectedIntent === "focus" ? "MBSR" : detectedIntent === "stress" ? "PMR + ACT" : "MBSR"}
@@ -192,9 +374,22 @@ function SessionContent() {
                       })}
                     </div>
 
+                    {/* Render loading state */}
+                    {renderLoading && (
+                      <div className="flex items-center justify-center gap-2 mb-3">
+                        <div className="w-4 h-4 border-2 border-[var(--color-sand-300)] border-t-[var(--color-sand-900)] rounded-full animate-spin" />
+                        <span className="text-xs text-[var(--color-sand-500)]" style={{ fontFamily: "var(--font-body)" }}>Rendering your meditation...</span>
+                      </div>
+                    )}
+                    {renderError && (
+                      <div className="flex items-center justify-center mb-3">
+                        <span className="text-xs text-red-500" style={{ fontFamily: "var(--font-body)" }}>{renderError}</span>
+                      </div>
+                    )}
+
                     {/* Play */}
                     <div className="flex items-center justify-center mb-3">
-                      <button onClick={() => setIsPlaying(!isPlaying)} className="w-12 h-12 rounded-full bg-[var(--color-sand-900)] text-[var(--color-sand-50)] flex items-center justify-center hover:bg-[var(--color-sand-800)] transition-colors cursor-pointer shadow-lg">
+                      <button onClick={audioUrl ? togglePlay : () => setIsPlaying(!isPlaying)} className={`w-12 h-12 rounded-full bg-[var(--color-sand-900)] text-[var(--color-sand-50)] flex items-center justify-center hover:bg-[var(--color-sand-800)] transition-colors cursor-pointer shadow-lg ${renderLoading ? "opacity-50 pointer-events-none" : ""}`}>
                         {isPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5 ml-0.5" />}
                       </button>
                     </div>
@@ -204,28 +399,30 @@ function SessionContent() {
                       <div
                         ref={progressRef}
                         className="relative w-full h-5 flex items-center cursor-pointer group"
-                        onClick={(e) => {
+                        onClick={audioUrl ? handleSeek : (e) => {
                           if (!progressRef.current) return;
                           const rect = progressRef.current.getBoundingClientRect();
                           const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-                          setPlaybackPct(pct);
+                          setPlaybackPct(pct * 100);
                         }}
                       >
                         <div className="absolute inset-y-0 left-0 right-0 flex items-center">
                           <div className="w-full h-1 rounded-full bg-[var(--color-sand-200)] overflow-hidden">
-                            <div className="h-full rounded-full bg-[var(--color-sand-900)] transition-[width] duration-100" style={{ width: `${playbackPct * 100}%` }} />
+                            <div className="h-full rounded-full bg-[var(--color-sand-900)] transition-[width] duration-100" style={{ width: `${playbackPct}%` }} />
                           </div>
                         </div>
                         <div
                           className="absolute w-3 h-3 rounded-full bg-[var(--color-sand-900)] shadow-sm opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"
-                          style={{ left: `calc(${playbackPct * 100}% - 6px)` }}
+                          style={{ left: `calc(${playbackPct}% - 6px)` }}
                         />
                       </div>
                       <div className="flex justify-between">
                         <span className="text-xs text-[var(--color-sand-400)]" style={{ fontFamily: "var(--font-body)" }}>
-                          {Math.floor(playbackPct * duration)}:{String(Math.floor((playbackPct * duration * 60) % 60)).padStart(2, "0")}
+                          {audioUrl ? formatTime(currentTime) : `${Math.floor((playbackPct / 100) * duration)}:${String(Math.floor(((playbackPct / 100) * duration * 60) % 60)).padStart(2, "0")}`}
                         </span>
-                        <span className="text-xs text-[var(--color-sand-400)]" style={{ fontFamily: "var(--font-body)" }}>{duration}:00</span>
+                        <span className="text-xs text-[var(--color-sand-400)]" style={{ fontFamily: "var(--font-body)" }}>
+                          {audioUrl && audioDuration ? formatTime(audioDuration) : `${duration}:00`}
+                        </span>
                       </div>
                     </div>
 
@@ -236,13 +433,28 @@ function SessionContent() {
                         className={`flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-2 rounded-lg text-xs transition-colors cursor-pointer ${showBgPicker ? "bg-[var(--color-sand-900)] text-[var(--color-sand-50)]" : "text-[var(--color-sand-600)] hover:bg-[var(--color-sand-100)] border border-[var(--color-sand-200)]"}`}
                         style={{ fontFamily: "var(--font-body)" }}
                       >
-                        <Music className="w-3.5 h-3.5" />
-                        <span className="hidden sm:inline">Background sound</span>
-                        <span className="sm:hidden">Sound</span>
+                        {bgSoundLoading ? (
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        ) : (
+                          <Music className="w-3.5 h-3.5" />
+                        )}
+                        <span className="hidden sm:inline">{bgSoundLoading ? "Loading sound..." : "Background sound"}</span>
+                        <span className="sm:hidden">{bgSoundLoading ? "Loading..." : "Sound"}</span>
                         <ChevronDown className={`w-3.5 h-3.5 transition-transform ${showBgPicker ? "rotate-180" : ""}`} />
                       </button>
                       <div className="flex items-center gap-1">
-                        <button className="flex items-center gap-1.5 px-2.5 sm:px-3 py-2 rounded-lg text-[var(--color-sand-600)] hover:bg-[var(--color-sand-100)] transition-colors text-xs cursor-pointer" style={{ fontFamily: "var(--font-body)" }}>
+                        <button
+                          onClick={() => {
+                            if (audioUrl) {
+                              const a = document.createElement("a");
+                              a.href = audioUrl;
+                              a.download = `meditation-${sessionId || "session"}.mp3`;
+                              a.click();
+                            }
+                          }}
+                          className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-2 rounded-lg text-[var(--color-sand-600)] hover:bg-[var(--color-sand-100)] transition-colors text-xs cursor-pointer ${!audioUrl ? "opacity-40 pointer-events-none" : ""}`}
+                          style={{ fontFamily: "var(--font-body)" }}
+                        >
                           <Download className="w-3.5 h-3.5" /><span className="hidden sm:inline">Download</span>
                         </button>
                         <button onClick={() => router.push("/")} className="flex items-center gap-1.5 px-2.5 sm:px-3 py-2 rounded-lg text-[var(--color-sand-600)] hover:bg-[var(--color-sand-100)] transition-colors text-xs cursor-pointer" style={{ fontFamily: "var(--font-body)" }}>
@@ -271,7 +483,7 @@ function SessionContent() {
                             </div>
                             <input
                               type="range" min="0" max="100" value={bgVolume}
-                              onChange={(e) => setBgVolume(Number(e.target.value))}
+                              onChange={(e) => handleVolumeChange(Number(e.target.value))}
                               disabled={!soundscape}
                               className="flex-1 h-1 appearance-none rounded-full cursor-pointer disabled:opacity-40 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-[var(--color-sand-900)] [&::-webkit-slider-thumb]:cursor-pointer"
                               style={{ background: soundscape ? `linear-gradient(to right, var(--color-sand-900) ${bgVolume}%, var(--color-sand-200) ${bgVolume}%)` : "var(--color-sand-200)" }}
@@ -287,55 +499,93 @@ function SessionContent() {
                             </p>
                           </div>
 
-                          {/* Recommended — single default */}
-                          <div>
-                            <p className="text-[10px] uppercase tracking-wider text-[var(--color-sand-400)] mb-2 font-medium" style={{ fontFamily: "var(--font-body)" }}>Recommended — Default</p>
-                            <div className="flex flex-wrap gap-1.5">
-                              {recommendedPresets.map((preset) => {
-                                const isSel = soundscape === preset.label;
-                                return (
-                                  <button key={preset.label} onClick={() => { if (!isSel) setSoundscape(preset.label); }} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs transition-colors cursor-pointer ${isSel ? "bg-[var(--color-sand-900)] text-[var(--color-sand-50)] border border-[var(--color-sand-900)]" : "bg-[var(--color-sand-50)] text-[var(--color-sand-700)] hover:bg-[var(--color-sand-100)] border border-[var(--color-sand-200)]"}`} style={{ fontFamily: "var(--font-body)" }}>
-                                    <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: isSel ? "var(--color-sand-50)" : preset.color }} />
-                                    {preset.label}
-                                  </button>
-                                );
-                              })}
-                            </div>
-                          </div>
-
-                          {/* Alternatives */}
-                          {alternativePresets.length > 0 && (
-                            <div>
-                              <p className="text-[10px] uppercase tracking-wider text-[var(--color-sand-400)] mb-2 font-medium" style={{ fontFamily: "var(--font-body)" }}>Alternatives</p>
-                              <div className="flex flex-wrap gap-1.5">
-                                {alternativePresets.map((preset) => {
-                                  const isSel = soundscape === preset.label;
-                                  return (
-                                    <button key={preset.label} onClick={() => { if (!isSel) setSoundscape(preset.label); }} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs transition-colors cursor-pointer ${isSel ? "bg-[var(--color-sand-900)] text-[var(--color-sand-50)] border border-[var(--color-sand-900)]" : "bg-[var(--color-sand-50)] text-[var(--color-sand-700)] hover:bg-[var(--color-sand-100)] border border-[var(--color-sand-200)]"}`} style={{ fontFamily: "var(--font-body)" }}>
-                                      <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: isSel ? "var(--color-sand-50)" : preset.color }} />
-                                      {preset.label}
-                                    </button>
-                                  );
-                                })}
+                          {hasSoundOptions ? (
+                            <>
+                              {/* Recommended sounds (from API) */}
+                              <div>
+                                <p className="text-[10px] uppercase tracking-wider text-[var(--color-sand-400)] mb-2 font-medium" style={{ fontFamily: "var(--font-body)" }}>Recommended</p>
+                                <div className="flex flex-wrap gap-1.5">
+                                  {soundIdRecommended.map((sid) => {
+                                    const isSel = soundscape === sid;
+                                    return (
+                                      <button key={sid} onClick={() => setSoundscape(sid)} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs transition-colors cursor-pointer ${isSel ? "bg-[var(--color-sand-900)] text-[var(--color-sand-50)] border border-[var(--color-sand-900)]" : "bg-[var(--color-sand-50)] text-[var(--color-sand-700)] hover:bg-[var(--color-sand-100)] border border-[var(--color-sand-200)]"}`} style={{ fontFamily: "var(--font-body)" }}>
+                                        <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: isSel ? "var(--color-sand-50)" : "var(--color-sage)" }} />
+                                        {soundIdToLabel(sid)}
+                                      </button>
+                                    );
+                                  })}
+                                </div>
                               </div>
-                            </div>
-                          )}
 
-                          {/* Others */}
-                          <div>
-                            <p className="text-[10px] uppercase tracking-wider text-[var(--color-sand-400)] mb-2 font-medium" style={{ fontFamily: "var(--font-body)" }}>Others</p>
-                            <div className="flex flex-wrap gap-1.5">
-                              {otherPresets.map((preset) => {
-                                const isSel = soundscape === preset.label;
-                                return (
-                                  <button key={preset.label} onClick={() => { if (!isSel) setSoundscape(preset.label); }} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs transition-colors cursor-pointer ${isSel ? "bg-[var(--color-sand-900)] text-[var(--color-sand-50)] border border-[var(--color-sand-900)]" : "bg-[var(--color-sand-50)] text-[var(--color-sand-700)] hover:bg-[var(--color-sand-100)] border border-[var(--color-sand-200)]"}`} style={{ fontFamily: "var(--font-body)" }}>
-                                    <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: isSel ? "var(--color-sand-50)" : preset.color }} />
-                                    {preset.label}
-                                  </button>
-                                );
-                              })}
-                            </div>
-                          </div>
+                              {/* Other sounds (from API) */}
+                              {soundIdOther.length > 0 && (
+                                <div>
+                                  <p className="text-[10px] uppercase tracking-wider text-[var(--color-sand-400)] mb-2 font-medium" style={{ fontFamily: "var(--font-body)" }}>Others</p>
+                                  <div className="flex flex-wrap gap-1.5">
+                                    {soundIdOther.map((sid) => {
+                                      const isSel = soundscape === sid;
+                                      return (
+                                        <button key={sid} onClick={() => setSoundscape(sid)} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs transition-colors cursor-pointer ${isSel ? "bg-[var(--color-sand-900)] text-[var(--color-sand-50)] border border-[var(--color-sand-900)]" : "bg-[var(--color-sand-50)] text-[var(--color-sand-700)] hover:bg-[var(--color-sand-100)] border border-[var(--color-sand-200)]"}`} style={{ fontFamily: "var(--font-body)" }}>
+                                          <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: isSel ? "var(--color-sand-50)" : "var(--color-ocean)" }} />
+                                          {soundIdToLabel(sid)}
+                                        </button>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+                              )}
+                            </>
+                          ) : (
+                            <>
+                              {/* Legacy preset-based sounds (fallback) */}
+                              <div>
+                                <p className="text-[10px] uppercase tracking-wider text-[var(--color-sand-400)] mb-2 font-medium" style={{ fontFamily: "var(--font-body)" }}>Recommended</p>
+                                <div className="flex flex-wrap gap-1.5">
+                                  {recommendedPresets.map((preset) => {
+                                    const isSel = soundscape === preset.label;
+                                    return (
+                                      <button key={preset.label} onClick={() => setSoundscape(preset.label)} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs transition-colors cursor-pointer ${isSel ? "bg-[var(--color-sand-900)] text-[var(--color-sand-50)] border border-[var(--color-sand-900)]" : "bg-[var(--color-sand-50)] text-[var(--color-sand-700)] hover:bg-[var(--color-sand-100)] border border-[var(--color-sand-200)]"}`} style={{ fontFamily: "var(--font-body)" }}>
+                                        <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: isSel ? "var(--color-sand-50)" : preset.color }} />
+                                        {preset.label}
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+
+                              {alternativePresets.length > 0 && (
+                                <div>
+                                  <p className="text-[10px] uppercase tracking-wider text-[var(--color-sand-400)] mb-2 font-medium" style={{ fontFamily: "var(--font-body)" }}>Alternatives</p>
+                                  <div className="flex flex-wrap gap-1.5">
+                                    {alternativePresets.map((preset) => {
+                                      const isSel = soundscape === preset.label;
+                                      return (
+                                        <button key={preset.label} onClick={() => setSoundscape(preset.label)} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs transition-colors cursor-pointer ${isSel ? "bg-[var(--color-sand-900)] text-[var(--color-sand-50)] border border-[var(--color-sand-900)]" : "bg-[var(--color-sand-50)] text-[var(--color-sand-700)] hover:bg-[var(--color-sand-100)] border border-[var(--color-sand-200)]"}`} style={{ fontFamily: "var(--font-body)" }}>
+                                          <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: isSel ? "var(--color-sand-50)" : preset.color }} />
+                                          {preset.label}
+                                        </button>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+                              )}
+
+                              <div>
+                                <p className="text-[10px] uppercase tracking-wider text-[var(--color-sand-400)] mb-2 font-medium" style={{ fontFamily: "var(--font-body)" }}>Others</p>
+                                <div className="flex flex-wrap gap-1.5">
+                                  {otherPresets.map((preset) => {
+                                    const isSel = soundscape === preset.label;
+                                    return (
+                                      <button key={preset.label} onClick={() => setSoundscape(preset.label)} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs transition-colors cursor-pointer ${isSel ? "bg-[var(--color-sand-900)] text-[var(--color-sand-50)] border border-[var(--color-sand-900)]" : "bg-[var(--color-sand-50)] text-[var(--color-sand-700)] hover:bg-[var(--color-sand-100)] border border-[var(--color-sand-200)]"}`} style={{ fontFamily: "var(--font-body)" }}>
+                                        <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: isSel ? "var(--color-sand-50)" : preset.color }} />
+                                        {preset.label}
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            </>
+                          )}
                         </div>
                       </motion.div>
                     )}

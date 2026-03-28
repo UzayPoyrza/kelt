@@ -7,7 +7,7 @@ export async function POST(request: NextRequest) {
   if (error) return error;
 
   const body = await request.json();
-  const { prompt, voice, duration, protocol, soundscape, sessionId, script: serializedScript } = body;
+  const { prompt, voice, duration, protocol, soundscape, sessionId, script: serializedScript, support_choice, mode, preferred_approach } = body;
 
   if (!prompt) {
     return NextResponse.json({ error: "Prompt is required" }, { status: 400 });
@@ -34,8 +34,8 @@ export async function POST(request: NextRequest) {
         user_id: user!.id,
         title: deriveSessionName(prompt),
         prompt,
-        voice: voice || "aria",
-        duration: duration || 10,
+        voice: voice || "Graham",
+        duration: duration || 7,
         protocol: protocol || null,
         soundscape: soundscape || null,
         category: detectCategory(prompt),
@@ -57,8 +57,8 @@ export async function POST(request: NextRequest) {
       session_id: activeSessionId,
       user_id: user!.id,
       prompt,
-      voice: voice || "aria",
-      duration: String(duration || 10),
+      voice: voice || "Graham",
+      duration: String(duration || 7),
       status: "pending",
       credit_cost: 1,
     })
@@ -105,11 +105,14 @@ export async function POST(request: NextRequest) {
 
   // Generate script: use editor script if provided, otherwise call Incraft API
   let script: unknown;
+  let soundData: { selected_sound_id: string; sound_options: unknown } | null = null;
+  let routedProtocol: string | null = null;
 
   if (serializedScript) {
     script = serializedScript;
   } else {
     const category = detectCategory(prompt);
+    const resolvedSupportChoice = support_choice || (category === "default" ? "auto_detect" : category);
     const scriptResponse = await fetch(
       "https://j6w7gkn6x7.execute-api.us-east-1.amazonaws.com/v1/sessions/generate",
       {
@@ -117,11 +120,12 @@ export async function POST(request: NextRequest) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           prompt,
-          support_choice: category === "default" ? "auto_detect" : category,
+          support_choice: resolvedSupportChoice,
           duration_min: duration || 7,
-          mode: "still",
+          mode: mode || "still",
           extra_gentle: false,
-          preferred_approach: "auto",
+          preferred_approach: preferred_approach || "auto",
+          user_id: user!.id,
         }),
       }
     );
@@ -140,11 +144,34 @@ export async function POST(request: NextRequest) {
     }
 
     const scriptResult = await scriptResponse.json();
+    console.log("[generate] Script API response keys:", Object.keys(scriptResult));
+    console.log("[generate] final_script length:", scriptResult.final_script?.length || 0);
+    console.log("[generate] script length:", scriptResult.script?.length || 0);
     script = { raw: scriptResult.script, final: scriptResult.final_script };
+
+    // Capture sound options from the API
+    if (scriptResult.selected_sound_id) {
+      soundData = {
+        selected_sound_id: scriptResult.selected_sound_id,
+        sound_options: scriptResult.sound_options || null,
+      };
+    }
+
+    // Capture routed protocol
+    if (scriptResult.routed_protocol) {
+      routedProtocol = scriptResult.routed_protocol;
+    }
   }
 
   // Update session with script (only set title if it was a new session)
   const sessionUpdate: Record<string, unknown> = { script };
+  if (soundData) {
+    sessionUpdate.soundscape = soundData.selected_sound_id;
+    sessionUpdate.sound_options = soundData.sound_options;
+  }
+  if (routedProtocol) {
+    sessionUpdate.routed_protocol = routedProtocol;
+  }
   if (!sessionId) {
     sessionUpdate.title = deriveSessionName(prompt);
   }

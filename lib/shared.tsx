@@ -14,16 +14,174 @@ import svgPaths from "@/lib/svg-paths";
 
 /* ─── Data ─── */
 
-export const durations = [3, 5, 10, 15];
+export const durations = [3, 5, 7, 10, 15];
 
 export const voices = [
-  { id: "aria", label: "Aria", description: "Calm, gentle female" },
-  { id: "james", label: "James", description: "Grounded, steady male" },
-  { id: "lin", label: "Lin", description: "Soft, intimate tone" },
-  { id: "aditya", label: "Aditya", description: "Deep, spacious" },
+  { id: "Graham", label: "Aria", description: "Calm, gentle female" },
+  { id: "Claire", label: "James", description: "Grounded, steady male" },
+  { id: "Luna", label: "Lin", description: "Soft, intimate tone" },
+  { id: "Silas", label: "Aditya", description: "Deep, spacious" },
 ];
 
+/** Map old frontend voice IDs to new API voice IDs (for legacy sessions) */
+export const legacyVoiceMap: Record<string, string> = {
+  aria: "Graham",
+  james: "Claire",
+  lin: "Luna",
+  aditya: "Silas",
+};
+
+/** Resolve a voice ID (legacy or new) to a display label */
+export function voiceLabel(id: string): string {
+  const found = voices.find(v => v.id === id);
+  if (found) return found.label;
+  // Legacy lookup
+  const mapped = legacyVoiceMap[id];
+  if (mapped) return voices.find(v => v.id === mapped)?.label || id;
+  return id;
+}
+
+export const supportChoices = [
+  { id: "mindfulness", label: "Mindfulness", description: "General awareness practice" },
+  { id: "burnout", label: "Burnout", description: "Recovery from exhaustion" },
+  { id: "anxiety", label: "Anxiety", description: "Calm anxious thoughts" },
+  { id: "panic", label: "Panic", description: "Acute panic relief" },
+  { id: "adhd_focus", label: "ADHD Focus", description: "Structured attention support" },
+  { id: "sleep", label: "Sleep", description: "Fall asleep or improve rest" },
+  { id: "depression", label: "Depression", description: "Gentle mood support" },
+  { id: "addiction_support", label: "Addiction Support", description: "Craving and urge management" },
+  { id: "self_compassion", label: "Self-Compassion", description: "Kindness toward yourself" },
+  { id: "just_meditate", label: "Just Meditate", description: "No specific goal" },
+  { id: "auto_detect", label: "Auto-Detect", description: "Let AI choose the best fit" },
+];
+
+export const modes = [
+  { id: "still", label: "Still", description: "Seated or lying down" },
+  { id: "walking", label: "Walking", description: "Slow, mindful walk" },
+  { id: "gentle_movement", label: "Gentle Movement", description: "Light stretching or yoga" },
+];
+
+/** Which modes are available for each support choice (null = all modes allowed) */
+export const modeRules: Record<string, string[] | null> = {
+  sleep: ["still"],
+  panic: ["still"],
+  adhd_focus: null,
+  mindfulness: null,
+  burnout: ["still", "walking"],
+  anxiety: null,
+  depression: ["still", "walking"],
+  addiction_support: ["still"],
+  self_compassion: null,
+  just_meditate: null,
+  auto_detect: null,
+};
+
+/* ─── Approaches (hardcoded until /v1/options is deployed) ─── */
+
+const APPROACH_LABELS: Record<string, string> = {
+  focused_attention: "Focused Attention (FA)",
+  open_monitoring: "Open Monitoring",
+  breathwork: "Breathwork",
+  body_scan_pmr: "Body Scan / PMR",
+  grounding: "Grounding",
+  nsdr: "NSDR / Deep Rest",
+  cbt: "CBT",
+  cbt_i: "CBT-I",
+  mbct: "MBCT",
+  mbrp: "MBRP",
+  cft_msc: "CFT/MSC",
+  visualization: "Visualization",
+  mantra: "Mantra",
+  sound_meditation: "Sound Meditation",
+  movement: "Movement",
+  interoceptive_exposure: "Interoceptive Exposure",
+};
+
+const VALID_APPROACHES: Record<string, string[]> = {
+  mindfulness: ["focused_attention", "open_monitoring", "breathwork", "body_scan_pmr", "cbt", "mbct", "visualization", "mantra", "sound_meditation"],
+  burnout: ["focused_attention", "open_monitoring", "breathwork", "body_scan_pmr", "grounding", "nsdr", "cbt", "mbct", "cft_msc", "visualization", "mantra", "sound_meditation"],
+  anxiety: ["focused_attention", "open_monitoring", "breathwork", "body_scan_pmr", "grounding", "cbt", "mbct", "cft_msc", "mantra", "sound_meditation"],
+  panic: ["focused_attention", "breathwork", "body_scan_pmr", "grounding", "cbt", "sound_meditation", "interoceptive_exposure"],
+  adhd_focus: ["focused_attention", "breathwork", "grounding", "visualization", "mantra", "sound_meditation"],
+  sleep: ["breathwork", "body_scan_pmr", "nsdr", "cbt", "cbt_i", "cft_msc", "sound_meditation"],
+  depression: ["focused_attention", "breathwork", "cbt", "mbct", "cft_msc", "visualization", "mantra"],
+  addiction_support: ["focused_attention", "body_scan_pmr", "cbt", "mbrp", "visualization", "sound_meditation"],
+  self_compassion: ["cft_msc", "mantra"],
+  just_meditate: ["focused_attention", "open_monitoring", "breathwork", "body_scan_pmr", "nsdr", "mbct", "cft_msc", "visualization", "mantra", "sound_meditation"],
+};
+
+const STILL_ONLY = ["nsdr", "body_scan_pmr", "cbt_i"];
+const MOVEMENT_ONLY = ["movement"];
+
+/** Get valid approaches for a support choice + mode combination.
+ *  Replace with /v1/options fetch when deployed. */
+export function getApproaches(supportChoice: string, mode: string): { value: string; label: string }[] {
+  let approaches = VALID_APPROACHES[supportChoice] || [];
+  if (mode === "still") {
+    approaches = approaches.filter(a => !MOVEMENT_ONLY.includes(a));
+  } else {
+    approaches = approaches.filter(a => !STILL_ONLY.includes(a));
+    if (!approaches.includes("movement")) approaches.push("movement");
+  }
+  return approaches.map(value => ({ value, label: APPROACH_LABELS[value] || value }));
+}
+
 const AUDIO_BASE = "https://audio.neurotypeapp.com/faded";
+
+/* Sound ID → filename mapping (from MindFlow API) */
+export const SOUND_MAP: Record<string, string> = {
+  S01: "chimes_and_tones.mp3",
+  S02: "fireplace.mp3",
+  S03: "peaceful_moment.mp3",
+  S04: "rain.mp3",
+  S05: "river.mp3",
+  S06: "safe_haven.mp3",
+  S07: "shower.mp3",
+  S08: "spring_field.mp3",
+  S09: "white_noise.mp3",
+  S10: "summer_night.mp3",
+  S11: "waves.mp3",
+  S12: "distant_wind_chimes.mp3",
+  S13: "athens_street_cafe.mp3",
+  S14: "40hz_binurual.mp3",
+  S15: "10hz_alpha_wave_binurual.mp3",
+  S16: "sleep_train.mp3",
+  S17: "soundbowl_soundbath.mp3",
+  S18: "snowfall.mp3",
+  S19: "soft_piano.mp3",
+  S20: "deep_space.mp3",
+  S21: "brown_noise.mp3",
+  S22: "underwater.mp3",
+  S23: "rainforest_wildlife.mp3",
+  S24: "soft_metronome_60_bpm.mp3",
+  S25: "60_bpm_wood_metronome.mp3",
+  S26: "110_hz.mp3",
+  S27: "220_hz.mp3",
+  S28: "4_6_pacer.mp3",
+  S29: "room_tone.mp3",
+  S30: "pink_noise.mp3",
+  S31: "plain_stereo_focus_drone.mp3",
+  S32: "plain_stereo_calm_drone.mp3",
+  S33: "anchor_bell_single_source.mp3",
+  S34: "shamanic_drums.mp3",
+};
+
+/** Convert a sound ID (e.g. "S04") to a full audio URL */
+export function soundIdToUrl(id: string): string {
+  const filename = SOUND_MAP[id];
+  if (!filename) return "";
+  return `${AUDIO_BASE}/${filename}`;
+}
+
+/** Convert a sound ID to a display label via the audioCatalog */
+export function soundIdToLabel(id: string): string {
+  const filename = SOUND_MAP[id];
+  if (!filename) return id;
+  const base = filename.replace(/\.mp3$/, "");
+  // Find in audioCatalog by matching src filename
+  const found = audioCatalog.find(s => s.src.endsWith(`/${filename}`));
+  return found?.label || base.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+};
 
 export const ambients = [
   { id: "none", label: "Silence", icon: Volume2, src: null },
@@ -36,24 +194,24 @@ export const ambients = [
 /* Protocol-aware soundscape suggestions — auto-selected based on session intent */
 export const soundscapePresets: Record<string, { label: string; description: string; layers: string[]; protocol: string; color: string; src: string }[]> = {
   sleep: [
-    { label: "Deep Night", description: "Engineered for CBT-I sleep onset", layers: ["Low drone", "Distant rain", "Delta wave undertone"], protocol: "CBT-I", color: "var(--color-dusk)", src: `${AUDIO_BASE}/sleep_train.mp3` },
-    { label: "Soft Drift", description: "NSDR-optimized descent into rest", layers: ["White noise fade", "Heartbeat sync", "Ocean bed"], protocol: "NSDR", color: "var(--color-ocean)", src: `${AUDIO_BASE}/white_noise.mp3` },
-    { label: "Moonlit Forest", description: "PMR tension release atmosphere", layers: ["Night crickets", "Gentle stream", "Warm pad"], protocol: "PMR", color: "var(--color-sage)", src: `${AUDIO_BASE}/summer_night.mp3` },
+    { label: "Sleep Train", description: "Engineered for CBT-I sleep onset", layers: ["Low drone", "Distant rain", "Delta wave undertone"], protocol: "CBT-I", color: "var(--color-dusk)", src: `${AUDIO_BASE}/sleep_train.mp3` },
+    { label: "White Noise", description: "NSDR-optimized descent into rest", layers: ["White noise fade", "Heartbeat sync", "Ocean bed"], protocol: "NSDR", color: "var(--color-ocean)", src: `${AUDIO_BASE}/white_noise.mp3` },
+    { label: "Summer Night", description: "PMR tension release atmosphere", layers: ["Night crickets", "Gentle stream", "Warm pad"], protocol: "PMR", color: "var(--color-sage)", src: `${AUDIO_BASE}/summer_night.mp3` },
   ],
   focus: [
-    { label: "Flow State", description: "MBSR sustained attention scaffold", layers: ["Brown noise", "Minimal piano", "Room tone"], protocol: "MBSR", color: "var(--color-sage)", src: `${AUDIO_BASE}/brown_noise.mp3` },
-    { label: "Deep Work", description: "HRV-BF coherence at 0.1Hz", layers: ["Binaural 40Hz", "Soft static", "Clock pulse"], protocol: "HRV-BF", color: "var(--color-ocean)", src: `${AUDIO_BASE}/40hz_binurual.mp3` },
-    { label: "Morning Clear", description: "ACT present-moment grounding", layers: ["Bird dawn chorus", "Wind through leaves", "Singing bowl"], protocol: "ACT", color: "var(--color-ember)", src: `${AUDIO_BASE}/spring_field.mp3` },
+    { label: "Brown Noise", description: "MBSR sustained attention scaffold", layers: ["Brown noise", "Minimal piano", "Room tone"], protocol: "MBSR", color: "var(--color-sage)", src: `${AUDIO_BASE}/brown_noise.mp3` },
+    { label: "40Hz Binaural", description: "HRV-BF coherence at 0.1Hz", layers: ["Binaural 40Hz", "Soft static", "Clock pulse"], protocol: "HRV-BF", color: "var(--color-ocean)", src: `${AUDIO_BASE}/40hz_binurual.mp3` },
+    { label: "Spring Field", description: "ACT present-moment grounding", layers: ["Bird dawn chorus", "Wind through leaves", "Singing bowl"], protocol: "ACT", color: "var(--color-ember)", src: `${AUDIO_BASE}/spring_field.mp3` },
   ],
   stress: [
-    { label: "Safe Harbor", description: "PMR progressive release sequence", layers: ["Ocean waves", "Warm sub-bass", "Breath guide tone"], protocol: "PMR", color: "var(--color-ocean)", src: `${AUDIO_BASE}/waves.mp3` },
-    { label: "Forest Floor", description: "MBSR body scan environment", layers: ["Rain on canopy", "Earth resonance", "Distant thunder"], protocol: "MBSR", color: "var(--color-sage)", src: `${AUDIO_BASE}/rain.mp3` },
-    { label: "Letting Go", description: "ACT defusion through sound", layers: ["Tibetan bowls", "Wind", "Resonant hum"], protocol: "ACT", color: "var(--color-dusk)", src: `${AUDIO_BASE}/soundbowl_soundbath.mp3` },
+    { label: "Waves", description: "PMR progressive release sequence", layers: ["Ocean waves", "Warm sub-bass", "Breath guide tone"], protocol: "PMR", color: "var(--color-ocean)", src: `${AUDIO_BASE}/waves.mp3` },
+    { label: "Rain", description: "MBSR body scan environment", layers: ["Rain on canopy", "Earth resonance", "Distant thunder"], protocol: "MBSR", color: "var(--color-sage)", src: `${AUDIO_BASE}/rain.mp3` },
+    { label: "Sound Bowl Bath", description: "ACT defusion through sound", layers: ["Tibetan bowls", "Wind", "Resonant hum"], protocol: "ACT", color: "var(--color-dusk)", src: `${AUDIO_BASE}/soundbowl_soundbath.mp3` },
   ],
   default: [
-    { label: "Sanctuary", description: "Adaptive all-purpose soundscape", layers: ["Ambient pad", "Nature blend", "Breath sync"], protocol: "MBSR", color: "var(--color-sage)", src: `${AUDIO_BASE}/peaceful_moment.mp3` },
-    { label: "Still Water", description: "Minimal, spacious atmosphere", layers: ["Water droplets", "Room reverb", "Soft drone"], protocol: "PMR", color: "var(--color-ocean)", src: `${AUDIO_BASE}/river.mp3` },
-    { label: "Open Sky", description: "Expansive, grounding presence", layers: ["Wind layers", "Distant chimes", "Earth tone"], protocol: "ACT", color: "var(--color-ember)", src: `${AUDIO_BASE}/distant_wind_chimes.mp3` },
+    { label: "Peaceful Moment", description: "Adaptive all-purpose soundscape", layers: ["Ambient pad", "Nature blend", "Breath sync"], protocol: "MBSR", color: "var(--color-sage)", src: `${AUDIO_BASE}/peaceful_moment.mp3` },
+    { label: "River", description: "Minimal, spacious atmosphere", layers: ["Water droplets", "Room reverb", "Soft drone"], protocol: "PMR", color: "var(--color-ocean)", src: `${AUDIO_BASE}/river.mp3` },
+    { label: "Distant Wind Chimes", description: "Expansive, grounding presence", layers: ["Wind layers", "Distant chimes", "Earth tone"], protocol: "ACT", color: "var(--color-ember)", src: `${AUDIO_BASE}/distant_wind_chimes.mp3` },
   ],
 };
 
@@ -207,6 +365,22 @@ export function detectIntent(text: string): string {
   if (/focus|concentrat|work|study|morning|sharp|productivity|attention/i.test(lower)) return "focus";
   if (/stress|anxi|worry|overwhelm|calm|relax|tension|panic/i.test(lower)) return "stress";
   return "default";
+}
+
+/** Auto-detect a support choice from the user's prompt text */
+export function detectSupportChoice(text: string): string {
+  const lower = text.toLowerCase();
+  if (/sleep|insomnia|bed|night|dream|tired|rest(?:ful|less)/i.test(lower)) return "sleep";
+  if (/panic|panic\s*attack|can'?t breathe|heart\s*racing/i.test(lower)) return "panic";
+  if (/anxi|anxious|worry|worries|nervous|dread|uneasy/i.test(lower)) return "anxiety";
+  if (/burnout|burned?\s*out|exhaust|depleted|overwhelm/i.test(lower)) return "burnout";
+  if (/adhd|add|focus|concentrat|distract|attention\s*deficit/i.test(lower)) return "adhd_focus";
+  if (/depress|sad|low\s*mood|hopeless|empty|unmotivated/i.test(lower)) return "depression";
+  if (/addict|craving|urge|sober|relapse|substance/i.test(lower)) return "addiction_support";
+  if (/self.?compassion|self.?love|self.?care|kind\s*to\s*my|forgive\s*my/i.test(lower)) return "self_compassion";
+  if (/mindful|present|aware|body\s*scan|grounding/i.test(lower)) return "mindfulness";
+  if (/just\s*meditat|no\s*goal|general|simple/i.test(lower)) return "just_meditate";
+  return "auto_detect";
 }
 
 /* ─── Logo ─── */

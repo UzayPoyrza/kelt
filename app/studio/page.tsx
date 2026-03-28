@@ -53,11 +53,43 @@ import {
   Pencil,
 } from "lucide-react";
 import svgPaths from "@/lib/svg-paths";
-import { suggestions, voices as sharedVoices, durations as sharedDurations, detectIntent, rotatingPhrases, protocols } from "@/lib/shared";
+import { suggestions, voices as sharedVoices, durations as sharedDurations, detectIntent, detectSupportChoice, supportChoices, modes, modeRules, getApproaches, rotatingPhrases } from "@/lib/shared";
 import { ProfileProvider, useProfile } from "@/lib/hooks/useProfile";
 import { generateScript as generateScriptFn, deriveSessionName, estimateDuration, serializeScript, parseRawScript, type ScriptBlock } from "@/lib/generateScript";
 import { useSearchParams } from "next/navigation";
 import { Suspense } from "react";
+
+/* ─── Helpers ─── */
+
+function formatTime(seconds: number): string {
+  const m = Math.floor(seconds / 60);
+  const s = Math.floor(seconds % 60);
+  return `${m}:${s.toString().padStart(2, '0')}`;
+}
+
+/** Normalize DB script (ScriptBlock[], { raw, final } string, plain string, or null) to ScriptBlock[] | null */
+function normalizeScript(raw: unknown): ScriptBlock[] | null {
+  if (!raw) return null;
+  if (Array.isArray(raw)) {
+    // Already ScriptBlock[] — validate shape
+    if (raw.length > 0 && typeof raw[0] === 'object' && 'type' in raw[0]) return raw as ScriptBlock[];
+    return null;
+  }
+  if (typeof raw === 'string') {
+    const parsed = parseRawScript(raw);
+    return parsed.blocks.length > 0 ? parsed.blocks : null;
+  }
+  if (typeof raw === 'object') {
+    const obj = raw as Record<string, unknown>;
+    // { raw: "...", final: "..." } format from MindFlow API
+    const text = (obj.final || obj.raw) as string | undefined;
+    if (text && typeof text === 'string') {
+      const parsed = parseRawScript(text);
+      return parsed.blocks.length > 0 ? parsed.blocks : null;
+    }
+  }
+  return null;
+}
 
 /* ─── Logo ─── */
 
@@ -74,23 +106,24 @@ function Logo() {
 /* ─── Data ─── */
 
 const voices = [
-  { id: "aria", name: "Aria", desc: "Warm, calm, nurturing", color: "var(--color-sage)" },
-  { id: "james", name: "James", desc: "Deep, grounding, steady", color: "var(--color-ocean)" },
-  { id: "lin", name: "Lin", desc: "Soft, dreamy, gentle", color: "var(--color-dusk)" },
-  { id: "aditya", name: "Aditya", desc: "Clear, focused, present", color: "var(--color-ember)" },
+  { id: "Graham", name: "Aria", desc: "Warm, calm, nurturing", color: "var(--color-sage)" },
+  { id: "Claire", name: "James", desc: "Deep, grounding, steady", color: "var(--color-ocean)" },
+  { id: "Luna", name: "Lin", desc: "Soft, dreamy, gentle", color: "var(--color-dusk)" },
+  { id: "Silas", name: "Aditya", desc: "Clear, focused, present", color: "var(--color-ember)" },
 ];
 
 const durations = [
   { value: 5, label: "5 min", desc: "Quick reset" },
+  { value: 7, label: "7 min", desc: "Default session" },
   { value: 10, label: "10 min", desc: "Standard session" },
   { value: 15, label: "15 min", desc: "Deep practice" },
   { value: 20, label: "20 min", desc: "Extended journey" },
 ];
 
 const soundCategories = {
-  recommended: { label: "Recommended", items: ["Deep Night"] },
-  alternatives: { label: "Alternatives", items: ["Soft Drift", "Safe Harbor", "Flow State", "Still Water"] },
-  others: { label: "Others", items: ["Sanctuary", "Open Sky", "Forest Floor", "Letting Go", "Morning Clear"] },
+  recommended: { label: "Recommended", items: ["Rain"] },
+  alternatives: { label: "Alternatives", items: ["Waves", "Brown Noise", "River", "White Noise"] },
+  others: { label: "Others", items: ["Peaceful Moment", "Distant Wind Chimes", "Sleep Train", "Sound Bowl Bath", "Spring Field"] },
 };
 
 type HistoryFilter = "all" | "sessions" | "generations";
@@ -378,12 +411,15 @@ function SessionCard({ session, delay, isNowPlaying, onPlay, onOpenStudio, onDel
 
 /* ─── Bottom Player Bar ─── */
 
-function PlayerBar({ session, isPlaying, onTogglePlay, onClose, inline, sound, volume, onSoundChange, onVolumeChange }: {
+function PlayerBar({ session, isPlaying, onTogglePlay, onClose, inline, sound, volume, onSoundChange, onVolumeChange, audioUrl }: {
   session: SessionItem; isPlaying: boolean;
   onTogglePlay: () => void; onClose: () => void; inline?: boolean;
   sound?: string; volume?: number; onSoundChange?: (s: string) => void; onVolumeChange?: (v: number) => void;
+  audioUrl?: string | null;
 }) {
   const [progress, setProgress] = useState(0);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
   const [showBgSound, setShowBgSound] = useState(false);
   const [_bgSound, _setBgSound] = useState(session.sound);
   const [_bgVol, _setBgVol] = useState(70);
@@ -393,14 +429,111 @@ function PlayerBar({ session, isPlaying, onTogglePlay, onClose, inline, sound, v
   const setBgVol = onVolumeChange ?? _setBgVol;
   const colors = categoryColors[session.category] || categoryColors.focus;
   const Icon = session.icon;
+  const audioRef = useRef<HTMLAudioElement>(null);
+  const progressBarRef = useRef<HTMLDivElement>(null);
+  const hasRealAudio = !!audioUrl;
 
+  // Sync play/pause with audio element
   useEffect(() => {
+    if (!audioRef.current || !hasRealAudio) return;
+    if (isPlaying) {
+      audioRef.current.play().catch(() => {});
+    } else {
+      audioRef.current.pause();
+    }
+  }, [isPlaying, hasRealAudio]);
+
+  // Auto-play when audioUrl changes and isPlaying is true
+  useEffect(() => {
+    if (!audioRef.current || !hasRealAudio) return;
+    if (isPlaying) {
+      audioRef.current.play().catch(() => {});
+    }
+  }, [audioUrl, hasRealAudio, isPlaying]);
+
+  // Wire audio events for real audio
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio || !hasRealAudio) return;
+    const onTimeUpdate = () => {
+      setCurrentTime(audio.currentTime);
+      if (audio.duration && isFinite(audio.duration)) {
+        setProgress((audio.currentTime / audio.duration) * 100);
+      }
+    };
+    const onLoadedMetadata = () => {
+      if (audio.duration && isFinite(audio.duration)) {
+        setDuration(audio.duration);
+      }
+    };
+    const onDurationChange = () => {
+      if (audio.duration && isFinite(audio.duration)) {
+        setDuration(audio.duration);
+      }
+    };
+    const onEnded = () => {
+      setProgress(100);
+      onTogglePlay();
+    };
+    audio.addEventListener("timeupdate", onTimeUpdate);
+    audio.addEventListener("loadedmetadata", onLoadedMetadata);
+    audio.addEventListener("durationchange", onDurationChange);
+    audio.addEventListener("ended", onEnded);
+    return () => {
+      audio.removeEventListener("timeupdate", onTimeUpdate);
+      audio.removeEventListener("loadedmetadata", onLoadedMetadata);
+      audio.removeEventListener("durationchange", onDurationChange);
+      audio.removeEventListener("ended", onEnded);
+    };
+  }, [hasRealAudio, onTogglePlay]);
+
+  // Sync volume slider with audio element
+  useEffect(() => {
+    if (!audioRef.current || !hasRealAudio) return;
+    audioRef.current.volume = bgVol / 100;
+  }, [bgVol, hasRealAudio]);
+
+  // Fallback fake progress for visual-only mode
+  useEffect(() => {
+    if (hasRealAudio) return;
     if (!isPlaying) return;
     const interval = setInterval(() => {
       setProgress(prev => prev >= 100 ? 0 : prev + 0.3);
     }, 100);
     return () => clearInterval(interval);
-  }, [isPlaying]);
+  }, [isPlaying, hasRealAudio]);
+
+  // Clean up audio on unmount
+  useEffect(() => {
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.src = "";
+      }
+    };
+  }, []);
+
+  const handleSeek = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    if (!progressBarRef.current || !audioRef.current || !hasRealAudio) return;
+    const rect = progressBarRef.current.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const pct = Math.max(0, Math.min(1, x / rect.width));
+    if (audioRef.current.duration && isFinite(audioRef.current.duration)) {
+      audioRef.current.currentTime = pct * audioRef.current.duration;
+    }
+  }, [hasRealAudio]);
+
+  const handleSkipBack = useCallback(() => {
+    if (audioRef.current && hasRealAudio) {
+      audioRef.current.currentTime = Math.max(0, audioRef.current.currentTime - 10);
+    }
+  }, [hasRealAudio]);
+
+  const handleSkipForward = useCallback(() => {
+    if (audioRef.current && hasRealAudio) {
+      audioRef.current.currentTime = Math.min(audioRef.current.duration || 0, audioRef.current.currentTime + 10);
+    }
+  }, [hasRealAudio]);
 
   return (
     <motion.div
@@ -410,8 +543,15 @@ function PlayerBar({ session, isPlaying, onTogglePlay, onClose, inline, sound, v
       transition={{ type: "spring", stiffness: 400, damping: 30, mass: 0.8 }}
       className={inline ? "border-t border-[#e4e4e7] bg-white/95 backdrop-blur-xl" : "fixed bottom-0 left-0 lg:left-56 right-0 z-50 border-t border-[#e4e4e7] bg-white/95 backdrop-blur-xl"}
     >
+      {/* Hidden audio element */}
+      {hasRealAudio && <audio ref={audioRef} src={audioUrl!} preload="metadata" />}
+
       {/* Progress bar */}
-      <div className="h-[2px] bg-[#f0f0f3]">
+      <div
+        ref={progressBarRef}
+        className={`h-[2px] bg-[#f0f0f3] ${hasRealAudio ? "cursor-pointer" : ""}`}
+        onClick={handleSeek}
+      >
         <motion.div
           className="h-full rounded-full"
           style={{ background: colors.accent, width: `${progress}%` }}
@@ -439,7 +579,7 @@ function PlayerBar({ session, isPlaying, onTogglePlay, onClose, inline, sound, v
 
         {/* Controls */}
         <div className="flex items-center gap-1 sm:gap-2 shrink-0">
-          <button className="relative w-8 h-8 sm:w-9 sm:h-9 rounded-lg hover:bg-[#f4f4f5] flex items-center justify-center text-[#71717a] hover:text-[#18181b] transition-colors cursor-pointer" title="Back 10s">
+          <button onClick={handleSkipBack} className="relative w-8 h-8 sm:w-9 sm:h-9 rounded-lg hover:bg-[#f4f4f5] flex items-center justify-center text-[#71717a] hover:text-[#18181b] transition-colors cursor-pointer" title="Back 10s">
             <RotateCcw className="w-4 h-4 sm:w-5 sm:h-5" />
             <span className="absolute text-[6px] sm:text-[7px] font-bold" style={{ fontFamily: "var(--font-body)" }}>10</span>
           </button>
@@ -450,10 +590,16 @@ function PlayerBar({ session, isPlaying, onTogglePlay, onClose, inline, sound, v
           >
             {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4 ml-0.5" />}
           </button>
-          <button className="relative w-8 h-8 sm:w-9 sm:h-9 rounded-lg hover:bg-[#f4f4f5] flex items-center justify-center text-[#71717a] hover:text-[#18181b] transition-colors cursor-pointer" title="Skip 10s">
+          <button onClick={handleSkipForward} className="relative w-8 h-8 sm:w-9 sm:h-9 rounded-lg hover:bg-[#f4f4f5] flex items-center justify-center text-[#71717a] hover:text-[#18181b] transition-colors cursor-pointer" title="Skip 10s">
             <RotateCw className="w-4 h-4 sm:w-5 sm:h-5" />
             <span className="absolute text-[6px] sm:text-[7px] font-bold" style={{ fontFamily: "var(--font-body)" }}>10</span>
           </button>
+          {/* Time display */}
+          {hasRealAudio && duration > 0 && (
+            <span className="hidden sm:inline text-[11px] text-[#a1a1aa] tabular-nums whitespace-nowrap ml-1" style={{ fontFamily: "var(--font-body)" }}>
+              {formatTime(currentTime)} / {formatTime(duration)}
+            </span>
+          )}
         </div>
 
         {/* Right side — background sound + actions */}
@@ -567,6 +713,8 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, savedScript,
   const [rightTab, setRightTab] = useState<"settings" | "history">("settings");
   const [mobilePanel, setMobilePanel] = useState<"settings" | "history" | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [renderingAudio, setRenderingAudio] = useState(false);
+  const [studioAudioUrl, setStudioAudioUrl] = useState<string | null>(null);
   const [studioPlaying, setStudioPlaying] = useState(false);
   const [showStudioPlayer, setShowStudioPlayer] = useState(false);
   const [hasGenerated, setHasGenerated] = useState(!!(savedScript && savedScript.length > 0));
@@ -853,10 +1001,29 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, savedScript,
         }, ...prev]);
       }
       setIsGenerating(false);
-      setShowStudioPlayer(true);
-      setStudioPlaying(true);
       setHasGenerated(true);
       onGenerated?.();
+
+      // Chain render call to produce audio
+      const renderSessionId = data.session?.id || sessionIdState;
+      if (renderSessionId) {
+        setRenderingAudio(true);
+        try {
+          const renderRes = await fetch('/api/render', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ session_id: renderSessionId }),
+          });
+          if (renderRes.ok) {
+            const renderData = await renderRes.json();
+            setStudioAudioUrl(renderData.audio_url);
+          }
+        } catch { /* render failed silently */ }
+        setRenderingAudio(false);
+      }
+
+      setShowStudioPlayer(true);
+      setStudioPlaying(true);
     } catch {
       setGenerateWarning("Generation failed. Please try again.");
       setIsGenerating(false);
@@ -1585,15 +1752,22 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, savedScript,
             />
             <button
               onClick={handleGenerateAudio}
-              disabled={isGenerating}
+              disabled={isGenerating || renderingAudio}
               className="relative flex items-center gap-2 px-5 py-2.5 rounded-lg bg-[#18181b] text-white hover:bg-[#27272a] transition-colors text-sm cursor-pointer shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
               style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}>
-              {isGenerating ? (
+              {renderingAudio ? (
+                <>
+                  <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }}>
+                    <Headphones className="w-3.5 h-3.5" />
+                  </motion.div>
+                  Rendering audio...
+                </>
+              ) : isGenerating ? (
                 <>
                   <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }}>
                     <Sparkles className="w-3.5 h-3.5" />
                   </motion.div>
-                  Generating...
+                  Generating script...
                 </>
               ) : hasGenerated ? (
                 <>
@@ -1654,15 +1828,22 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, savedScript,
               />
               <button
                 onClick={handleGenerateAudio}
-                disabled={isGenerating}
+                disabled={isGenerating || renderingAudio}
                 className="relative w-full flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg bg-[#18181b] text-white hover:bg-[#27272a] transition-colors text-sm cursor-pointer shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
                 style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}>
-                {isGenerating ? (
+                {renderingAudio ? (
+                  <>
+                    <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }}>
+                      <Headphones className="w-3.5 h-3.5" />
+                    </motion.div>
+                    Rendering audio...
+                  </>
+                ) : isGenerating ? (
                   <>
                     <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }}>
                       <Sparkles className="w-3.5 h-3.5" />
                     </motion.div>
-                    Generating...
+                    Generating script...
                   </>
                 ) : hasGenerated ? (
                   <>
@@ -1707,6 +1888,7 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, savedScript,
               volume={soundVolume}
               onSoundChange={(s) => { setSessionSound(s); markEdited(); }}
               onVolumeChange={setSoundVolume}
+              audioUrl={studioAudioUrl}
             />
           )}
         </AnimatePresence>
@@ -2311,21 +2493,39 @@ function StudioPageContent() {
   // Bottom player state
   const [nowPlayingId, setNowPlayingId] = useState<string | null>(null);
   const [playerPlaying, setPlayerPlaying] = useState(false);
+  const [playerAudioUrl, setPlayerAudioUrl] = useState<string | null>(null);
   const nowPlayingGeneration = generations.find(g => g.id === nowPlayingId);
   const nowPlayingSession = sessions.find(s => s.id === nowPlayingId || (nowPlayingGeneration && s.id === nowPlayingGeneration.sessionId)) || null;
 
-  const handlePlaySession = useCallback((sessionId: string) => {
+  const handlePlaySession = useCallback(async (sessionId: string) => {
     if (nowPlayingId === sessionId) {
       setPlayerPlaying(prev => !prev);
-    } else {
-      setNowPlayingId(sessionId);
-      setPlayerPlaying(true);
+      return;
     }
+    // Fetch generation audio_url
+    try {
+      const res = await fetch(`/api/generations?session_id=${sessionId}&limit=1`);
+      if (res.ok) {
+        const gens = await res.json();
+        if (gens.length > 0 && gens[0].audio_url) {
+          setPlayerAudioUrl(gens[0].audio_url);
+        } else {
+          setPlayerAudioUrl(null);
+        }
+      } else {
+        setPlayerAudioUrl(null);
+      }
+    } catch {
+      setPlayerAudioUrl(null);
+    }
+    setNowPlayingId(sessionId);
+    setPlayerPlaying(true);
   }, [nowPlayingId]);
 
   const handleClosePlayer = useCallback(() => {
     setNowPlayingId(null);
     setPlayerPlaying(false);
+    setPlayerAudioUrl(null);
   }, []);
 
   // Fetch sessions from API
@@ -2342,7 +2542,7 @@ function StudioPageContent() {
         duration: `${s.duration || 10} min`,
         voice: (s.voice as string) || "Aria",
         protocol: (s.protocol as string) || "Custom",
-        sound: (s.soundscape as string) || "Sanctuary",
+        sound: (s.soundscape as string) || "Rain",
         createdAt: new Intl.DateTimeFormat("en-US", { dateStyle: "medium", timeStyle: "short" }).format(new Date(s.created_at as string)),
         createdAtRaw: s.created_at as string,
         createdAtShort: getRelativeTime(s.created_at as string),
@@ -2425,13 +2625,16 @@ function StudioPageContent() {
         const full = await res.json();
         setGenConfig({
           prompt: full.prompt || full.title || "",
-          voice: (full.voice || "aria").toLowerCase(),
-          duration: full.duration || 10,
-          sound: full.soundscape || "Sanctuary",
+          voice: full.voice || "Graham",
+          duration: full.duration || 7,
+          sound: full.soundscape || "Rain",
           sessionId: full.id,
-          script: full.script || null,
+          script: normalizeScript(full.script),
           title: full.title || null,
           soundVolume: full.sound_volume ?? 70,
+          supportChoice: full.support_choice || detectSupportChoice(full.prompt || ""),
+          mode: full.mode || "still",
+          preferredApproach: full.preferred_approach || "auto",
         });
         setActiveNav("generate" as NavId);
         setGenStep("studio");
@@ -2444,16 +2647,35 @@ function StudioPageContent() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Handle browser back/forward: if URL loses ?session= while in studio, go back to sessions list
+  // Hydrate from ?prompt= URL param (e.g. shared link or bookmark)
   useEffect(() => {
-    const sessionParam = searchParams.get("session") || searchParams.get("sessionId");
-    if (!sessionParam && activeNav === "generate" && genStep === "studio") {
+    const urlPrompt = searchParams.get("prompt");
+    if (!urlPrompt) return;
+    setGenConfig(prev => ({ ...prev, prompt: urlPrompt }));
+    setActiveNav("generate" as NavId);
+    setGenStep("choose");
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Trap browser back button inside studio — always navigate to sessions list instead of leaving
+  useEffect(() => {
+    // Push a duplicate entry so the first "back" stays on /studio
+    window.history.pushState({ studio: true }, "", "/studio");
+
+    const handlePopState = () => {
+      // Always re-push so user can never back out of studio via browser button
+      window.history.pushState({ studio: true }, "", "/studio");
+      // Reset to sessions list
       setActiveNav("sessions" as NavId);
       setGenStep("input");
       fetchSessions();
       refetchProfile();
-    }
-  }, [searchParams]);
+    };
+
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Rotating phrases for generate heading
   const [phraseIndex, setPhraseIndex] = useState(0);
@@ -2485,18 +2707,17 @@ function StudioPageContent() {
   // Generate flow: "input" → "choose" → "studio"
   const [genStep, setGenStep] = useState<"input" | "choose" | "studio">("input");
   const [loadingSession, setLoadingSession] = useState(false);
-  const [genConfig, setGenConfig] = useState({ prompt: "", voice: "aria", duration: 10, sound: "Sanctuary", sessionId: null as string | null, script: null as ScriptBlock[] | null, title: null as string | null, soundVolume: 70 });
+  const [isQuickGenerating, setIsQuickGenerating] = useState(false);
+  const [genConfig, setGenConfig] = useState({ prompt: "", voice: "Graham", duration: 7, sound: "Rain", sessionId: null as string | null, script: null as ScriptBlock[] | null, title: null as string | null, soundVolume: 70, supportChoice: "auto_detect", mode: "still", preferredApproach: "auto" });
   const [showGenAdvanced, setShowGenAdvanced] = useState(false);
   const genGenerateRef = useRef<HTMLDivElement>(null);
-  const [selectedGenProtocol, setSelectedGenProtocol] = useState<string | null>(null);
-  const [showGenProtocolInfo, setShowGenProtocolInfo] = useState(false);
   const [genPromptError, setGenPromptError] = useState(false);
   const [historyFilter, setHistoryFilter] = useState<HistoryFilter>("all");
   const [sessionsPage, setSessionsPage] = useState(1);
   const [confirmDialog, setConfirmDialog] = useState<{ type: "regenerate" | "delete" | "generate"; sessionId: string; sessionTitle: string } | null>(null);
-  const [settingsVoice, setSettingsVoice] = useState("aria");
+  const [settingsVoice, setSettingsVoice] = useState("Graham");
   const [settingsDuration, setSettingsDuration] = useState(10);
-  const [settingsSound, setSettingsSound] = useState("Sanctuary");
+  const [settingsSound, setSettingsSound] = useState("Rain");
   const [settingsAutoDownload, setSettingsAutoDownload] = useState(false);
   const [settingsAmbientPreview, setSettingsAmbientPreview] = useState(true);
 
@@ -2538,12 +2759,18 @@ function StudioPageContent() {
   const [settingsOpenDropdown, setSettingsOpenDropdown] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
+  // Derive approach options from support choice + mode
+  const genApproachOptions = getApproaches(genConfig.supportChoice, genConfig.mode);
+
   const handleQuickGenerate = useCallback(async () => {
     if (!genConfig.prompt.trim()) {
       setGenPromptError(true);
       return;
     }
+    if (isQuickGenerating) return;
     setGenPromptError(false);
+    setIsQuickGenerating(true);
+    router.replace(`/studio?prompt=${encodeURIComponent(genConfig.prompt.trim())}`, { scroll: false });
     try {
       const res = await fetch("/api/generate", {
         method: "POST",
@@ -2553,6 +2780,9 @@ function StudioPageContent() {
           voice: genConfig.voice,
           duration: genConfig.duration,
           soundscape: genConfig.sound,
+          support_choice: genConfig.supportChoice,
+          mode: genConfig.mode,
+          preferred_approach: genConfig.preferredApproach,
         }),
       });
       if (!res.ok) {
@@ -2568,14 +2798,19 @@ function StudioPageContent() {
       const intent = detectIntent(genConfig.prompt);
       const params = new URLSearchParams({ prompt: genConfig.prompt, voice: genConfig.voice, duration: String(genConfig.duration), intent });
       router.push(`/session?${params.toString()}`);
+    } finally {
+      setIsQuickGenerating(false);
     }
-  }, [router, genConfig, refetchProfile]);
+  }, [router, genConfig, refetchProfile, isQuickGenerating]);
 
   const handlePromptSubmit = (text: string) => {
     if (!text.trim()) return;
-    setGenConfig(prev => ({ ...prev, prompt: text.trim() }));
+    const trimmed = text.trim();
+    const sc = detectSupportChoice(trimmed);
+    setGenConfig(prev => ({ ...prev, prompt: trimmed, supportChoice: sc }));
     setGeneratePrompt("");
     setGenStep("choose");
+    window.history.replaceState({ studio: true }, "", `/studio?prompt=${encodeURIComponent(trimmed)}`);
   };
 
   const navigateTo = (id: NavId) => {
@@ -2586,17 +2821,18 @@ function StudioPageContent() {
     if (id === "history") fetchGenerations();
     if (id === "sessions" || id === "history") refetchProfile();
     // Clear session param when navigating away from a session
-    router.replace("/studio", { scroll: false });
+    window.history.replaceState({ studio: true }, "", "/studio");
   };
 
-  // Update URL to reflect the active session (or clear it)
+  // Update URL to reflect the active session (or clear it) — use replaceState
+  // so browser back always goes to sessions list via the popstate handler
   const updateSessionUrl = useCallback((sessionId: string | null) => {
     if (sessionId) {
-      router.push(`/studio?session=${sessionId}`, { scroll: false });
+      window.history.replaceState({ studio: true }, "", `/studio?session=${sessionId}`);
     } else {
-      router.replace("/studio", { scroll: false });
+      window.history.replaceState({ studio: true }, "", "/studio");
     }
-  }, [router]);
+  }, []);
 
   const filteredSessions = sessions;
 
@@ -2945,19 +3181,22 @@ function StudioPageContent() {
                               const full = await res.json();
                               setGenConfig({
                                 prompt: full.prompt || session.title,
-                                voice: (full.voice || session.voice).toLowerCase(),
+                                voice: full.voice || session.voice || "Graham",
                                 duration: full.duration || parseInt(session.duration),
                                 sound: full.soundscape || session.sound,
                                 sessionId: session.id,
-                                script: full.script || null,
+                                script: normalizeScript(full.script),
                                 title: full.title || session.title,
                                 soundVolume: full.sound_volume ?? 70,
+                                supportChoice: full.support_choice || detectSupportChoice(full.prompt || session.title || ""),
+                                mode: full.mode || "still",
+                                preferredApproach: full.preferred_approach || "auto",
                               });
                             } else {
-                              setGenConfig({ prompt: session.title, voice: session.voice.toLowerCase(), duration: parseInt(session.duration), sound: session.sound, sessionId: session.id, script: null, title: session.title, soundVolume: 70 });
+                              setGenConfig({ prompt: session.title, voice: session.voice || "Graham", duration: parseInt(session.duration), sound: session.sound, sessionId: session.id, script: null, title: session.title, soundVolume: 70, supportChoice: detectSupportChoice(session.title || ""), mode: "still", preferredApproach: "auto" });
                             }
                           } catch {
-                            setGenConfig({ prompt: session.title, voice: session.voice.toLowerCase(), duration: parseInt(session.duration), sound: session.sound, sessionId: session.id, script: null, title: session.title, soundVolume: 70 });
+                            setGenConfig({ prompt: session.title, voice: session.voice || "Graham", duration: parseInt(session.duration), sound: session.sound, sessionId: session.id, script: null, title: session.title, soundVolume: 70, supportChoice: detectSupportChoice(session.title || ""), mode: "still", preferredApproach: "auto" });
                           }
                           setActiveNav("generate" as NavId);
                           setGenStep("studio");
@@ -3170,12 +3409,12 @@ function StudioPageContent() {
                                 const res = await fetch(`/api/sessions/${session.id}`);
                                 if (res.ok) {
                                   const full = await res.json();
-                                  setGenConfig({ prompt: full.prompt || session.title, voice: (full.voice || session.voice).toLowerCase(), duration: full.duration || parseInt(session.duration), sound: full.soundscape || session.sound, sessionId: session.id, script: full.script || null, title: full.title || session.title, soundVolume: full.sound_volume ?? 70 });
+                                  setGenConfig({ prompt: full.prompt || session.title, voice: full.voice || session.voice || "Graham", duration: full.duration || parseInt(session.duration), sound: full.soundscape || session.sound, sessionId: session.id, script: normalizeScript(full.script), title: full.title || session.title, soundVolume: full.sound_volume ?? 70, supportChoice: full.support_choice || detectSupportChoice(full.prompt || session.title || ""), mode: full.mode || "still", preferredApproach: full.preferred_approach || "auto" });
                                 } else {
-                                  setGenConfig({ prompt: session.title, voice: session.voice.toLowerCase(), duration: parseInt(session.duration), sound: session.sound, sessionId: session.id, script: null, title: session.title, soundVolume: 70 });
+                                  setGenConfig({ prompt: session.title, voice: session.voice || "Graham", duration: parseInt(session.duration), sound: session.sound, sessionId: session.id, script: null, title: session.title, soundVolume: 70, supportChoice: detectSupportChoice(session.title || ""), mode: "still", preferredApproach: "auto" });
                                 }
                               } catch {
-                                setGenConfig({ prompt: session.title, voice: session.voice.toLowerCase(), duration: parseInt(session.duration), sound: session.sound, sessionId: session.id, script: null, title: session.title, soundVolume: 70 });
+                                setGenConfig({ prompt: session.title, voice: session.voice || "Graham", duration: parseInt(session.duration), sound: session.sound, sessionId: session.id, script: null, title: session.title, soundVolume: 70, supportChoice: detectSupportChoice(session.title || ""), mode: "still", preferredApproach: "auto" });
                               }
                               setActiveNav("generate" as NavId);
                               setGenStep("studio");
@@ -3198,7 +3437,7 @@ function StudioPageContent() {
                             <div className="flex items-center justify-end gap-1">
                               <div className="relative group/tip">
                                 <button
-                                  onClick={async (e) => { e.stopPropagation(); setLoadingSession(true); try { const res = await fetch(`/api/sessions/${session.id}`); if (res.ok) { const full = await res.json(); setGenConfig({ prompt: full.prompt || session.title, voice: (full.voice || session.voice).toLowerCase(), duration: full.duration || parseInt(session.duration), sound: full.soundscape || session.sound, sessionId: session.id, script: full.script || null, title: full.title || session.title, soundVolume: full.sound_volume ?? 70 }); } else { setGenConfig({ prompt: session.title, voice: session.voice.toLowerCase(), duration: parseInt(session.duration), sound: session.sound, sessionId: session.id, script: null, title: session.title, soundVolume: 70 }); } } catch { setGenConfig({ prompt: session.title, voice: session.voice.toLowerCase(), duration: parseInt(session.duration), sound: session.sound, sessionId: session.id, script: null, title: session.title, soundVolume: 70 }); } setActiveNav("generate" as NavId); setGenStep("studio"); setLoadingSession(false); updateSessionUrl(session.id); }}
+                                  onClick={async (e) => { e.stopPropagation(); setLoadingSession(true); try { const res = await fetch(`/api/sessions/${session.id}`); if (res.ok) { const full = await res.json(); setGenConfig({ prompt: full.prompt || session.title, voice: full.voice || session.voice || "Graham", duration: full.duration || parseInt(session.duration), sound: full.soundscape || session.sound, sessionId: session.id, script: normalizeScript(full.script), title: full.title || session.title, soundVolume: full.sound_volume ?? 70, supportChoice: full.support_choice || detectSupportChoice(full.prompt || session.title || ""), mode: full.mode || "still", preferredApproach: full.preferred_approach || "auto" }); } else { setGenConfig({ prompt: session.title, voice: session.voice || "Graham", duration: parseInt(session.duration), sound: session.sound, sessionId: session.id, script: null, title: session.title, soundVolume: 70, supportChoice: detectSupportChoice(session.title || ""), mode: "still", preferredApproach: "auto" }); } } catch { setGenConfig({ prompt: session.title, voice: session.voice || "Graham", duration: parseInt(session.duration), sound: session.sound, sessionId: session.id, script: null, title: session.title, soundVolume: 70, supportChoice: detectSupportChoice(session.title || ""), mode: "still", preferredApproach: "auto" }); } setActiveNav("generate" as NavId); setGenStep("studio"); setLoadingSession(false); updateSessionUrl(session.id); }}
                                   className="w-8 h-8 rounded-lg hover:bg-[#ededfc] flex items-center justify-center text-[#3f3f46] hover:text-[#18181b] transition-colors cursor-pointer"
                                 >
                                   <PenLine className="w-4 h-4" />
@@ -3404,13 +3643,48 @@ function StudioPageContent() {
                   )}
                 </motion.div>
 
+                {/* Support Choice */}
+                <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.08 }} className="mb-8">
+                  <p className="text-xs uppercase tracking-widest text-[var(--color-sand-400)] mb-1.5" style={{ fontFamily: "var(--font-body)" }}>What do you need support with?</p>
+                  <div className="grid grid-cols-3 gap-1.5">
+                    {supportChoices.filter(s => s.id !== "auto_detect").map((s) => (
+                      <button key={s.id} onClick={() => {
+                        const allowedModes = modeRules[s.id] ? modes.filter(m => modeRules[s.id]!.includes(m.id)) : modes;
+                        const newMode = allowedModes.find(m => m.id === genConfig.mode) ? genConfig.mode : (allowedModes[0]?.id || "still");
+                        setGenConfig(prev => ({ ...prev, supportChoice: s.id, mode: newMode, preferredApproach: "auto" }));
+                      }}
+                        className={`px-3 py-2 rounded-lg text-xs text-left transition-all cursor-pointer ${genConfig.supportChoice === s.id ? "bg-[var(--color-sand-900)] text-[var(--color-sand-50)] shadow-sm" : "bg-white/60 text-[var(--color-sand-600)] hover:bg-white border border-[var(--color-sand-200)]"}`}
+                        style={{ fontFamily: "var(--font-body)" }}>
+                        <span className="font-medium block">{s.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                </motion.div>
+
+                {/* Mode (conditional) */}
+                {(() => {
+                  const availModes = modeRules[genConfig.supportChoice] ? modes.filter(m => modeRules[genConfig.supportChoice]!.includes(m.id)) : modes;
+                  return availModes.length > 1 ? (
+                    <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.09 }} className="mb-8">
+                      <p className="text-xs uppercase tracking-widest text-[var(--color-sand-400)] mb-3" style={{ fontFamily: "var(--font-body)" }}>Mode</p>
+                      <div className="flex gap-1.5">
+                        {availModes.map((m) => (
+                          <button key={m.id} onClick={() => setGenConfig(prev => ({ ...prev, mode: m.id, preferredApproach: "auto" }))}
+                            className={`flex-1 py-2.5 rounded-full text-sm transition-all cursor-pointer ${genConfig.mode === m.id ? "bg-[var(--color-sand-900)] text-[var(--color-sand-50)] shadow-sm" : "bg-white/60 text-[var(--color-sand-600)] hover:bg-white border border-[var(--color-sand-200)]"}`}
+                            style={{ fontFamily: "var(--font-body)" }}>{m.label}</button>
+                        ))}
+                      </div>
+                    </motion.div>
+                  ) : null;
+                })()}
+
                 {/* Duration */}
                 <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="mb-8">
                   <p className="text-xs uppercase tracking-widest text-[var(--color-sand-400)] mb-3" style={{ fontFamily: "var(--font-body)" }}>Duration</p>
                   <div className="flex gap-2 items-end">
                     {sharedDurations.map((d) => (
                       <div key={d} className="flex-1 flex flex-col items-center">
-                        <span className={`text-[8px] tracking-wide uppercase mb-1 h-3 ${d === 10 && genConfig.duration !== 10 ? "text-[var(--color-sand-400)]" : "text-transparent select-none"}`} style={{ fontFamily: "var(--font-body)" }}>{d === 10 ? "Popular" : "\u00A0"}</span>
+                        <span className={`text-[8px] tracking-wide uppercase mb-1 h-3 ${d === 7 && genConfig.duration !== 7 ? "text-[var(--color-sand-400)]" : "text-transparent select-none"}`} style={{ fontFamily: "var(--font-body)" }}>{d === 7 ? "Default" : "\u00A0"}</span>
                         <button onClick={() => setGenConfig(prev => ({ ...prev, duration: d }))}
                           className={`w-full py-2.5 rounded-full text-sm transition-all cursor-pointer ${genConfig.duration === d ? "bg-[var(--color-sand-900)] text-[var(--color-sand-50)] shadow-sm" : "bg-white/60 text-[var(--color-sand-600)] hover:bg-white border border-[var(--color-sand-200)]"}`}
                           style={{ fontFamily: "var(--font-body)" }}>{d}m</button>
@@ -3432,7 +3706,7 @@ function StudioPageContent() {
                           <div className="flex-1 min-w-0">
                             <span className="text-sm font-medium flex items-center gap-1.5" style={{ fontFamily: "var(--font-body)" }}>
                               {v.label}
-                              {v.id === "aria" && isActive && <span className="text-[8px] uppercase tracking-wide opacity-40 font-normal px-1.5 py-px rounded-full bg-white/15">Default</span>}
+                              {v.id === "Graham" && isActive && <span className="text-[8px] uppercase tracking-wide opacity-40 font-normal px-1.5 py-px rounded-full bg-white/15">Default</span>}
                             </span>
                             <span className={`text-xs mt-0.5 block ${isActive ? "opacity-50" : "text-[var(--color-sand-500)]"}`} style={{ fontFamily: "var(--font-body)" }}>{v.description}</span>
                             <div className="flex items-end gap-[2px] h-3 mt-2">
@@ -3459,7 +3733,7 @@ function StudioPageContent() {
                   </div>
                 </motion.div>
 
-                {/* Advanced — Protocol selection */}
+                {/* Advanced — Approach selection */}
                 <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="mb-10">
                   <button
                     onClick={() => { setShowGenAdvanced(!showGenAdvanced); setTimeout(() => genGenerateRef.current?.scrollIntoView({ behavior: "smooth", block: "end" }), 300); }}
@@ -3478,60 +3752,35 @@ function StudioPageContent() {
                       transition={{ duration: 0.25 }}
                       className="mt-4"
                     >
-                      <div className="flex items-center gap-1.5 mb-3">
-                        <p className="text-xs uppercase tracking-widest text-[var(--color-sand-400)]" style={{ fontFamily: "var(--font-body)" }}>Protocol</p>
-                        <div className="relative">
-                          <button
-                            onClick={(e) => { e.stopPropagation(); setShowGenProtocolInfo(!showGenProtocolInfo); }}
-                            className="w-4 h-4 rounded-full flex items-center justify-center text-[var(--color-sand-400)] hover:text-[var(--color-sand-700)] hover:bg-white/60 transition-all cursor-pointer"
-                          >
-                            <Info className="w-3 h-3" />
-                          </button>
-                          {showGenProtocolInfo && (
-                            <>
-                              <div className="fixed inset-0 z-10" onClick={() => setShowGenProtocolInfo(false)} />
-                              <div className="absolute left-1/2 -translate-x-1/2 top-full mt-2 w-72 p-4 rounded-xl bg-[var(--color-sand-900)] text-[var(--color-sand-50)] shadow-xl z-20">
-                                <p className="text-xs font-medium mb-1.5" style={{ fontFamily: "var(--font-body)" }}>How protocols work</p>
-                                <p className="text-[11px] leading-relaxed opacity-70" style={{ fontFamily: "var(--font-body)" }}>
-                                  Each session is structured around a clinical protocol. Our AI was trained on peer-reviewed techniques — it controls pacing, language patterns, and pause timing to match how each method is practiced by trained therapists.
-                                </p>
-                                <p className="text-[11px] leading-relaxed opacity-70 mt-2" style={{ fontFamily: "var(--font-body)" }}>
-                                  A protocol is chosen automatically during generation. For therapists and advanced users — override here.
-                                </p>
-                                <div className="w-2.5 h-2.5 bg-[var(--color-sand-900)] rotate-45 absolute -top-1 left-1/2 -translate-x-1/2" />
-                              </div>
-                            </>
-                          )}
-                        </div>
-                      </div>
-
+                      <p className="text-xs uppercase tracking-widest text-[var(--color-sand-400)] mb-1.5" style={{ fontFamily: "var(--font-body)" }}>Approach</p>
                       <p className="text-[11px] text-[var(--color-sand-400)] mb-3 italic" style={{ fontFamily: "var(--font-body)" }}>
-                        Auto-chosen during generation. For therapists and advanced users — override below.
+                        Auto-chosen during generation based on your support choice. Override below for more control.
                       </p>
 
-                      <div className="grid grid-cols-2 gap-2">
-                        {protocols.map((p) => {
-                          const isSelected = selectedGenProtocol === p.abbr;
-                          return (
+                      {genApproachOptions.length > 0 ? (
+                        <div className="grid grid-cols-2 gap-2">
+                          <button
+                            onClick={() => setGenConfig(prev => ({ ...prev, preferredApproach: "auto" }))}
+                            className={`p-3 rounded-xl text-left text-sm transition-all cursor-pointer ${genConfig.preferredApproach === "auto" ? "bg-[var(--color-sand-900)] text-[var(--color-sand-50)] shadow-md" : "bg-white/60 text-[var(--color-sand-600)] hover:bg-white border border-[var(--color-sand-200)]"}`}
+                            style={{ fontFamily: "var(--font-body)" }}
+                          >
+                            <span className="font-medium">Auto</span>
+                            <span className={`text-[10px] block mt-0.5 ${genConfig.preferredApproach === "auto" ? "opacity-50" : "text-[var(--color-sand-500)]"}`}>Let AI choose</span>
+                          </button>
+                          {genApproachOptions.map((a) => (
                             <button
-                              key={p.abbr}
-                              onClick={(e) => { e.stopPropagation(); setSelectedGenProtocol(isSelected ? null : p.abbr); }}
-                              className={`relative p-3 rounded-xl text-left transition-all cursor-pointer ${
-                                isSelected
-                                  ? "bg-[var(--color-sand-900)] text-[var(--color-sand-50)] shadow-md"
-                                  : "bg-white/60 text-[var(--color-sand-900)] hover:bg-white border border-[var(--color-sand-200)] hover:border-[var(--color-sand-300)]"
-                              }`}
+                              key={a.value}
+                              onClick={() => setGenConfig(prev => ({ ...prev, preferredApproach: a.value }))}
+                              className={`p-3 rounded-xl text-left text-sm transition-all cursor-pointer ${genConfig.preferredApproach === a.value ? "bg-[var(--color-sand-900)] text-[var(--color-sand-50)] shadow-md" : "bg-white/60 text-[var(--color-sand-600)] hover:bg-white border border-[var(--color-sand-200)]"}`}
+                              style={{ fontFamily: "var(--font-body)" }}
                             >
-                              <div className="flex items-center gap-1.5 mb-1">
-                                <span className="text-sm font-medium" style={{ fontFamily: "var(--font-body)" }}>{p.abbr}</span>
-                              </div>
-                              <span className={`text-[10px] leading-snug block ${isSelected ? "opacity-50" : "text-[var(--color-sand-500)]"}`} style={{ fontFamily: "var(--font-body)" }}>
-                                {p.name}
-                              </span>
+                              <span className="font-medium">{a.label}</span>
                             </button>
-                          );
-                        })}
-                      </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-[11px] text-[var(--color-sand-400)] italic" style={{ fontFamily: "var(--font-body)" }}>No specific approaches available for this combination — AI will auto-select.</p>
+                      )}
                     </motion.div>
                   )}
                 </motion.div>
@@ -3541,8 +3790,8 @@ function StudioPageContent() {
                   {/* Open in Studio — primary CTA with border glow */}
                   <div className="relative rounded-full group w-full">
                     <div className="absolute -inset-[2.5px] rounded-full bg-[length:300%_300%] animate-[border-glow_4s_ease_infinite] opacity-90 group-hover:opacity-100 transition-opacity duration-300" style={{ background: "linear-gradient(135deg, var(--color-sage), var(--color-ocean), var(--color-dusk), var(--color-ember), var(--color-sage))", backgroundSize: "300% 300%" }} />
-                    <button onClick={() => { if (!genConfig.prompt.trim()) { setGenPromptError(true); return; } setGenPromptError(false); setGenStep("studio"); if (genConfig.sessionId) updateSessionUrl(genConfig.sessionId); }}
-                      className="relative w-full flex items-center justify-center gap-2.5 py-4 rounded-full bg-[var(--color-sand-900)] text-[var(--color-sand-50)] hover:bg-[var(--color-sand-800)] transition-all shadow-lg cursor-pointer text-sm"
+                    <button disabled={isQuickGenerating} onClick={() => { if (!genConfig.prompt.trim()) { setGenPromptError(true); return; } setGenPromptError(false); setGenStep("studio"); if (genConfig.sessionId) { updateSessionUrl(genConfig.sessionId); } else { router.replace(`/studio?prompt=${encodeURIComponent(genConfig.prompt.trim())}`, { scroll: false }); } }}
+                      className="relative w-full flex items-center justify-center gap-2.5 py-4 rounded-full bg-[var(--color-sand-900)] text-[var(--color-sand-50)] hover:bg-[var(--color-sand-800)] transition-all shadow-lg cursor-pointer text-sm disabled:opacity-60 disabled:cursor-not-allowed"
                       style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>
                       <PenLine className="w-4 h-4" />
                       <span>Open in Studio</span>
@@ -3554,11 +3803,21 @@ function StudioPageContent() {
 
                   {/* Quick Generate — secondary */}
                   <button onClick={handleQuickGenerate}
-                    className="w-full flex items-center justify-center gap-2.5 py-4 rounded-full text-sm text-[var(--color-sand-900)] bg-white border-2 border-[var(--color-sand-900)] hover:bg-[var(--color-sand-50)] transition-all cursor-pointer"
+                    disabled={isQuickGenerating}
+                    className="w-full flex items-center justify-center gap-2.5 py-4 rounded-full text-sm text-[var(--color-sand-900)] bg-white border-2 border-[var(--color-sand-900)] hover:bg-[var(--color-sand-50)] transition-all cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
                     style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>
-                    <Zap className="w-4 h-4" />
-                    <span>Quick Generate</span>
-                    <span className="text-[var(--color-sand-400)] text-xs font-normal">· Create instantly</span>
+                    {isQuickGenerating ? (
+                      <>
+                        <Sparkles className="w-4 h-4 animate-spin" />
+                        <span>Generating...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Zap className="w-4 h-4" />
+                        <span>Quick Generate</span>
+                        <span className="text-[var(--color-sand-400)] text-xs font-normal">· Create instantly</span>
+                      </>
+                    )}
                   </button>
                 </motion.div>
               </motion.div>
@@ -3771,6 +4030,7 @@ function StudioPageContent() {
             isPlaying={playerPlaying}
             onTogglePlay={() => setPlayerPlaying(prev => !prev)}
             onClose={handleClosePlayer}
+            audioUrl={playerAudioUrl}
           />
         )}
       </AnimatePresence>
