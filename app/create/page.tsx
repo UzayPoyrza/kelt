@@ -25,6 +25,8 @@ function LoadingFallback() {
   );
 }
 import {
+  Play,
+  Pause,
   ChevronLeft,
   ChevronDown,
   Sparkles,
@@ -94,6 +96,11 @@ function CreateContent() {
     setPromptError(false);
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
+    console.log("[create] Auth status:", user ? `authenticated (${user.id}, anonymous: ${user.is_anonymous})` : "not authenticated");
+    if (user) {
+      const { data: profile } = await supabase.from("profiles").select("credits_remaining, is_anonymous").eq("id", user.id).single();
+      console.log("[create] Profile:", profile ? `credits: ${profile.credits_remaining}, anonymous: ${profile.is_anonymous}` : "no profile found");
+    }
 
     const generateBody = {
       prompt,
@@ -124,32 +131,35 @@ function CreateContent() {
       return false;
     };
 
-    if (user) {
-      // Already authenticated — call generate directly
-      setIsGenerating(true);
-      try {
-        if (await callGenerateApi()) return;
-      } catch {
-        // Fall through to unauthenticated flow
-      } finally {
-        setIsGenerating(false);
-      }
-    } else {
-      // Not authenticated — try anonymous sign-in
-      setIsGenerating(true);
-      try {
+    setIsGenerating(true);
+    try {
+      let activeUser = user;
+
+      // If not authenticated, sign in anonymously first
+      if (!activeUser) {
         const { data: anonData, error: anonError } = await supabase.auth.signInAnonymously();
-        if (!anonError && anonData.user) {
+        console.log("[create] Anonymous sign-in:", anonError ? anonError.message : "success", anonData?.user?.id);
+        if (anonError || !anonData.user) {
+          console.error("[create] Anonymous auth failed:", anonError);
+          // Fall through to URL params flow below
+          setIsGenerating(false);
+        } else {
+          activeUser = anonData.user;
           // Create anonymous profile with 1 credit
-          await fetch("/api/anon-profile", { method: "POST" });
-          // Now generate
-          if (await callGenerateApi()) return;
+          const profileRes = await fetch("/api/anon-profile", { method: "POST" });
+          console.log("[create] Anon profile:", profileRes.status);
         }
-      } catch {
-        // Fall through to URL params flow
-      } finally {
-        setIsGenerating(false);
       }
+
+      if (activeUser) {
+        const success = await callGenerateApi();
+        if (success) return;
+        console.error("[create] Generate API call failed");
+      }
+    } catch (err) {
+      console.error("[create] Generate flow error:", err);
+    } finally {
+      setIsGenerating(false);
     }
 
     // Fallback: unauthenticated URL params flow
@@ -183,39 +193,22 @@ function CreateContent() {
             className="w-full max-w-xl mx-auto"
             onClick={() => setVoicePlaying(null)}
           >
-            {/* Back button */}
+            {/* Back button — minimal */}
             <motion.button
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               onClick={() => router.push("/")}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm text-[var(--color-sand-600)] hover:text-[var(--color-sand-900)] hover:bg-white/60 border border-[var(--color-sand-200)] hover:border-[var(--color-sand-300)] transition-all cursor-pointer mb-6 sm:mb-8"
+              className="flex items-center gap-1 text-sm text-[var(--color-sand-400)] hover:text-[var(--color-sand-700)] transition-colors cursor-pointer mb-8 sm:mb-10"
               style={{ fontFamily: "var(--font-body)" }}
             >
-              <ChevronLeft className="w-4 h-4" />Back
+              <ChevronLeft className="w-3.5 h-3.5" />Back
             </motion.button>
 
-            {/* Step indicator */}
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.05 }} className="flex items-center justify-center gap-1.5 mb-6 sm:mb-8 text-[11px]" style={{ fontFamily: "var(--font-body)" }}>
-              <span className="text-[var(--color-sand-400)] flex items-center gap-1">
-                <span className="inline-flex items-center justify-center w-[18px] h-[18px] rounded-full text-[10px] !leading-[0] border border-[var(--color-sand-300)] text-[var(--color-sand-400)] font-medium">1</span>
-                Prompt
-              </span>
-              <span className="text-[var(--color-sand-300)]">→</span>
-              <span className="text-[var(--color-sand-900)] flex items-center gap-1 font-medium">
-                <span className="inline-flex items-center justify-center w-[18px] h-[18px] rounded-full text-[10px] !leading-[0] bg-[var(--color-sand-900)] text-[var(--color-sand-50)] font-medium">2</span>
-                Customize
-              </span>
-              <span className="text-[var(--color-sand-300)]">→</span>
-              <span className="text-[var(--color-sand-300)] flex items-center gap-1">
-                <span className="inline-flex items-center justify-center w-[18px] h-[18px] rounded-full text-[10px] !leading-[0] border border-[var(--color-sand-300)] text-[var(--color-sand-300)] font-medium">3</span>
-                Generate
-              </span>
-            </motion.div>
-
-            {/* Editable prompt */}
-            <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="mb-6 sm:mb-8 text-center max-w-md mx-auto">
-              <p className="text-xl sm:text-2xl text-[var(--color-sand-900)] leading-snug inline" style={{ fontFamily: "var(--font-display)" }}>
-                <span className="text-[var(--color-sand-400)] select-none">&ldquo;</span>
+            {/* Prompt hero */}
+            <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="mb-8 sm:mb-10 text-center">
+              <p className="text-[11px] uppercase tracking-widest text-[var(--color-sand-400)] mb-3" style={{ fontFamily: "var(--font-body)" }}>Your intention</p>
+              <p className="text-2xl sm:text-3xl text-[var(--color-sand-900)] leading-snug inline" style={{ fontFamily: "var(--font-display)" }}>
+                <span className="text-[var(--color-sand-300)] select-none">&ldquo;</span>
                 <span
                   contentEditable
                   suppressContentEditableWarning
@@ -238,10 +231,10 @@ function CreateContent() {
                   }}
                   onKeyDown={(e) => { if (e.key === "Enter") e.preventDefault(); }}
                   onFocus={() => setPromptError(false)}
-                  className={`outline-none border-b transition-colors ${promptError ? "border-[var(--color-ember)]" : "border-transparent focus:border-[var(--color-sand-300)]"}`}
+                  className={`outline-none border-b-2 transition-colors ${promptError ? "border-[var(--color-ember)]" : "border-transparent focus:border-[var(--color-sand-200)]"}`}
                 >{prompt}</span>
-                <span className="text-[var(--color-sand-400)] select-none">&rdquo;</span>
-                <Pencil className="w-3 h-3 text-[var(--color-sand-400)] inline-block ml-1.5 mb-1" />
+                <span className="text-[var(--color-sand-300)] select-none">&rdquo;</span>
+                <Pencil className="w-3 h-3 text-[var(--color-sand-300)] inline-block ml-2 mb-1.5" />
               </p>
               {promptError && (
                 <p className="text-xs text-[var(--color-ember)] mt-2 block" style={{ fontFamily: "var(--font-body)" }}>
@@ -250,139 +243,165 @@ function CreateContent() {
               )}
             </motion.div>
 
-            {/* Support Choice — compact inline chips */}
-            <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.08 }} className="mb-6">
-              <div className="flex items-center justify-between mb-2.5">
-                <p className="text-[11px] uppercase tracking-widest text-[var(--color-sand-400)]" style={{ fontFamily: "var(--font-body)" }}>Focus area</p>
-                <span className="text-[10px] text-[var(--color-sand-400)] italic" style={{ fontFamily: "var(--font-body)" }}>Optional</span>
-              </div>
-              {detectedSupportChoice !== "auto_detect" && !hasExplicitChoice && (
-                <button onClick={() => setSupportChoice(detectedSupportChoice)} className="text-[10px] text-[var(--color-sage)] hover:underline mb-2 block cursor-pointer" style={{ fontFamily: "var(--font-body)" }}>
-                  Suggested: {supportChoices.find(s => s.id === detectedSupportChoice)?.label}
-                </button>
-              )}
-              <div className="flex flex-wrap gap-1.5">
-                {supportChoices.filter(s => s.id !== "auto_detect").map((s) => (
-                  <button key={s.id} onClick={() => setSupportChoice(supportChoice === s.id ? "auto_detect" : s.id)}
-                    className={`px-3 py-1.5 rounded-full text-[12px] transition-all cursor-pointer whitespace-nowrap ${supportChoice === s.id ? "bg-[var(--color-sand-900)] text-[var(--color-sand-50)] shadow-sm" : "bg-white/70 text-[var(--color-sand-600)] hover:bg-white border border-[var(--color-sand-200)] hover:border-[var(--color-sand-300)]"}`}
-                    style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>
-                    {s.label}
+            {/* Options card */}
+            <motion.div
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.08 }}
+              className="rounded-2xl bg-white/50 backdrop-blur-sm border border-[var(--color-sand-200)] p-5 sm:p-6 mb-8"
+            >
+              {/* Focus area */}
+              <div className="mb-5">
+                <div className="flex items-center gap-2 mb-2.5">
+                  <p className="text-[11px] uppercase tracking-widest text-[var(--color-sand-400)]" style={{ fontFamily: "var(--font-body)" }}>Focus area</p>
+                  <span className="text-[10px] text-[var(--color-sand-400)]" style={{ fontFamily: "var(--font-body)" }}>— optional</span>
+                </div>
+                {detectedSupportChoice !== "auto_detect" && !hasExplicitChoice && (
+                  <button onClick={() => setSupportChoice(detectedSupportChoice)} className="text-[10px] text-[var(--color-sage)] hover:underline mb-2 block cursor-pointer" style={{ fontFamily: "var(--font-body)" }}>
+                    Suggested: {supportChoices.find(s => s.id === detectedSupportChoice)?.label}
                   </button>
-                ))}
-              </div>
-            </motion.div>
-
-            {/* Duration + Voice — side by side on larger screens */}
-            <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="mb-6 flex flex-col sm:flex-row gap-6">
-              {/* Duration */}
-              <div className="sm:w-[45%]">
-                <p className="text-[11px] uppercase tracking-widest text-[var(--color-sand-400)] mb-2.5" style={{ fontFamily: "var(--font-body)" }}>Duration</p>
-                <div className="flex gap-1.5">
-                  {durations.map((d) => (
-                    <button key={d} onClick={() => setDuration(d)} className={`flex-1 py-2 rounded-full text-sm transition-all cursor-pointer ${duration === d ? "bg-[var(--color-sand-900)] text-[var(--color-sand-50)] shadow-sm" : "bg-white/60 text-[var(--color-sand-600)] hover:bg-white border border-[var(--color-sand-200)]"}`} style={{ fontFamily: "var(--font-body)" }}>{d}m</button>
+                )}
+                <div className="flex flex-wrap gap-1.5">
+                  {supportChoices.filter(s => s.id !== "auto_detect").map((s) => (
+                    <button key={s.id} onClick={() => setSupportChoice(supportChoice === s.id ? "auto_detect" : s.id)}
+                      className={`px-3 py-1.5 rounded-full text-[12px] transition-all cursor-pointer whitespace-nowrap ${supportChoice === s.id ? "bg-[var(--color-sand-900)] text-[var(--color-sand-50)] shadow-sm" : "text-[var(--color-sand-600)] hover:bg-[var(--color-sand-100)] border border-[var(--color-sand-200)] hover:border-[var(--color-sand-300)]"}`}
+                      style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>
+                      {s.label}
+                    </button>
                   ))}
                 </div>
               </div>
 
-              {/* Voice — compact selector */}
-              <div className="flex-1">
-                <p className="text-[11px] uppercase tracking-widest text-[var(--color-sand-400)] mb-2.5" style={{ fontFamily: "var(--font-body)" }}>Voice</p>
-                <div className="flex gap-1.5">
-                  {voices.map((v) => {
-                    const isActive = voice === v.id;
-                    const isVoicePlaying = voicePlaying === v.id;
-                    return (
-                      <button key={v.id} onClick={(e) => { e.stopPropagation(); setVoice(v.id); setVoicePlaying(v.id); setTimeout(() => setVoicePlaying((cur) => cur === v.id ? null : cur), 3000); }}
-                        className={`flex-1 flex flex-col items-center gap-1 py-2.5 px-1 rounded-xl transition-all cursor-pointer ${isActive ? "bg-[var(--color-sand-900)] text-[var(--color-sand-50)] shadow-sm" : "bg-white/60 text-[var(--color-sand-600)] hover:bg-white border border-[var(--color-sand-200)] hover:border-[var(--color-sand-300)]"}`}
-                      >
-                        <span className="text-[12px] font-medium" style={{ fontFamily: "var(--font-body)" }}>{v.label}</span>
-                        {isActive && (
-                          <span className={`text-[10px] ${isActive ? "opacity-50" : "text-[var(--color-sand-500)]"}`} style={{ fontFamily: "var(--font-body)" }}>{v.description}</span>
-                        )}
-                        {isVoicePlaying && (
-                          <div className="flex items-end gap-[2px] h-2.5">
-                            {Array.from({ length: 8 }).map((_, i) => (
-                              <motion.div
-                                key={i}
-                                className={`w-[2px] rounded-full ${isActive ? "bg-white/50" : "bg-[var(--color-sand-400)]"}`}
-                                animate={{ height: [`${20 + Math.random() * 40}%`, `${40 + Math.random() * 60}%`, `${20 + Math.random() * 40}%`] }}
-                                transition={{ duration: 0.4 + Math.random() * 0.3, repeat: Infinity, ease: "easeInOut" }}
-                                style={{ height: "30%" }}
-                              />
-                            ))}
+              {/* Divider */}
+              <div className="h-px bg-[var(--color-sand-200)] mb-5" />
+
+              {/* Duration + Voice row */}
+              <div className="flex flex-col sm:flex-row gap-5">
+                {/* Duration */}
+                <div className="sm:w-[45%]">
+                  <p className="text-[11px] uppercase tracking-widest text-[var(--color-sand-400)] mb-2.5" style={{ fontFamily: "var(--font-body)" }}>Duration</p>
+                  <div className="flex gap-1.5">
+                    {durations.map((d) => (
+                      <div key={d} className="flex-1 flex flex-col items-center">
+                        {d === 7 && duration !== 7 && <span className="text-[8px] uppercase tracking-wide text-[var(--color-sand-400)] mb-0.5" style={{ fontFamily: "var(--font-body)" }}>Popular</span>}
+                        {(d !== 7 || duration === 7) && <span className="text-[8px] mb-0.5 select-none">&nbsp;</span>}
+                        <button onClick={() => setDuration(d)} className={`w-full py-2 rounded-full text-sm transition-all cursor-pointer ${duration === d ? "bg-[var(--color-sand-900)] text-[var(--color-sand-50)] shadow-sm" : "text-[var(--color-sand-600)] hover:bg-[var(--color-sand-100)] border border-[var(--color-sand-200)]"}`} style={{ fontFamily: "var(--font-body)" }}>{d}m</button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Voice */}
+                <div className="flex-1">
+                  <p className="text-[11px] uppercase tracking-widest text-[var(--color-sand-400)] mb-2.5" style={{ fontFamily: "var(--font-body)" }}>Voice</p>
+                  <div className="flex gap-1.5">
+                    {voices.map((v) => {
+                      const isActive = voice === v.id;
+                      const isVoicePlaying = voicePlaying === v.id;
+                      return (
+                        <button key={v.id} onClick={(e) => { e.stopPropagation(); setVoice(v.id); }}
+                          className={`flex-1 flex flex-col items-center gap-0.5 py-2 px-1 rounded-xl transition-all cursor-pointer relative ${isActive ? "bg-[var(--color-sand-900)] text-[var(--color-sand-50)] shadow-sm" : "text-[var(--color-sand-600)] hover:bg-[var(--color-sand-100)] border border-[var(--color-sand-200)] hover:border-[var(--color-sand-300)]"}`}
+                        >
+                          <span className="text-[12px] font-medium" style={{ fontFamily: "var(--font-body)" }}>{v.label}</span>
+                          {isActive && (
+                            <span className="text-[10px] opacity-50" style={{ fontFamily: "var(--font-body)" }}>{v.description}</span>
+                          )}
+                          {isVoicePlaying && (
+                            <div className="flex items-end gap-[2px] h-2.5 mt-0.5">
+                              {Array.from({ length: 8 }).map((_, i) => (
+                                <motion.div
+                                  key={i}
+                                  className={`w-[2px] rounded-full ${isActive ? "bg-white/50" : "bg-[var(--color-sand-400)]"}`}
+                                  animate={{ height: [`${20 + Math.random() * 40}%`, `${40 + Math.random() * 60}%`, `${20 + Math.random() * 40}%`] }}
+                                  transition={{ duration: 0.4 + Math.random() * 0.3, repeat: Infinity, ease: "easeInOut" }}
+                                  style={{ height: "30%" }}
+                                />
+                              ))}
+                            </div>
+                          )}
+                          {/* Play/Pause toggle */}
+                          <div
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setVoice(v.id);
+                              setVoicePlaying(isVoicePlaying ? null : v.id);
+                              if (!isVoicePlaying) setTimeout(() => setVoicePlaying((cur) => cur === v.id ? null : cur), 3000);
+                            }}
+                            className={`mt-1 w-6 h-6 rounded-full flex items-center justify-center transition-all ${isActive ? "bg-white/20 text-white hover:bg-white/30" : "bg-[var(--color-sand-100)] text-[var(--color-sand-500)] hover:bg-[var(--color-sand-200)]"}`}
+                          >
+                            {isVoicePlaying ? <Pause className="w-2.5 h-2.5" /> : <Play className="w-2.5 h-2.5 ml-px" />}
                           </div>
-                        )}
-                      </button>
-                    );
-                  })}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
-            </motion.div>
 
-            {/* Advanced — Mode + Approach (only when a support choice is selected) */}
-            {hasExplicitChoice && (
-            <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="mb-6">
-              <button
-                onClick={() => { setShowAdvanced(!showAdvanced); setTimeout(() => generateRef.current?.scrollIntoView({ behavior: "smooth", block: "end" }), 300); }}
-                className="flex items-center gap-3 w-full px-4 py-3 rounded-xl bg-white/60 border border-[var(--color-sand-200)] hover:border-[var(--color-sand-300)] hover:bg-white transition-all cursor-pointer"
-                style={{ fontFamily: "var(--font-body)" }}
-              >
-                <FlaskConical className="w-4 h-4 text-[var(--color-sand-500)]" />
-                <span className="text-sm text-[var(--color-sand-600)] flex-1 text-left">Advanced options</span>
-                <ChevronDown className={`w-5 h-5 text-[var(--color-sand-400)] transition-transform ${showAdvanced ? "rotate-180" : ""}`} />
-              </button>
+              {/* Advanced options — inside the card */}
+              {hasExplicitChoice && (
+                <>
+                  <div className="h-px bg-[var(--color-sand-200)] my-5" />
+                  <button
+                    onClick={() => { setShowAdvanced(!showAdvanced); setTimeout(() => generateRef.current?.scrollIntoView({ behavior: "smooth", block: "end" }), 300); }}
+                    className="flex items-center gap-2 w-full text-left transition-colors cursor-pointer group"
+                    style={{ fontFamily: "var(--font-body)" }}
+                  >
+                    <FlaskConical className="w-3.5 h-3.5 text-[var(--color-sand-400)] group-hover:text-[var(--color-sand-600)] transition-colors" />
+                    <span className="text-[12px] text-[var(--color-sand-500)] group-hover:text-[var(--color-sand-700)] flex-1 transition-colors">Advanced</span>
+                    <ChevronDown className={`w-4 h-4 text-[var(--color-sand-400)] transition-transform ${showAdvanced ? "rotate-180" : ""}`} />
+                  </button>
 
-              {showAdvanced && (
-                <motion.div
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: "auto" }}
-                  transition={{ duration: 0.25 }}
-                  className="mt-3 px-4 py-3.5 rounded-xl bg-white/40 border border-[var(--color-sand-200)]"
-                >
-                  {/* Mode — inline row */}
-                  {availableModes.length > 1 && (
-                    <div className="mb-3.5">
-                      <p className="text-[11px] uppercase tracking-widest text-[var(--color-sand-400)] mb-2" style={{ fontFamily: "var(--font-body)" }}>Mode</p>
-                      <div className="flex gap-1.5">
-                        {availableModes.map((m) => (
-                          <button key={m.id} onClick={() => setSelectedMode(m.id)}
-                            className={`px-3.5 py-1.5 rounded-full text-[12px] transition-all cursor-pointer ${selectedMode === m.id ? "bg-[var(--color-sand-900)] text-[var(--color-sand-50)] shadow-sm" : "bg-white/70 text-[var(--color-sand-600)] hover:bg-white border border-[var(--color-sand-200)]"}`}
-                            style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>{m.label}</button>
-                        ))}
-                      </div>
-                    </div>
+                  {showAdvanced && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      transition={{ duration: 0.25 }}
+                      className="mt-4"
+                    >
+                      {/* Body position */}
+                      {availableModes.length > 1 && (
+                        <div className="mb-3.5">
+                          <p className="text-[11px] uppercase tracking-widest text-[var(--color-sand-400)] mb-2" style={{ fontFamily: "var(--font-body)" }}>Body position</p>
+                          <div className="flex gap-1.5">
+                            {availableModes.map((m) => (
+                              <button key={m.id} onClick={() => setSelectedMode(m.id)}
+                                className={`px-3.5 py-1.5 rounded-full text-[12px] transition-all cursor-pointer flex items-center gap-1.5 ${selectedMode === m.id ? "bg-[var(--color-sand-900)] text-[var(--color-sand-50)] shadow-sm" : "text-[var(--color-sand-600)] hover:bg-[var(--color-sand-100)] border border-[var(--color-sand-200)]"}`}
+                                style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>
+                                <span>{m.label}</span>
+                                <span className={`text-[10px] font-normal ${selectedMode === m.id ? "opacity-40" : "text-[var(--color-sand-400)]"}`}>
+                                  {m.id === "still" ? "Default" : m.description}
+                                </span>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Protocol */}
+                      <p className="text-[11px] uppercase tracking-widest text-[var(--color-sand-400)] mb-1" style={{ fontFamily: "var(--font-body)" }}>Protocol</p>
+                      <p className="text-[10px] text-[var(--color-sand-400)] mb-2" style={{ fontFamily: "var(--font-body)" }}>For therapists, instructors, and advanced users. Overrides the auto-selected therapeutic approach.</p>
+                      {approachOptions.length > 0 ? (
+                        <div className="flex flex-wrap gap-1.5">
+                          {approachOptions.map((a) => (
+                            <button
+                              key={a.value}
+                              onClick={() => setPreferredApproach(preferredApproach === a.value ? "auto" : a.value)}
+                              className={`px-3 py-1.5 rounded-full text-[12px] transition-all cursor-pointer ${preferredApproach === a.value ? "bg-[var(--color-sand-900)] text-[var(--color-sand-50)] shadow-sm" : "text-[var(--color-sand-600)] hover:bg-[var(--color-sand-100)] border border-[var(--color-sand-200)]"}`}
+                              style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}
+                            >
+                              {a.label}
+                            </button>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-[11px] text-[var(--color-sand-400)] italic" style={{ fontFamily: "var(--font-body)" }}>No specific approaches — AI will auto-select.</p>
+                      )}
+                    </motion.div>
                   )}
-
-                  {/* Approach — compact chips */}
-                  <p className="text-[11px] uppercase tracking-widest text-[var(--color-sand-400)] mb-2" style={{ fontFamily: "var(--font-body)" }}>Approach</p>
-
-                  {approachOptions.length > 0 ? (
-                    <div className="flex flex-wrap gap-1.5">
-                      <button
-                        onClick={() => setPreferredApproach("auto")}
-                        className={`px-3 py-1.5 rounded-full text-[12px] transition-all cursor-pointer ${preferredApproach === "auto" ? "bg-[var(--color-sand-900)] text-[var(--color-sand-50)] shadow-sm" : "bg-white/70 text-[var(--color-sand-600)] hover:bg-white border border-[var(--color-sand-200)]"}`}
-                        style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}
-                      >
-                        Auto
-                      </button>
-                      {approachOptions.map((a) => (
-                        <button
-                          key={a.value}
-                          onClick={() => setPreferredApproach(a.value)}
-                          className={`px-3 py-1.5 rounded-full text-[12px] transition-all cursor-pointer ${preferredApproach === a.value ? "bg-[var(--color-sand-900)] text-[var(--color-sand-50)] shadow-sm" : "bg-white/70 text-[var(--color-sand-600)] hover:bg-white border border-[var(--color-sand-200)]"}`}
-                          style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}
-                        >
-                          {a.label}
-                        </button>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-[11px] text-[var(--color-sand-400)] italic" style={{ fontFamily: "var(--font-body)" }}>No specific approaches — AI will auto-select.</p>
-                  )}
-                </motion.div>
+                </>
               )}
             </motion.div>
-            )}
 
             {/* Generate button */}
             <motion.div ref={generateRef} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }} className="flex justify-center">
