@@ -208,7 +208,7 @@ function StudioPreview() {
           {/* Sound pill */}
           <div className="flex items-center gap-1 px-2 py-0.5 rounded-full" style={{ background: "rgba(109,154,181,0.08)", border: "1px solid rgba(109,154,181,0.15)" }}>
             <div className="w-1.5 h-1.5 rounded-full" style={{ background: "var(--color-ocean)" }} />
-            <span className="text-[10px] text-[var(--color-sand-700)]" style={{ fontFamily: "var(--font-body)" }}>Deep Night</span>
+            <span className="text-[10px] text-[var(--color-sand-700)]" style={{ fontFamily: "var(--font-body)" }}>Rain</span>
           </div>
         </div>
 

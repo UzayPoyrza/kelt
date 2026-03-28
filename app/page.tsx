@@ -22,6 +22,7 @@ import {
   MessageCircle,
   ArrowRight,
 } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
 import {
   Logo,
   AmbientBackground,
@@ -186,6 +187,14 @@ const timelineSteps = [
 
 export default function HomePage() {
   const router = useRouter();
+
+  // Redirect authenticated users to studio
+  useEffect(() => {
+    createClient().auth.getUser().then(({ data: { user } }) => {
+      if (user) router.replace("/studio");
+    });
+  }, [router]);
+
   const [prompt, setPrompt] = useState("");
   const [playing, setPlaying] = useState<string | null>(null);
   const [sampleProgress, setSampleProgress] = useState<Record<string, number>>({});

@@ -18,6 +18,7 @@ export interface Profile {
     ambientPreview?: boolean;
   } | null;
   created_at: string;
+  is_anonymous: boolean;
   updated_at: string;
 }
 
@@ -30,6 +31,7 @@ export interface Session {
   duration: number | null;
   protocol: string | null;
   soundscape: string | null;
+  sound_options: { recommended: string[]; other: string[] } | null;
   script: Record<string, unknown>[] | null;
   category: string | null;
   intent: string | null;

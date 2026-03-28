@@ -6,7 +6,9 @@ import { Suspense } from "react";
 function RemountInner({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const key = pathname + searchParams.toString();
+  // Studio manages its own state transitions via searchParams effects,
+  // so only key on pathname to avoid full remount on back/forward navigation
+  const key = pathname === "/studio" ? pathname : pathname + searchParams.toString();
 
   return <div key={key}>{children}</div>;
 }
