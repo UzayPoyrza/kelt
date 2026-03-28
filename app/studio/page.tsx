@@ -3643,12 +3643,19 @@ function StudioPageContent() {
                   )}
                 </motion.div>
 
-                {/* Support Choice */}
+                {/* Support Choice (optional) */}
                 <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.08 }} className="mb-8">
-                  <p className="text-xs uppercase tracking-widest text-[var(--color-sand-400)] mb-1.5" style={{ fontFamily: "var(--font-body)" }}>What do you need support with?</p>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <p className="text-xs uppercase tracking-widest text-[var(--color-sand-400)]" style={{ fontFamily: "var(--font-body)" }}>What do you need support with?</p>
+                    <span className="text-[10px] text-[var(--color-sand-400)] italic" style={{ fontFamily: "var(--font-body)" }}>Optional</span>
+                  </div>
                   <div className="grid grid-cols-3 gap-1.5">
                     {supportChoices.filter(s => s.id !== "auto_detect").map((s) => (
                       <button key={s.id} onClick={() => {
+                        if (genConfig.supportChoice === s.id) {
+                          setGenConfig(prev => ({ ...prev, supportChoice: "auto_detect", mode: "still", preferredApproach: "auto" }));
+                          return;
+                        }
                         const allowedModes = modeRules[s.id] ? modes.filter(m => modeRules[s.id]!.includes(m.id)) : modes;
                         const newMode = allowedModes.find(m => m.id === genConfig.mode) ? genConfig.mode : (allowedModes[0]?.id || "still");
                         setGenConfig(prev => ({ ...prev, supportChoice: s.id, mode: newMode, preferredApproach: "auto" }));
@@ -3716,7 +3723,8 @@ function StudioPageContent() {
                   </div>
                 </motion.div>
 
-                {/* Advanced — Approach selection */}
+                {/* Advanced — Mode + Approach (only when a support choice is selected) */}
+                {genConfig.supportChoice !== "auto_detect" && (
                 <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="mb-10">
                   <button
                     onClick={() => { setShowGenAdvanced(!showGenAdvanced); setTimeout(() => genGenerateRef.current?.scrollIntoView({ behavior: "smooth", block: "end" }), 300); }}
@@ -3785,6 +3793,7 @@ function StudioPageContent() {
                     </motion.div>
                   )}
                 </motion.div>
+                )}
 
                 {/* Action buttons */}
                 <motion.div ref={genGenerateRef} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }} className="flex flex-col gap-3 items-center">

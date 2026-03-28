@@ -61,12 +61,13 @@ function CreateContent() {
   const generateRef = useRef<HTMLDivElement>(null);
 
   // Support choice, mode, and approach state
-  const [supportChoice, setSupportChoice] = useState<string>(() => detectSupportChoice(initialPrompt));
+  const [supportChoice, setSupportChoice] = useState<string>("auto_detect");
   const [selectedMode, setSelectedMode] = useState<string>("still");
   const [preferredApproach, setPreferredApproach] = useState<string>("auto");
 
-  // Auto-detect support choice when prompt changes
+  // Auto-detect support choice suggestion when prompt changes
   const detectedSupportChoice = detectSupportChoice(prompt);
+  const hasExplicitChoice = supportChoice !== "auto_detect";
 
   // Available modes based on support choice
   const availableModes = modeRules[supportChoice] ? modes.filter(m => modeRules[supportChoice]!.includes(m.id)) : modes;
@@ -251,17 +252,20 @@ function CreateContent() {
               )}
             </motion.div>
 
-            {/* Support Choice */}
+            {/* Support Choice (optional) */}
             <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.08 }} className="mb-8">
-              <p className="text-xs uppercase tracking-widest text-[var(--color-sand-400)] mb-1.5" style={{ fontFamily: "var(--font-body)" }}>What do you need support with?</p>
-              {detectedSupportChoice !== "auto_detect" && detectedSupportChoice !== supportChoice && (
+              <div className="flex items-center justify-between mb-1.5">
+                <p className="text-xs uppercase tracking-widest text-[var(--color-sand-400)]" style={{ fontFamily: "var(--font-body)" }}>What do you need support with?</p>
+                <span className="text-[10px] text-[var(--color-sand-400)] italic" style={{ fontFamily: "var(--font-body)" }}>Optional</span>
+              </div>
+              {detectedSupportChoice !== "auto_detect" && !hasExplicitChoice && (
                 <button onClick={() => setSupportChoice(detectedSupportChoice)} className="text-[10px] text-[var(--color-sage)] hover:underline mb-2 block cursor-pointer" style={{ fontFamily: "var(--font-body)" }}>
                   Suggested: {supportChoices.find(s => s.id === detectedSupportChoice)?.label}
                 </button>
               )}
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
                 {supportChoices.filter(s => s.id !== "auto_detect").map((s) => (
-                  <button key={s.id} onClick={() => setSupportChoice(s.id)}
+                  <button key={s.id} onClick={() => setSupportChoice(supportChoice === s.id ? "auto_detect" : s.id)}
                     className={`px-3 py-2 rounded-lg text-xs text-left transition-all cursor-pointer ${supportChoice === s.id ? "bg-[var(--color-sand-900)] text-[var(--color-sand-50)] shadow-sm" : "bg-white/60 text-[var(--color-sand-600)] hover:bg-white border border-[var(--color-sand-200)]"}`}
                     style={{ fontFamily: "var(--font-body)" }}>
                     <span className="font-medium block">{s.label}</span>
@@ -325,7 +329,8 @@ function CreateContent() {
               </div>
             </motion.div>
 
-            {/* Advanced — Approach selection */}
+            {/* Advanced — Mode + Approach (only when a support choice is selected) */}
+            {hasExplicitChoice && (
             <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="mb-10">
               <button
                 onClick={() => { setShowAdvanced(!showAdvanced); setTimeout(() => generateRef.current?.scrollIntoView({ behavior: "smooth", block: "end" }), 300); }}
@@ -391,6 +396,7 @@ function CreateContent() {
                 </motion.div>
               )}
             </motion.div>
+            )}
 
             {/* Generate button */}
             <motion.div ref={generateRef} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }} className="flex justify-center">
