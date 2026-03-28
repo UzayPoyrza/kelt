@@ -34,6 +34,10 @@ import {
   samples,
 } from "@/lib/shared";
 
+/* ─── Sound Aware Section ─── */
+
+/* Sound pairing demo data */
+
 /* ─── Transition Interstitial ─── */
 
 const testimonials = [
@@ -188,10 +192,10 @@ const timelineSteps = [
 export default function HomePage() {
   const router = useRouter();
 
-  // Redirect authenticated users to studio
+  // Redirect authenticated (non-anonymous) users to studio
   useEffect(() => {
     createClient().auth.getUser().then(({ data: { user } }) => {
-      if (user) router.replace("/studio");
+      if (user && !user.is_anonymous) router.replace("/studio");
     });
   }, [router]);
 
@@ -902,6 +906,114 @@ export default function HomePage() {
               </FadeIn>
             ))}
           </div>
+        </div>
+      </section>
+
+      {/* ════════════════════════════════════════════
+          SECTION 4 — SOUND AWARE
+         ════════════════════════════════════════════ */}
+      <section className="relative py-14 sm:py-20 md:py-24 px-4 sm:px-6 overflow-hidden" style={{ background: "var(--color-sand-100)" }}>
+        <div className="max-w-4xl mx-auto relative z-10">
+          <FadeIn className="text-center mb-10 sm:mb-14">
+            <p className="text-xs uppercase tracking-[0.25em] text-[var(--color-sand-500)] mb-5" style={{ fontFamily: "var(--font-body)" }}>
+              Script-aware soundscapes
+            </p>
+            <h2 className="text-[1.75rem] sm:text-[2.5rem] md:text-[3.5rem] text-[var(--color-sand-900)] leading-tight mb-5" style={{ fontFamily: "var(--font-display)" }}>
+              <span className="bg-clip-text text-transparent bg-[length:300%_300%] animate-[border-glow_4s_ease_infinite]" style={{ backgroundImage: "linear-gradient(135deg, var(--color-sage), var(--color-ocean), var(--color-dusk), var(--color-ember), var(--color-sage))", backgroundSize: "300% 300%" }}>Intelligent</span>{" "}
+              Sound Pairing
+            </h2>
+            <p className="text-base text-[var(--color-sand-600)] max-w-md mx-auto leading-relaxed" style={{ fontFamily: "var(--font-body)" }}>
+              The AI scans the script it generates and selects from 40+ ambient layers to match exactly what&apos;s happening. Bowl in the script? Real singing bowl audio. Breath pacing? A synced pacer track. General mindfulness? Soft, unobtrusive ambience. It gets specific when the session is specific, and stays out of the way when it isn&apos;t.
+            </p>
+          </FadeIn>
+
+          {/* Demo — dark card mimicking an AI analysis terminal */}
+          <FadeIn>
+            <div className="rounded-2xl overflow-hidden shadow-xl" style={{ background: "#1a1614" }}>
+              {/* Card chrome */}
+              <div className="flex items-center gap-2 px-4 py-2.5" style={{ background: "rgba(255,255,255,0.03)", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+                <div className="flex gap-1.5">
+                  <div className="w-2 h-2 rounded-full" style={{ background: "rgba(255,255,255,0.08)" }} />
+                  <div className="w-2 h-2 rounded-full" style={{ background: "rgba(255,255,255,0.08)" }} />
+                  <div className="w-2 h-2 rounded-full" style={{ background: "rgba(255,255,255,0.08)" }} />
+                </div>
+                <span className="text-[9px] uppercase tracking-[0.2em] text-white/20 ml-2" style={{ fontFamily: "var(--font-body)" }}>Sound pairing engine</span>
+              </div>
+
+              <div className="p-4 sm:p-5 grid grid-cols-1 sm:grid-cols-3 gap-3">
+                {[
+                  {
+                    script: "Let the sound of the singing bowl wash over you…",
+                    highlight: "singing bowl",
+                    color: "var(--color-dusk)",
+                    sounds: ["Sound Bowl Bath", "110 Hz Resonance"],
+                  },
+                  {
+                    script: "Breathe in for four… and out for six…",
+                    highlight: "four… and out for six",
+                    color: "var(--color-ocean)",
+                    sounds: ["4-6 Breath Pacer", "Calm Drone"],
+                  },
+                  {
+                    script: "Rest your awareness on whatever arises…",
+                    highlight: "rest your awareness",
+                    color: "var(--color-sage)",
+                    sounds: ["Rain", "River", "Peaceful Moment"],
+                  },
+                ].map((item, i) => {
+                  const parts = item.script.split(item.highlight);
+                  return (
+                    <FadeIn key={i} delay={i * 0.08}>
+                      <div className="rounded-xl p-3.5" style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)" }}>
+                        {/* Script line */}
+                        <p className="text-[12px] text-white/35 leading-relaxed mb-3" style={{ fontFamily: "var(--font-display)" }}>
+                          &ldquo;{parts[0]}
+                          <span className="text-white/80 border-b-2 pb-px" style={{ borderColor: item.color }}>{item.highlight}</span>
+                          {parts[1]}&rdquo;
+                        </p>
+
+                        {/* Divider + count */}
+                        <div className="flex items-center gap-2 mb-2.5">
+                          <Sparkles className="w-2.5 h-2.5 shrink-0" style={{ color: item.color, opacity: 0.5 }} />
+                          <span className="text-[9px] uppercase tracking-[0.12em] text-white/20" style={{ fontFamily: "var(--font-body)" }}>AI provides {item.sounds.length} sounds</span>
+                          <div className="flex-1 h-px" style={{ background: "rgba(255,255,255,0.04)" }} />
+                        </div>
+
+                        {/* Sound pills */}
+                        <div className="flex flex-wrap gap-1">
+                          {item.sounds.map((label, si) => (
+                            <motion.span
+                              key={si}
+                              initial={{ opacity: 0, scale: 0.9 }}
+                              whileInView={{ opacity: 1, scale: 1 }}
+                              viewport={{ once: true }}
+                              transition={{ duration: 0.25, delay: 0.2 + i * 0.1 + si * 0.05 }}
+                              className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-medium"
+                              style={{
+                                fontFamily: "var(--font-body)",
+                                color: item.color,
+                                background: `color-mix(in srgb, ${item.color} 8%, transparent)`,
+                                border: `1px solid color-mix(in srgb, ${item.color} 15%, transparent)`,
+                              }}
+                            >
+                              <Headphones className="w-2 h-2 shrink-0 opacity-70" />
+                              {label}
+                            </motion.span>
+                          ))}
+                        </div>
+                      </div>
+                    </FadeIn>
+                  );
+                })}
+              </div>
+            </div>
+          </FadeIn>
+
+          <FadeIn delay={0.3}>
+            <p className="text-center text-[11px] text-[var(--color-sand-400)] mt-6" style={{ fontFamily: "var(--font-body)" }}>
+              Selects from 40+ layers — binaural beats, breath pacers, sound bowls, nature, drones, metronomes
+            </p>
+          </FadeIn>
         </div>
       </section>
 
