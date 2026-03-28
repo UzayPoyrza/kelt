@@ -112,7 +112,7 @@ export async function POST(request: NextRequest) {
     script = serializedScript;
   } else {
     const category = detectCategory(prompt);
-    const resolvedSupportChoice = support_choice || (category === "default" ? "auto_detect" : category);
+    const resolvedSupportChoice = support_choice || category;
     const scriptResponse = await fetch(
       "https://j6w7gkn6x7.execute-api.us-east-1.amazonaws.com/v1/sessions/generate",
       {
@@ -131,6 +131,8 @@ export async function POST(request: NextRequest) {
     );
 
     if (!scriptResponse.ok) {
+      const errBody = await scriptResponse.text();
+      console.error("[generate] Script API failed:", scriptResponse.status, errBody);
       // Mark generation failed and refund
       await supabase
         .from("generations")
@@ -138,7 +140,7 @@ export async function POST(request: NextRequest) {
         .eq("id", generation.id);
 
       return NextResponse.json(
-        { error: "Script generation failed" },
+        { error: "Script generation failed", detail: errBody },
         { status: 502 }
       );
     }
@@ -170,7 +172,7 @@ export async function POST(request: NextRequest) {
     sessionUpdate.sound_options = soundData.sound_options;
   }
   if (routedProtocol) {
-    sessionUpdate.routed_protocol = routedProtocol;
+    sessionUpdate.protocol = routedProtocol;
   }
   if (!sessionId) {
     sessionUpdate.title = deriveSessionName(prompt);
@@ -194,7 +196,11 @@ export async function POST(request: NextRequest) {
 function detectCategory(prompt: string): string {
   const lower = prompt.toLowerCase();
   if (/sleep|insomnia|bed|night|dream|tired/i.test(lower)) return "sleep";
-  if (/focus|concentrat|work|study|morning|productivity/i.test(lower)) return "focus";
-  if (/stress|anxi|worry|overwhelm|calm|relax|tension/i.test(lower)) return "stress";
-  return "default";
+  if (/focus|concentrat|work|study|morning|productivity|adhd/i.test(lower)) return "adhd_focus";
+  if (/stress|anxi|worry|overwhelm|panic/i.test(lower)) return "anxiety";
+  if (/calm|relax|tension/i.test(lower)) return "mindfulness";
+  if (/burnout|exhaust/i.test(lower)) return "burnout";
+  if (/depress|sad|mood|low/i.test(lower)) return "depression";
+  if (/compassion|kind|forgiv/i.test(lower)) return "self_compassion";
+  return "auto_detect";
 }

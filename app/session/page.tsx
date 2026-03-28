@@ -197,8 +197,8 @@ function SessionContent() {
 
   const handleVolumeChange = (value: number) => {
     setBgVolume(value);
-    if (audioRef.current) {
-      audioRef.current.volume = value / 100;
+    if (bgAudioRef.current) {
+      bgAudioRef.current.volume = value / 100;
     }
   };
 
@@ -389,22 +389,39 @@ function SessionContent() {
 
                     {/* Play */}
                     <div className="flex items-center justify-center mb-3">
-                      <button onClick={audioUrl ? togglePlay : () => setIsPlaying(!isPlaying)} className={`w-12 h-12 rounded-full bg-[var(--color-sand-900)] text-[var(--color-sand-50)] flex items-center justify-center hover:bg-[var(--color-sand-800)] transition-colors cursor-pointer shadow-lg ${renderLoading ? "opacity-50 pointer-events-none" : ""}`}>
-                        {isPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5 ml-0.5" />}
+                      <button
+                        onClick={audioUrl ? togglePlay : undefined}
+                        disabled={!audioUrl || renderLoading}
+                        className={`w-12 h-12 rounded-full flex items-center justify-center transition-colors shadow-lg ${
+                          audioUrl
+                            ? "bg-[var(--color-sand-900)] text-[var(--color-sand-50)] hover:bg-[var(--color-sand-800)] cursor-pointer"
+                            : "bg-[var(--color-sand-300)] text-[var(--color-sand-50)] cursor-not-allowed"
+                        } ${renderLoading ? "opacity-50 pointer-events-none" : ""}`}
+                      >
+                        {renderLoading ? (
+                          <Loader2 className="w-5 h-5 animate-spin" />
+                        ) : isPlaying ? (
+                          <Pause className="w-5 h-5" />
+                        ) : (
+                          <Play className="w-5 h-5 ml-0.5" />
+                        )}
                       </button>
                     </div>
+                    {/* Audio error */}
+                    {!renderLoading && !audioUrl && renderError && (
+                      <div className="flex items-center justify-center mb-3">
+                        <span className="text-xs text-red-500 text-center" style={{ fontFamily: "var(--font-body)" }}>
+                          Audio generation failed. Try again or edit in Studio.
+                        </span>
+                      </div>
+                    )}
 
                     {/* Progress — interactive */}
                     <div className="mb-3">
                       <div
                         ref={progressRef}
-                        className="relative w-full h-5 flex items-center cursor-pointer group"
-                        onClick={audioUrl ? handleSeek : (e) => {
-                          if (!progressRef.current) return;
-                          const rect = progressRef.current.getBoundingClientRect();
-                          const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-                          setPlaybackPct(pct * 100);
-                        }}
+                        className={`relative w-full h-5 flex items-center group ${audioUrl ? "cursor-pointer" : "cursor-default"}`}
+                        onClick={audioUrl ? handleSeek : undefined}
                       >
                         <div className="absolute inset-y-0 left-0 right-0 flex items-center">
                           <div className="w-full h-1 rounded-full bg-[var(--color-sand-200)] overflow-hidden">
@@ -479,7 +496,7 @@ function SessionContent() {
                           <div className="flex items-center gap-3">
                             <div className="flex items-center gap-1.5 shrink-0">
                               <Music className={`w-3 h-3 ${soundscape ? "text-[var(--color-sand-500)]" : "text-[var(--color-sand-300)]"}`} />
-                              <span className="text-[10px] text-[var(--color-sand-400)] uppercase tracking-wider" style={{ fontFamily: "var(--font-body)" }}>Vol</span>
+                              <span className="text-[10px] text-[var(--color-sand-400)] uppercase tracking-wider" style={{ fontFamily: "var(--font-body)" }}>BG Vol</span>
                             </div>
                             <input
                               type="range" min="0" max="100" value={bgVolume}

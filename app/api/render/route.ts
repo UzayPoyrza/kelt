@@ -1,7 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthUser } from "@/app/api/_lib/auth";
 
-const MINDFLOW_API = "https://j6w7gkn6x7.execute-api.us-east-1.amazonaws.com/v1/sessions";
+// Voice mapping: frontend names → TTS voice IDs
+const VOICE_MAP: Record<string, string> = {
+  aria: "Graham",
+  james: "Claire",
+  lin: "Luna",
+  aditya: "Silas",
+};
+const VALID_VOICES = new Set(["Graham", "Claire", "Luna", "Silas"]);
+
+function toTtsVoiceId(frontendVoice: string): string {
+  // Already a valid TTS voice ID (studio uses these directly)
+  if (VALID_VOICES.has(frontendVoice)) return frontendVoice;
+  return VOICE_MAP[frontendVoice] || "Graham";
+}
 
 export async function POST(request: NextRequest) {
   const { user, supabase, error } = await getAuthUser();
@@ -28,29 +41,61 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  // Resolve voice ID (handle legacy IDs)
-  const voiceId = session.voice || "Graham";
+  // Extract the final script text from any stored format
+  const scriptData = session.script as unknown;
+  let scriptText: string | null = null;
 
-  console.log("[render] Calling MindFlow render API:", JSON.stringify({ session_id, voice_id: voiceId, title: session.title }));
+  if (typeof scriptData === "string") {
+    scriptText = scriptData;
+  } else if (Array.isArray(scriptData)) {
+    // ScriptBlock[] from studio editor
+    const voiceBlocks = (scriptData as Array<{ type: string; text?: string; duration?: number }>)
+      .map((block) => {
+        if (block.type === "voice" && block.text) return block.text;
+        if (block.type === "pause" && block.duration) return `[pause: ${block.duration}]`;
+        return null;
+      })
+      .filter(Boolean);
+    scriptText = voiceBlocks.join("\n") || null;
+  } else if (scriptData && typeof scriptData === "object") {
+    const obj = scriptData as Record<string, unknown>;
+    scriptText = (obj.final || obj.raw) as string | null;
+  }
+
+  if (!scriptText) {
+    return NextResponse.json({ error: "No script found on session" }, { status: 400 });
+  }
+
+  const voiceId = toTtsVoiceId(session.voice || "aria");
+
+  const payload = {
+    session_id,
+    script: scriptText,
+    voice_id: voiceId,
+    title: session.title || "",
+  };
+  console.log("[render] Invoking mindflow-tts Lambda:", JSON.stringify({
+    session_id, voice_id: voiceId, script_length: scriptText.length, title: session.title,
+  }));
 
   try {
-    const response = await fetch(`${MINDFLOW_API}/${session_id}/render`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        session_id,
-        voice_id: voiceId,
-        timestamps: false,
-      }),
+    // Direct Lambda invocation via AWS Lambda Invoke API (bypasses broken API Gateway)
+    const { LambdaClient, InvokeCommand } = await import("@aws-sdk/client-lambda");
+    const lambda = new LambdaClient({ region: "us-east-1" });
+    const command = new InvokeCommand({
+      FunctionName: "mindflow-tts",
+      Payload: new TextEncoder().encode(JSON.stringify(payload)),
     });
 
-    if (!response.ok) {
-      const errorBody = await response.text();
-      console.error("[render] MindFlow render error:", errorBody);
-      return NextResponse.json({ error: "TTS render failed" }, { status: 502 });
+    const response = await lambda.send(command);
+
+    if (response.FunctionError) {
+      const errorBody = new TextDecoder().decode(response.Payload);
+      console.error("[render] Lambda error:", errorBody);
+      return NextResponse.json({ error: "TTS Lambda failed" }, { status: 502 });
     }
 
-    const result = await response.json();
+    const result = JSON.parse(new TextDecoder().decode(response.Payload));
     console.log("[render] TTS success:", JSON.stringify(result));
 
     // Persist audio_url to the latest generation for this session
@@ -77,7 +122,7 @@ export async function POST(request: NextRequest) {
       status: result.status || "completed",
     });
   } catch (err) {
-    console.error("[render] Render call failed:", err);
+    console.error("[render] Lambda invocation failed:", err);
     return NextResponse.json({ error: "Render failed" }, { status: 502 });
   }
 }
