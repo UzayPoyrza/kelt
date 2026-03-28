@@ -25,8 +25,6 @@ function LoadingFallback() {
   );
 }
 import {
-  Play,
-  Pause,
   ChevronLeft,
   ChevronDown,
   Sparkles,
@@ -215,7 +213,7 @@ function CreateContent() {
             </motion.div>
 
             {/* Editable prompt */}
-            <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="mb-8 sm:mb-10 text-center max-w-md mx-auto">
+            <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="mb-6 sm:mb-8 text-center max-w-md mx-auto">
               <p className="text-xl sm:text-2xl text-[var(--color-sand-900)] leading-snug inline" style={{ fontFamily: "var(--font-display)" }}>
                 <span className="text-[var(--color-sand-400)] select-none">&ldquo;</span>
                 <span
@@ -252,10 +250,10 @@ function CreateContent() {
               )}
             </motion.div>
 
-            {/* Support Choice (optional) */}
-            <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.08 }} className="mb-8">
-              <div className="flex items-center justify-between mb-1.5">
-                <p className="text-xs uppercase tracking-widest text-[var(--color-sand-400)]" style={{ fontFamily: "var(--font-body)" }}>What do you need support with?</p>
+            {/* Support Choice — compact inline chips */}
+            <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.08 }} className="mb-6">
+              <div className="flex items-center justify-between mb-2.5">
+                <p className="text-[11px] uppercase tracking-widest text-[var(--color-sand-400)]" style={{ fontFamily: "var(--font-body)" }}>Focus area</p>
                 <span className="text-[10px] text-[var(--color-sand-400)] italic" style={{ fontFamily: "var(--font-body)" }}>Optional</span>
               </div>
               {detectedSupportChoice !== "auto_detect" && !hasExplicitChoice && (
@@ -263,75 +261,67 @@ function CreateContent() {
                   Suggested: {supportChoices.find(s => s.id === detectedSupportChoice)?.label}
                 </button>
               )}
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
+              <div className="flex flex-wrap gap-1.5">
                 {supportChoices.filter(s => s.id !== "auto_detect").map((s) => (
                   <button key={s.id} onClick={() => setSupportChoice(supportChoice === s.id ? "auto_detect" : s.id)}
-                    className={`px-3 py-2 rounded-lg text-xs text-left transition-all cursor-pointer ${supportChoice === s.id ? "bg-[var(--color-sand-900)] text-[var(--color-sand-50)] shadow-sm" : "bg-white/60 text-[var(--color-sand-600)] hover:bg-white border border-[var(--color-sand-200)]"}`}
-                    style={{ fontFamily: "var(--font-body)" }}>
-                    <span className="font-medium block">{s.label}</span>
+                    className={`px-3 py-1.5 rounded-full text-[12px] transition-all cursor-pointer whitespace-nowrap ${supportChoice === s.id ? "bg-[var(--color-sand-900)] text-[var(--color-sand-50)] shadow-sm" : "bg-white/70 text-[var(--color-sand-600)] hover:bg-white border border-[var(--color-sand-200)] hover:border-[var(--color-sand-300)]"}`}
+                    style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>
+                    {s.label}
                   </button>
                 ))}
               </div>
             </motion.div>
 
-            {/* Duration */}
-            <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="mb-8">
-              <p className="text-xs uppercase tracking-widest text-[var(--color-sand-400)] mb-3" style={{ fontFamily: "var(--font-body)" }}>Duration</p>
-              <div className="flex gap-1.5 sm:gap-2 items-end">
-                {durations.map((d) => (
-                  <div key={d} className="flex-1 flex flex-col items-center">
-                    <span className={`text-[8px] tracking-wide uppercase mb-1 h-3 ${d === 7 && duration !== 7 ? "text-[var(--color-sand-400)]" : "text-transparent select-none"}`} style={{ fontFamily: "var(--font-body)" }}>{d === 7 ? "Default" : "\u00A0"}</span>
-                    <button onClick={() => setDuration(d)} className={`w-full py-2.5 rounded-full text-sm transition-all cursor-pointer ${duration === d ? "bg-[var(--color-sand-900)] text-[var(--color-sand-50)] shadow-sm" : "bg-white/60 text-[var(--color-sand-600)] hover:bg-white border border-[var(--color-sand-200)]"}`} style={{ fontFamily: "var(--font-body)" }}>{d}m</button>
-                  </div>
-                ))}
+            {/* Duration + Voice — side by side on larger screens */}
+            <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="mb-6 flex flex-col sm:flex-row gap-6">
+              {/* Duration */}
+              <div className="sm:w-[45%]">
+                <p className="text-[11px] uppercase tracking-widest text-[var(--color-sand-400)] mb-2.5" style={{ fontFamily: "var(--font-body)" }}>Duration</p>
+                <div className="flex gap-1.5">
+                  {durations.map((d) => (
+                    <button key={d} onClick={() => setDuration(d)} className={`flex-1 py-2 rounded-full text-sm transition-all cursor-pointer ${duration === d ? "bg-[var(--color-sand-900)] text-[var(--color-sand-50)] shadow-sm" : "bg-white/60 text-[var(--color-sand-600)] hover:bg-white border border-[var(--color-sand-200)]"}`} style={{ fontFamily: "var(--font-body)" }}>{d}m</button>
+                  ))}
+                </div>
               </div>
-            </motion.div>
 
-            {/* Voice */}
-            <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }} className="mb-8">
-              <p className="text-xs uppercase tracking-widest text-[var(--color-sand-400)] mb-3" style={{ fontFamily: "var(--font-body)" }}>Voice</p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                {voices.map((v) => {
-                  const isActive = voice === v.id;
-                  const isVoicePlaying = voicePlaying === v.id;
-                  return (
-                    <button key={v.id} onClick={(e) => { e.stopPropagation(); setVoice(v.id); setVoicePlaying(v.id); setTimeout(() => setVoicePlaying((cur) => cur === v.id ? null : cur), 3000); }} className={`relative flex items-center gap-3 p-4 rounded-xl transition-all cursor-pointer text-left overflow-hidden ${isActive ? "bg-[var(--color-sand-900)] text-[var(--color-sand-50)] shadow-md" : "bg-white text-[var(--color-sand-900)] hover:shadow-sm border border-[var(--color-sand-200)] hover:border-[var(--color-sand-300)]"}`}>
-                      <div className="flex-1 min-w-0">
-                        <span className="text-sm font-medium flex items-center gap-1.5" style={{ fontFamily: "var(--font-body)" }}>
-                          {v.label}
-                          {v.id === "Graham" && isActive && <span className="text-[8px] uppercase tracking-wide opacity-40 font-normal px-1.5 py-px rounded-full bg-white/15">Default</span>}
-                        </span>
-                        <span className={`text-xs mt-0.5 block ${isActive ? "opacity-50" : "text-[var(--color-sand-500)]"}`} style={{ fontFamily: "var(--font-body)" }}>{v.description}</span>
-                        <div className="flex items-end gap-[2px] h-3 mt-2">
-                          {isVoicePlaying && Array.from({ length: 12 }).map((_, i) => (
-                            <motion.div
-                              key={i}
-                              className={`w-[2px] rounded-full ${isActive ? "bg-white/50" : "bg-[var(--color-sand-400)]"}`}
-                              animate={{ height: [`${20 + Math.random() * 40}%`, `${40 + Math.random() * 60}%`, `${20 + Math.random() * 40}%`] }}
-                              transition={{ duration: 0.4 + Math.random() * 0.3, repeat: Infinity, ease: "easeInOut" }}
-                              style={{ height: "30%" }}
-                            />
-                          ))}
-                        </div>
-                      </div>
-                      <div
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setVoicePlaying(voicePlaying === v.id ? null : v.id);
-                        }}
-                        className={`shrink-0 w-9 h-9 rounded-full flex items-center justify-center transition-all ${isActive ? "bg-white/20 text-white hover:bg-white/30" : "bg-[var(--color-sand-100)] text-[var(--color-sand-500)] hover:bg-[var(--color-sand-200)]"}`}
+              {/* Voice — compact selector */}
+              <div className="flex-1">
+                <p className="text-[11px] uppercase tracking-widest text-[var(--color-sand-400)] mb-2.5" style={{ fontFamily: "var(--font-body)" }}>Voice</p>
+                <div className="flex gap-1.5">
+                  {voices.map((v) => {
+                    const isActive = voice === v.id;
+                    const isVoicePlaying = voicePlaying === v.id;
+                    return (
+                      <button key={v.id} onClick={(e) => { e.stopPropagation(); setVoice(v.id); setVoicePlaying(v.id); setTimeout(() => setVoicePlaying((cur) => cur === v.id ? null : cur), 3000); }}
+                        className={`flex-1 flex flex-col items-center gap-1 py-2.5 px-1 rounded-xl transition-all cursor-pointer ${isActive ? "bg-[var(--color-sand-900)] text-[var(--color-sand-50)] shadow-sm" : "bg-white/60 text-[var(--color-sand-600)] hover:bg-white border border-[var(--color-sand-200)] hover:border-[var(--color-sand-300)]"}`}
                       >
-                        {isVoicePlaying ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5 ml-0.5" />}
-                      </div>
-                    </button>
-                  );
-                })}
+                        <span className="text-[12px] font-medium" style={{ fontFamily: "var(--font-body)" }}>{v.label}</span>
+                        {isActive && (
+                          <span className={`text-[10px] ${isActive ? "opacity-50" : "text-[var(--color-sand-500)]"}`} style={{ fontFamily: "var(--font-body)" }}>{v.description}</span>
+                        )}
+                        {isVoicePlaying && (
+                          <div className="flex items-end gap-[2px] h-2.5">
+                            {Array.from({ length: 8 }).map((_, i) => (
+                              <motion.div
+                                key={i}
+                                className={`w-[2px] rounded-full ${isActive ? "bg-white/50" : "bg-[var(--color-sand-400)]"}`}
+                                animate={{ height: [`${20 + Math.random() * 40}%`, `${40 + Math.random() * 60}%`, `${20 + Math.random() * 40}%`] }}
+                                transition={{ duration: 0.4 + Math.random() * 0.3, repeat: Infinity, ease: "easeInOut" }}
+                                style={{ height: "30%" }}
+                              />
+                            ))}
+                          </div>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
             </motion.div>
 
             {/* Advanced — Mode + Approach (only when a support choice is selected) */}
             {hasExplicitChoice && (
-            <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="mb-10">
+            <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="mb-6">
               <button
                 onClick={() => { setShowAdvanced(!showAdvanced); setTimeout(() => generateRef.current?.scrollIntoView({ behavior: "smooth", block: "end" }), 300); }}
                 className="flex items-center gap-3 w-full px-4 py-3 rounded-xl bg-white/60 border border-[var(--color-sand-200)] hover:border-[var(--color-sand-300)] hover:bg-white transition-all cursor-pointer"
@@ -347,51 +337,47 @@ function CreateContent() {
                   initial={{ opacity: 0, height: 0 }}
                   animate={{ opacity: 1, height: "auto" }}
                   transition={{ duration: 0.25 }}
-                  className="mt-4"
+                  className="mt-3 px-4 py-3.5 rounded-xl bg-white/40 border border-[var(--color-sand-200)]"
                 >
-                  {/* Mode */}
+                  {/* Mode — inline row */}
                   {availableModes.length > 1 && (
-                    <div className="mb-5">
-                      <p className="text-xs uppercase tracking-widest text-[var(--color-sand-400)] mb-2" style={{ fontFamily: "var(--font-body)" }}>Mode</p>
+                    <div className="mb-3.5">
+                      <p className="text-[11px] uppercase tracking-widest text-[var(--color-sand-400)] mb-2" style={{ fontFamily: "var(--font-body)" }}>Mode</p>
                       <div className="flex gap-1.5">
                         {availableModes.map((m) => (
                           <button key={m.id} onClick={() => setSelectedMode(m.id)}
-                            className={`flex-1 py-2.5 rounded-full text-sm transition-all cursor-pointer ${selectedMode === m.id ? "bg-[var(--color-sand-900)] text-[var(--color-sand-50)] shadow-sm" : "bg-white/60 text-[var(--color-sand-600)] hover:bg-white border border-[var(--color-sand-200)]"}`}
-                            style={{ fontFamily: "var(--font-body)" }}>{m.label}</button>
+                            className={`px-3.5 py-1.5 rounded-full text-[12px] transition-all cursor-pointer ${selectedMode === m.id ? "bg-[var(--color-sand-900)] text-[var(--color-sand-50)] shadow-sm" : "bg-white/70 text-[var(--color-sand-600)] hover:bg-white border border-[var(--color-sand-200)]"}`}
+                            style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>{m.label}</button>
                         ))}
                       </div>
                     </div>
                   )}
 
-                  {/* Approach */}
-                  <p className="text-xs uppercase tracking-widest text-[var(--color-sand-400)] mb-1.5" style={{ fontFamily: "var(--font-body)" }}>Approach</p>
-                  <p className="text-[11px] text-[var(--color-sand-400)] mb-3 italic" style={{ fontFamily: "var(--font-body)" }}>
-                    Auto-chosen during generation based on your support choice. Override below for more control.
-                  </p>
+                  {/* Approach — compact chips */}
+                  <p className="text-[11px] uppercase tracking-widest text-[var(--color-sand-400)] mb-2" style={{ fontFamily: "var(--font-body)" }}>Approach</p>
 
                   {approachOptions.length > 0 ? (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <div className="flex flex-wrap gap-1.5">
                       <button
                         onClick={() => setPreferredApproach("auto")}
-                        className={`p-3 rounded-xl text-left text-sm transition-all cursor-pointer ${preferredApproach === "auto" ? "bg-[var(--color-sand-900)] text-[var(--color-sand-50)] shadow-md" : "bg-white/60 text-[var(--color-sand-600)] hover:bg-white border border-[var(--color-sand-200)]"}`}
-                        style={{ fontFamily: "var(--font-body)" }}
+                        className={`px-3 py-1.5 rounded-full text-[12px] transition-all cursor-pointer ${preferredApproach === "auto" ? "bg-[var(--color-sand-900)] text-[var(--color-sand-50)] shadow-sm" : "bg-white/70 text-[var(--color-sand-600)] hover:bg-white border border-[var(--color-sand-200)]"}`}
+                        style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}
                       >
-                        <span className="font-medium">Auto</span>
-                        <span className={`text-[10px] block mt-0.5 ${preferredApproach === "auto" ? "opacity-50" : "text-[var(--color-sand-500)]"}`}>Let AI choose</span>
+                        Auto
                       </button>
                       {approachOptions.map((a) => (
                         <button
                           key={a.value}
                           onClick={() => setPreferredApproach(a.value)}
-                          className={`p-3 rounded-xl text-left text-sm transition-all cursor-pointer ${preferredApproach === a.value ? "bg-[var(--color-sand-900)] text-[var(--color-sand-50)] shadow-md" : "bg-white/60 text-[var(--color-sand-600)] hover:bg-white border border-[var(--color-sand-200)]"}`}
-                          style={{ fontFamily: "var(--font-body)" }}
+                          className={`px-3 py-1.5 rounded-full text-[12px] transition-all cursor-pointer ${preferredApproach === a.value ? "bg-[var(--color-sand-900)] text-[var(--color-sand-50)] shadow-sm" : "bg-white/70 text-[var(--color-sand-600)] hover:bg-white border border-[var(--color-sand-200)]"}`}
+                          style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}
                         >
-                          <span className="font-medium">{a.label}</span>
+                          {a.label}
                         </button>
                       ))}
                     </div>
                   ) : (
-                    <p className="text-[11px] text-[var(--color-sand-400)] italic" style={{ fontFamily: "var(--font-body)" }}>No specific approaches available for this combination — AI will auto-select.</p>
+                    <p className="text-[11px] text-[var(--color-sand-400)] italic" style={{ fontFamily: "var(--font-body)" }}>No specific approaches — AI will auto-select.</p>
                   )}
                 </motion.div>
               )}
