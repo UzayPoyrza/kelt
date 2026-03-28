@@ -20,8 +20,7 @@ import {
   X,
   Lock,
   Music,
-  Plus,
-  Minus,
+  Heart,
 } from "lucide-react";
 import type { Profile } from "@/lib/types/database";
 
@@ -44,11 +43,29 @@ function Logo() {
 
 const plans = [
   {
+    id: "free",
+    name: "Free",
+    tagline: "Try it out",
+    price: 0,
+    yearlyPrice: 0,
+    credits: 2,
+    color: "var(--color-sand-500)",
+    colorLight: "var(--color-sand-100)",
+    colorHex: "#6b6560",
+    colorLightHex: "#f0eeeb",
+    recommended: false,
+    features: [
+      { text: "2 credits per month", highlight: true },
+      { text: "All voices & soundscapes" },
+      { text: "No commercial use" },
+    ],
+  },
+  {
     id: "personal",
     name: "Personal",
     tagline: "For your daily practice",
-    price: 9,
-    yearlyPrice: 7,
+    price: 8,
+    yearlyPrice: 6,
     credits: 30,
     color: "var(--color-sage)",
     colorLight: "var(--color-sage-light)",
@@ -58,30 +75,28 @@ const plans = [
     features: [
       { text: "30 credits per month", highlight: true },
       { text: "All voices & soundscapes" },
-      { text: "Up to 20-minute sessions" },
+      { text: "Priority generation queue" },
       { text: "Commercial use included" },
     ],
-    idealFor: "Ideal for personal meditation, sleep aid, and stress relief",
   },
   {
     id: "creator",
-    name: "Creator",
+    name: "Pro",
     tagline: "For professionals & creators",
-    price: 29,
-    yearlyPrice: 23,
-    credits: 150,
+    price: 24,
+    yearlyPrice: 18,
+    credits: 100,
     color: "var(--color-dusk)",
     colorLight: "var(--color-dusk-light)",
     colorHex: "#8b7ea6",
     colorLightHex: "#eee9f5",
     recommended: false,
     features: [
-      { text: "150 credits per month", highlight: true },
+      { text: "100 credits per month", highlight: true },
       { text: "Everything in Personal" },
-      { text: "Extended sessions up to 45 min" },
-      { text: "Priority generation queue" },
+      { text: "Exclusive Aditya voice" },
+      { text: "Highest priority generation" },
     ],
-    idealFor: "Ideal for therapists, content creators, and wellness coaches",
   },
 ];
 
@@ -92,11 +107,11 @@ const faqs = [
   },
   {
     q: "Can I use generated sessions commercially?",
-    a: "Yes. All plans include full commercial rights to every session you generate. Use them in apps, courses, podcasts, client sessions, or any other context.",
+    a: "Yes — on Personal and Pro plans. Paid plans include full commercial rights to every session you generate. Use them in apps, courses, podcasts, client sessions, or any other context. Free plan sessions are for personal use only.",
   },
   {
     q: "What happens if I run out of credits?",
-    a: "You can still access and listen to all previously generated sessions. To create new ones, wait for your monthly refresh, purchase single credits, or upgrade your plan.",
+    a: "You can still access and listen to all previously generated sessions. To create new ones, wait for your monthly refresh or upgrade your plan.",
   },
   {
     q: "Can I cancel anytime?",
@@ -104,11 +119,7 @@ const faqs = [
   },
   {
     q: "Is there a free tier?",
-    a: "Yes. The free plan includes 3 credits per month so you can experience Incraft before committing. Free sessions also include commercial rights.",
-  },
-  {
-    q: "How do single credits work?",
-    a: "Purchase credits individually at $0.99 each — no subscription needed. They never expire and work exactly like monthly credits. Great for occasional use or topping up.",
+    a: "Yes. The free plan includes 2 credits per month so you can experience Incraft before committing. Free sessions are for personal use only — upgrade to unlock commercial rights.",
   },
 ];
 
@@ -167,12 +178,9 @@ function FAQItem({ item, index }: { item: (typeof faqs)[number]; index: number }
 
 function getPriceId(
   plan: (typeof plans)[number] | null,
-  billing: "monthly" | "yearly" | "single",
+  billing: "monthly" | "yearly",
   creditCount?: number
 ): string | null {
-  if (!plan && creditCount) {
-    return process.env.NEXT_PUBLIC_PRICE_SINGLE_CREDIT || null;
-  }
   if (!plan) return null;
   if (plan.id === "personal") {
     return billing === "yearly"
@@ -196,7 +204,7 @@ function CheckoutModal({
   onSuccess,
 }: {
   plan: (typeof plans)[number] | null;
-  billing: "monthly" | "yearly" | "single";
+  billing: "monthly" | "yearly";
   creditCount?: number;
   onClose: () => void;
   onSuccess?: () => void;
@@ -208,18 +216,15 @@ function CheckoutModal({
   const [redirecting, setRedirecting] = useState(false);
   const [needsAuth, setNeedsAuth] = useState(false);
 
-  const isSingleCredit = !plan && creditCount;
-  const displayName = plan ? plan.name : `${creditCount} Credit${creditCount !== 1 ? "s" : ""}`;
+  const displayName = plan ? plan.name : "";
   const displayColor = plan ? plan.colorHex : "#c4876c";
   const displayColorLight = plan ? plan.colorLightHex : "#faf0eb";
-  const price = isSingleCredit
-    ? (creditCount! * 0.99).toFixed(2)
-    : plan
-      ? billing === "yearly"
-        ? plan.yearlyPrice
-        : plan.price
-      : 0;
-  const credits = plan ? plan.credits : creditCount || 0;
+  const price = plan
+    ? billing === "yearly"
+      ? plan.yearlyPrice
+      : plan.price
+    : 0;
+  const credits = plan ? plan.credits : 0;
 
   useEffect(() => {
     const priceId = getPriceId(plan, billing, creditCount);
@@ -227,11 +232,11 @@ function CheckoutModal({
       setLoading(false);
       return;
     }
-    const mode = isSingleCredit ? "payment" : "subscription";
+    const mode = "subscription";
     fetch("/api/create-payment-intent", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ priceId, mode, ...(isSingleCredit && creditCount ? { quantity: creditCount } : {}) }),
+      body: JSON.stringify({ priceId, mode }),
     })
       .then(async (res) => {
         if (res.status === 401) {
@@ -254,18 +259,18 @@ function CheckoutModal({
         console.error("Checkout form load error:", err);
       })
       .finally(() => setLoading(false));
-  }, [plan, billing, creditCount, isSingleCredit]);
+  }, [plan, billing, creditCount]);
 
   const handleCheckoutRedirect = async () => {
     setRedirecting(true);
     try {
       const priceId = getPriceId(plan, billing, creditCount);
       if (!priceId) { setRedirecting(false); return; }
-      const mode = isSingleCredit ? "payment" : "subscription";
+      const mode = "subscription";
       const res = await fetch("/api/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ priceId, mode, ...(isSingleCredit && creditCount ? { quantity: creditCount } : {}) }),
+        body: JSON.stringify({ priceId, mode }),
       });
       if (!res.ok) { setRedirecting(false); return; }
       const data = await res.json();
@@ -319,7 +324,7 @@ function CheckoutModal({
               className="text-xl text-[#18181b] mb-2"
               style={{ fontFamily: "var(--font-display)" }}
             >
-              {isSingleCredit ? "Credits Added" : `Welcome to ${displayName}`}
+              {`Welcome to ${displayName}`}
             </h3>
             <p
               className="text-[13px] text-[#71717a] mb-6"
@@ -389,7 +394,7 @@ function CheckoutModal({
                   </p>
                 </div>
                 <button
-                  onClick={() => router.push("/login?redirect=/upgrade")}
+                  onClick={() => router.push("/login?next=/upgrade")}
                   className="w-full py-3 rounded-xl text-white text-[13px] transition-all cursor-pointer shadow-md hover:shadow-lg flex items-center justify-center gap-2"
                   style={{
                     fontFamily: "var(--font-body)",
@@ -422,11 +427,10 @@ function CheckoutModal({
 
 export default function UpgradePage() {
   const router = useRouter();
-  const [billing, setBilling] = useState<"monthly" | "yearly" | "single">("monthly");
+  const [billing, setBilling] = useState<"monthly" | "yearly">("yearly");
   const [checkoutPlan, setCheckoutPlan] = useState<(typeof plans)[number] | null>(null);
   const [checkoutCredits, setCheckoutCredits] = useState<number | undefined>(undefined);
   const [showCheckout, setShowCheckout] = useState(false);
-  const [singleCreditQty, setSingleCreditQty] = useState(5);
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
 
   // Real user profile data
@@ -451,8 +455,8 @@ export default function UpgradePage() {
     fetchProfile();
   }, [fetchProfile]);
 
-  const currentPlan = profile?.plan === "personal" ? "Personal" : profile?.plan === "creator" ? "Creator" : "Free";
-  const creditsTotal = profile?.plan === "creator" ? 200 : profile?.plan === "personal" ? 50 : 10;
+  const currentPlan = profile?.plan === "personal" ? "Personal" : profile?.plan === "creator" ? "Pro" : "Free";
+  const creditsTotal = profile?.plan === "creator" ? 100 : profile?.plan === "personal" ? 30 : 2;
   const creditsRemaining = profile?.credits_remaining ?? 0;
 
   const openPlanCheckout = async (plan: (typeof plans)[number]) => {
@@ -464,14 +468,6 @@ export default function UpgradePage() {
     setLoadingPlan(null);
   };
 
-  const openCreditCheckout = async () => {
-    setLoadingPlan("single");
-    await new Promise((r) => setTimeout(r, 600));
-    setCheckoutPlan(null);
-    setCheckoutCredits(singleCreditQty);
-    setShowCheckout(true);
-    setLoadingPlan(null);
-  };
 
   return (
     <div
@@ -501,7 +497,7 @@ export default function UpgradePage() {
       </div>
 
       {/* Navigation */}
-      <nav className="relative z-10 flex items-center justify-between px-4 sm:px-8 py-5">
+      <nav className="relative z-10 flex items-center justify-between px-4 sm:px-8 py-3">
         <button
           onClick={() => router.back()}
           className="flex items-center gap-2 sm:gap-2.5 text-[13px] text-[#71717a] hover:text-[#18181b] transition-colors cursor-pointer group"
@@ -523,22 +519,22 @@ export default function UpgradePage() {
         <div className="w-[60px] sm:w-[120px]" />
       </nav>
 
-      {/* Compact heading + billing toggle */}
-      <div className="relative z-10 max-w-4xl mx-auto text-center px-4 sm:px-6 pb-6">
+      {/* Heading + billing toggle */}
+      <div className="relative z-10 max-w-3xl mx-auto text-center px-4 sm:px-6 pb-5">
         <motion.h1
-          initial={{ opacity: 0, y: 16 }}
+          initial={{ opacity: 0, y: 14 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{
-            delay: 0.1,
+            delay: 0.08,
             duration: 0.5,
             ease: [0.22, 1, 0.36, 1],
           }}
-          className="text-[#18181b] mb-2"
+          className="text-[#18181b] mb-1"
           style={{
             fontFamily: "var(--font-display)",
-            fontSize: "clamp(1.6rem, 4vw, 2.4rem)",
-            lineHeight: 1.15,
-            letterSpacing: "-0.025em",
+            fontSize: "clamp(1.35rem, 3vw, 1.85rem)",
+            lineHeight: 1.2,
+            letterSpacing: "-0.02em",
           }}
         >
           More sessions.{" "}
@@ -548,110 +544,35 @@ export default function UpgradePage() {
         </motion.h1>
 
         <motion.p
-          initial={{ opacity: 0, y: 12 }}
+          initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{
-            delay: 0.15,
+            delay: 0.12,
             duration: 0.5,
             ease: [0.22, 1, 0.36, 1],
           }}
-          className="text-[14px] text-[#71717a] leading-relaxed max-w-lg mx-auto mb-5"
-          style={{ fontFamily: "var(--font-body)" }}
+          className="text-[12.5px] text-[#8a8480] max-w-md mx-auto mb-4"
+          style={{ fontFamily: "var(--font-body)", lineHeight: 1.5 }}
         >
           Every session is yours to keep, share, and use commercially.
         </motion.p>
 
-        {/* Current Plan + Credits — compact inline cards */}
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2, duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-          className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-4"
-        >
-          {/* Current plan pill */}
-          <div className="flex items-center gap-2.5 px-4 py-2.5 rounded-xl bg-white border border-[#e8e8ec] shadow-sm w-full sm:w-auto">
-            <div className="w-6 h-6 rounded-lg bg-[#f4f4f5] flex items-center justify-center">
-              <Crown className="w-3 h-3 text-[#a1a1aa]" />
-            </div>
-            <div className="text-left">
-              <p
-                className="text-[10px] text-[#a1a1aa] uppercase tracking-wider leading-none mb-0.5"
-                style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}
-              >
-                Current plan
-              </p>
-              {profileLoading ? (
-                <div className="h-[14px] w-16 rounded bg-[#f0f0f3] animate-pulse" />
-              ) : (
-                <p
-                  className="text-[14px] text-[#18181b] leading-none"
-                  style={{ fontFamily: "var(--font-display)" }}
-                >
-                  {currentPlan}
-                </p>
-              )}
-            </div>
-          </div>
-
-          {/* Credits remaining pill */}
-          <div className="flex items-center gap-2.5 px-4 py-2.5 rounded-xl bg-white border border-[#e8e8ec] shadow-sm w-full sm:w-auto">
-            <div
-              className="w-6 h-6 rounded-lg flex items-center justify-center"
-              style={{ background: creditsRemaining > 0 ? "#e8f0e9" : "#faf0eb" }}
-            >
-              <Zap
-                className="w-3 h-3"
-                style={{ color: creditsRemaining > 0 ? "#7a9e7e" : "#c4876c" }}
-              />
-            </div>
-            <div className="text-left">
-              <p
-                className="text-[10px] text-[#a1a1aa] uppercase tracking-wider leading-none mb-0.5"
-                style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}
-              >
-                Credits remaining
-              </p>
-              {profileLoading ? (
-                <div className="h-[14px] w-12 rounded bg-[#f0f0f3] animate-pulse" />
-              ) : (
-                <div className="flex items-baseline gap-1">
-                  <p
-                    className="text-[14px] leading-none"
-                    style={{
-                      fontFamily: "var(--font-display)",
-                      color: creditsRemaining > 0 ? "#7a9e7e" : "#c4876c",
-                    }}
-                  >
-                    {creditsRemaining}
-                  </p>
-                  <span
-                    className="text-[11px] text-[#a1a1aa]"
-                    style={{ fontFamily: "var(--font-body)" }}
-                  >
-                    / {creditsTotal}
-                  </span>
-                </div>
-              )}
-            </div>
-          </div>
-        </motion.div>
-
         {/* Billing toggle */}
         <motion.div
-          initial={{ opacity: 0, y: 10 }}
+          initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{
-            delay: 0.25,
+            delay: 0.18,
             duration: 0.4,
             ease: [0.22, 1, 0.36, 1],
           }}
-          className="inline-flex items-center gap-1 p-1 rounded-full bg-[#f0eeeb] border border-[#e2dfd9]"
+          className="inline-flex items-center gap-0.5 p-[3px] rounded-full bg-[#f0eeeb] border border-[#e2dfd9]"
         >
-          {(["monthly", "yearly", "single"] as const).map((period) => (
+          {(["monthly", "yearly"] as const).map((period) => (
             <button
               key={period}
               onClick={() => setBilling(period)}
-              className="relative px-5 py-2 rounded-full text-[12px] transition-all cursor-pointer"
+              className="relative px-4 py-1.5 rounded-full text-[11.5px] transition-all cursor-pointer"
               style={{
                 fontFamily: "var(--font-body)",
                 fontWeight: billing === period ? 600 : 450,
@@ -670,17 +591,17 @@ export default function UpgradePage() {
                 />
               )}
               <span className="relative z-10 flex items-center gap-1.5">
-                {period === "monthly" ? "Monthly" : period === "yearly" ? "Yearly" : "Single Credits"}
+                {period === "monthly" ? "Monthly" : "Yearly"}
                 {period === "yearly" && (
                   <span
-                    className="text-[10px] px-1.5 py-0.5 rounded-full"
+                    className="text-[9px] px-1.5 py-[1px] rounded-full leading-tight"
                     style={{
                       background: "var(--color-sage-light)",
                       color: "var(--color-sage)",
                       fontWeight: 600,
                     }}
                   >
-                    -20%
+                    -25%
                   </span>
                 )}
               </span>
@@ -690,272 +611,187 @@ export default function UpgradePage() {
       </div>
 
       {/* Plans */}
-      <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 pb-8">
-        {billing === "single" ? (
-          <motion.div
-            key="single-credits"
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-            className="max-w-lg mx-auto"
-          >
-            <div className="rounded-2xl bg-white border border-[#e8e8ec] overflow-hidden shadow-sm">
-              <div className="px-6 sm:px-8 pt-7 pb-2">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0" style={{ background: "#faf0eb" }}>
-                    <Zap className="w-5 h-5" style={{ color: "#c4876c" }} />
-                  </div>
-                  <div>
-                    <h3 className="text-[17px] text-[#18181b]" style={{ fontFamily: "var(--font-display)" }}>Single Credits</h3>
-                    <p className="text-[13px] text-[#8a8480]" style={{ fontFamily: "var(--font-body)" }}>No subscription — buy what you need</p>
-                  </div>
-                </div>
-                <div className="flex items-baseline gap-1.5 mb-1">
-                  <span className="text-[36px] text-[#18181b] leading-none" style={{ fontFamily: "var(--font-display)" }}>$0.99</span>
-                  <span className="text-[13px] text-[#8a8480]" style={{ fontFamily: "var(--font-body)" }}>/ credit</span>
-                </div>
-                <p className="text-[12px] text-[#a1a1aa] mb-5" style={{ fontFamily: "var(--font-body)" }}>Credits never expire. Use them anytime.</p>
-              </div>
-              <div className="px-6 sm:px-8 pb-7">
-                <div className="flex items-center gap-4 mb-5">
-                  <div className="flex items-center gap-0 bg-[#f4f4f5] rounded-lg border border-[#e4e4e7]">
-                    <button
-                      onClick={() => setSingleCreditQty(Math.max(1, singleCreditQty - 1))}
-                      className="w-10 h-10 flex items-center justify-center text-[#71717a] hover:text-[#18181b] transition-colors cursor-pointer rounded-l-lg hover:bg-[#e8e8ec]"
-                    >
-                      <Minus className="w-4 h-4" />
-                    </button>
-                    <span className="w-12 text-center text-[16px] text-[#18181b] tabular-nums" style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}>
-                      {singleCreditQty}
-                    </span>
-                    <button
-                      onClick={() => setSingleCreditQty(Math.min(50, singleCreditQty + 1))}
-                      className="w-10 h-10 flex items-center justify-center text-[#71717a] hover:text-[#18181b] transition-colors cursor-pointer rounded-r-lg hover:bg-[#e8e8ec]"
-                    >
-                      <Plus className="w-4 h-4" />
-                    </button>
-                  </div>
-                  <span className="text-[13px] text-[#8a8480]" style={{ fontFamily: "var(--font-body)" }}>
-                    {singleCreditQty} credit{singleCreditQty !== 1 ? "s" : ""} = {singleCreditQty} session{singleCreditQty !== 1 ? "s" : ""}
-                  </span>
-                </div>
-                <button
-                  onClick={openCreditCheckout}
-                  disabled={loadingPlan === "single"}
-                  className="w-full py-3 rounded-xl text-white text-[14px] transition-all cursor-pointer shadow-sm hover:shadow-md flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
-                  style={{ fontFamily: "var(--font-body)", fontWeight: 600, background: "#c4876c" }}
-                >
-                  {loadingPlan === "single" ? (
-                    <>
-                      <motion.div
-                        animate={{ rotate: 360 }}
-                        transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                      >
-                        <Sparkles className="w-4 h-4" />
-                      </motion.div>
-                      Processing...
-                    </>
-                  ) : (
-                    <>
-                      <Zap className="w-4 h-4" />
-                      Buy for ${(singleCreditQty * 0.99).toFixed(2)}
-                    </>
-                  )}
-                </button>
-                <div className="mt-5 space-y-2.5">
-                  {["One session per credit, any length", "All voices & soundscapes included", "Commercial use rights", "Never expires"].map((f) => (
-                    <div key={f} className="flex items-center gap-2.5">
-                      <Check className="w-3.5 h-3.5 shrink-0" style={{ color: "#c4876c" }} />
-                      <span className="text-[13px] text-[#52525b]" style={{ fontFamily: "var(--font-body)" }}>{f}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </motion.div>
-        ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+      <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 pb-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
           {plans.map((plan, i) => {
             const price =
               billing === "yearly" ? plan.yearlyPrice : plan.price;
             return (
               <motion.div
                 key={plan.id}
-                initial={{ opacity: 0, y: 24 }}
+                initial={{ opacity: 0, y: 18 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{
-                  delay: 0.25 + i * 0.1,
-                  duration: 0.5,
+                  delay: 0.2 + i * 0.08,
+                  duration: 0.45,
                   ease: [0.22, 1, 0.36, 1],
                 }}
                 className="relative group h-full"
               >
-                {/* Card */}
                 <div
                   className={`relative bg-white rounded-2xl border overflow-hidden transition-all duration-300 h-full flex flex-col ${
                     plan.recommended
-                      ? "border-[#d4cfc6] shadow-[0_4px_24px_rgba(0,0,0,0.06)] hover:shadow-[0_8px_32px_rgba(0,0,0,0.08)]"
-                      : "border-[#e8e8ec] hover:border-[#d4d4d8] hover:shadow-[0_4px_20px_rgba(0,0,0,0.05)]"
+                      ? "border-[#7a9e7e]/30 shadow-[0_4px_24px_rgba(122,158,126,0.12)] hover:shadow-[0_6px_32px_rgba(122,158,126,0.18)] ring-1 ring-[#7a9e7e]/10"
+                      : "border-[#e4e2de] shadow-[0_2px_12px_rgba(0,0,0,0.03)] hover:border-[#d4d4d8] hover:shadow-[0_4px_20px_rgba(0,0,0,0.05)]"
                   }`}
                 >
-                  {/* Recommended badge */}
                   {plan.recommended && (
                     <div
-                      className="absolute top-0 left-0 right-0 h-[2px]"
+                      className="absolute top-0 left-0 bottom-0 w-[3px]"
                       style={{
-                        background: `linear-gradient(90deg, ${plan.colorHex}, ${plan.colorHex}88)`,
+                        background: `linear-gradient(180deg, ${plan.colorHex}, ${plan.colorHex}55)`,
                       }}
                     />
                   )}
 
-                  <div className="p-5 sm:p-7 flex flex-col flex-1">
-                    {/* Plan header */}
-                    <div className="flex items-start justify-between mb-5">
-                      <div>
-                        <div className="flex items-center gap-2.5 mb-1.5">
-                          <div
-                            className="w-9 h-9 rounded-xl flex items-center justify-center"
-                            style={{ background: plan.colorLightHex }}
-                          >
-                            {plan.id === "personal" ? (
-                              <Sparkles
-                                className="w-[18px] h-[18px]"
-                                style={{ color: plan.colorHex }}
-                              />
-                            ) : (
-                              <Crown
-                                className="w-[18px] h-[18px]"
-                                style={{ color: plan.colorHex }}
-                              />
-                            )}
-                          </div>
-                          <div>
+                  <div className="p-5 flex flex-col flex-1">
+                    {/* Header */}
+                    <div className="flex items-center justify-between mb-3.5">
+                      <div className="flex items-center gap-2.5">
+                        <div
+                          className="w-8 h-8 rounded-lg flex items-center justify-center"
+                          style={{ background: plan.colorLightHex }}
+                        >
+                          {plan.id === "free" ? (
+                            <Zap className="w-[15px] h-[15px]" style={{ color: plan.colorHex }} />
+                          ) : plan.id === "personal" ? (
+                            <Sparkles className="w-[15px] h-[15px]" style={{ color: plan.colorHex }} />
+                          ) : (
+                            <Crown className="w-[15px] h-[15px]" style={{ color: plan.colorHex }} />
+                          )}
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
                             <h3
-                              className="text-[16px] text-[#18181b]"
-                              style={{
-                                fontFamily: "var(--font-display)",
-                              }}
+                              className="text-[15px] text-[#18181b] leading-none"
+                              style={{ fontFamily: "var(--font-display)" }}
                             >
                               {plan.name}
                             </h3>
+                            {plan.recommended && (
+                              <span
+                                className="text-[9px] px-2 py-[3px] rounded-full shrink-0 flex items-center gap-1"
+                                style={{
+                                  fontFamily: "var(--font-body)",
+                                  fontWeight: 600,
+                                  color: "#fff",
+                                  background: plan.colorHex,
+                                  letterSpacing: "0.02em",
+                                }}
+                              >
+                                <Heart className="w-2.5 h-2.5 fill-current" />
+                                Most Popular
+                              </span>
+                            )}
                           </div>
+                          <p
+                            className="text-[11px] text-[#a1a1aa] mt-[3px]"
+                            style={{ fontFamily: "var(--font-body)" }}
+                          >
+                            {plan.tagline}
+                          </p>
                         </div>
-                        <p
-                          className="text-[12px] text-[#a1a1aa] pl-[46px]"
-                          style={{ fontFamily: "var(--font-body)" }}
-                        >
-                          {plan.tagline}
-                        </p>
                       </div>
-                      {plan.recommended && (
-                        <span
-                          className="text-[10px] px-2.5 py-1 rounded-full border shrink-0"
-                          style={{
-                            fontFamily: "var(--font-body)",
-                            fontWeight: 600,
-                            borderColor: plan.colorHex + "40",
-                            color: plan.colorHex,
-                            background: plan.colorLightHex,
-                          }}
-                        >
-                          Suggested
-                        </span>
-                      )}
                     </div>
 
-                    {/* Price */}
-                    <div className="flex items-baseline gap-1.5 mb-1">
-                      <span
-                        className="text-[28px] sm:text-[36px] text-[#18181b] leading-none"
-                        style={{
-                          fontFamily: "var(--font-display)",
-                          fontWeight: 400,
-                          letterSpacing: "-0.02em",
-                        }}
-                      >
-                        ${price}
-                      </span>
-                      <span
-                        className="text-[13px] text-[#a1a1aa]"
-                        style={{ fontFamily: "var(--font-body)" }}
-                      >
-                        /month
-                      </span>
-                    </div>
-                    {billing === "yearly" && (
-                      <p
-                        className="text-[11px] text-[#a1a1aa] mb-5"
-                        style={{ fontFamily: "var(--font-body)" }}
-                      >
-                        <span className="line-through mr-1">
-                          ${plan.price}
-                        </span>
-                        billed as ${plan.yearlyPrice * 12}/year
-                      </p>
-                    )}
-                    {billing === "monthly" && <div className="mb-5" />}
-
-                    {/* Credits highlight */}
+                    {/* Credits — hero */}
                     <div
-                      className="flex items-center gap-3 px-4 py-3 rounded-xl mb-5"
+                      className="rounded-xl mb-3.5 px-4 py-3"
                       style={{
                         background: plan.colorLightHex,
-                        border: `1px solid ${plan.colorHex}18`,
+                        border: `1px solid ${plan.colorHex}20`,
                       }}
                     >
-                      <Zap
-                        className="w-4 h-4 shrink-0"
-                        style={{ color: plan.colorHex }}
-                      />
-                      <div>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2.5">
+                          <Zap className="w-3.5 h-3.5 shrink-0" style={{ color: plan.colorHex }} />
+                          <span
+                            className="text-[18px] leading-none"
+                            style={{
+                              fontFamily: "var(--font-display)",
+                              color: plan.colorHex,
+                            }}
+                          >
+                            {plan.credits} credits
+                          </span>
+                        </div>
                         <span
-                          className="text-[13px] block"
+                          className="text-[11.5px]"
                           style={{
                             fontFamily: "var(--font-body)",
                             fontWeight: 500,
                             color: plan.colorHex,
                           }}
                         >
-                          {plan.credits} credits per month
-                        </span>
-                        <span
-                          className="text-[11px]"
-                          style={{
-                            fontFamily: "var(--font-body)",
-                            color: plan.colorHex + "99",
-                          }}
-                        >
-                          1 credit = 1 session of any length
+                          /month
                         </span>
                       </div>
+                      <p
+                        className="text-[11px] mt-1.5"
+                        style={{
+                          fontFamily: "var(--font-body)",
+                          fontWeight: 450,
+                          color: plan.colorHex,
+                        }}
+                      >
+                        1 credit = 1 session, any length
+                      </p>
                     </div>
 
-                    {/* CTA */}
-                    {profile?.plan === plan.id ? (
+                    {/* Price + CTA */}
+                    <div className="flex items-end justify-between mb-3.5">
+                      <div className="flex items-baseline gap-1">
+                        <span
+                          className="text-[26px] text-[#18181b] leading-none"
+                          style={{
+                            fontFamily: "var(--font-display)",
+                            letterSpacing: "-0.02em",
+                          }}
+                        >
+                          {plan.id === "free" ? "Free" : `$${price}`}
+                        </span>
+                        {plan.id !== "free" && (
+                          <span
+                            className="text-[11.5px] text-[#a1a1aa]"
+                            style={{ fontFamily: "var(--font-body)" }}
+                          >
+                            /mo
+                          </span>
+                        )}
+                      </div>
+                      {billing === "yearly" && plan.id !== "free" && (
+                        <span
+                          className="text-[11px] text-[#a1a1aa]"
+                          style={{ fontFamily: "var(--font-body)" }}
+                        >
+                          Save ${(plan.price - plan.yearlyPrice) * 12} by billing yearly
+                        </span>
+                      )}
+                    </div>
+
+                    {profile?.plan === plan.id || (plan.id === "free" && !profile?.plan) ? (
                       <div
-                        className="w-full py-3 rounded-xl text-[13px] flex items-center justify-center gap-2 border-2"
+                        className="w-full py-2.5 rounded-xl text-[12.5px] flex items-center justify-center gap-2 border-[1.5px]"
                         style={{
                           fontFamily: "var(--font-body)",
                           fontWeight: 600,
-                          borderColor: plan.colorHex + "40",
+                          borderColor: plan.colorHex + "35",
                           color: plan.colorHex,
                           background: plan.colorLightHex,
                         }}
                       >
-                        <Check className="w-4 h-4" />
+                        <Check className="w-3.5 h-3.5" />
                         Current Plan
                       </div>
                     ) : (
                       <button
                         onClick={() => openPlanCheckout(plan)}
                         disabled={loadingPlan === plan.id}
-                        className="w-full py-3 rounded-xl text-[13px] transition-all cursor-pointer flex items-center justify-center gap-2 shadow-sm hover:shadow-md disabled:opacity-60 disabled:cursor-not-allowed"
+                        className="w-full py-2.5 rounded-xl text-[12.5px] transition-all cursor-pointer flex items-center justify-center gap-2 hover:opacity-90 disabled:opacity-60 disabled:cursor-not-allowed"
                         style={{
                           fontFamily: "var(--font-body)",
                           fontWeight: 600,
-                          background: plan.recommended
-                            ? plan.colorHex
-                            : "#18181b",
+                          background: plan.recommended ? plan.colorHex : "#1a1614",
                           color: "#fff",
                         }}
                       >
@@ -965,48 +801,27 @@ export default function UpgradePage() {
                               animate={{ rotate: 360 }}
                               transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
                             >
-                              <Sparkles className="w-4 h-4" />
+                              <Sparkles className="w-3.5 h-3.5" />
                             </motion.div>
                             Processing...
                           </>
                         ) : (
-                          <>Get {plan.name} Plan</>
+                          <>Get {plan.name}</>
                         )}
                       </button>
                     )}
 
                     {/* Features */}
-                    <div className="mt-6 space-y-2.5">
-                      {plan.features.map((feature) => (
-                        <div
-                          key={feature.text}
-                          className="flex items-start gap-2.5"
-                        >
-                          <div
-                            className="w-4 h-4 rounded-full flex items-center justify-center shrink-0 mt-[1px]"
-                            style={{
-                              background: feature.highlight
-                                ? plan.colorLightHex
-                                : "#f4f4f5",
-                            }}
-                          >
-                            <Check
-                              className="w-2.5 h-2.5"
-                              style={{
-                                color: feature.highlight
-                                  ? plan.colorHex
-                                  : "#a1a1aa",
-                              }}
-                            />
-                          </div>
+                    <div className="mt-3.5 pt-3.5 border-t border-[#f0eee9] space-y-[7px]">
+                      {plan.features.slice(1).map((feature) => (
+                        <div key={feature.text} className="flex items-center gap-2">
+                          <Check className="w-3 h-3 shrink-0" style={{ color: plan.colorHex + "90" }} />
                           <span
-                            className="text-[13px] leading-snug"
+                            className="text-[11.5px]"
                             style={{
                               fontFamily: "var(--font-body)",
-                              color: feature.highlight
-                                ? "#18181b"
-                                : "#71717a",
-                              fontWeight: feature.highlight ? 500 : 400,
+                              color: "#71717a",
+                              fontWeight: 400,
                             }}
                           >
                             {feature.text}
@@ -1014,142 +829,15 @@ export default function UpgradePage() {
                         </div>
                       ))}
                     </div>
-
-                    {/* Ideal for */}
-                    <div className="grow" />
-                    <div className="pt-5 mt-5 border-t border-[#f0f0f3]">
-                      <p
-                        className="text-[11px] text-[#a1a1aa] italic"
-                        style={{ fontFamily: "var(--font-body)" }}
-                      >
-                        {plan.idealFor}
-                      </p>
-                    </div>
                   </div>
                 </div>
               </motion.div>
             );
           })}
         </div>
-        )}
       </div>
-
-      {/* Single Credit Purchase (shown only when viewing plans) */}
-      {billing !== "single" && <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 pb-10">
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{
-            delay: 0.45,
-            duration: 0.5,
-            ease: [0.22, 1, 0.36, 1],
-          }}
-          className="rounded-2xl bg-white border border-[#e8e8ec] overflow-hidden hover:border-[#d4d4d8] transition-colors"
-        >
-          <div className="px-5 sm:px-7 py-6 flex flex-col md:flex-row items-start md:items-center gap-5 justify-between">
-            <div className="flex items-start gap-3 sm:gap-4">
-              <div
-                className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0"
-                style={{ background: "#faf0eb" }}
-              >
-                <Zap className="w-5 h-5" style={{ color: "#c4876c" }} />
-              </div>
-              <div>
-                <h3
-                  className="text-[15px] text-[#18181b] mb-0.5"
-                  style={{ fontFamily: "var(--font-display)" }}
-                >
-                  Buy single credits
-                </h3>
-                <p
-                  className="text-[13px] text-[#8a8480] leading-relaxed"
-                  style={{ fontFamily: "var(--font-body)" }}
-                >
-                  No subscription needed. $0.99 per credit — they never expire.
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-3 sm:gap-4 pl-0 md:pl-0 w-full md:w-auto">
-              {/* Quantity selector */}
-              <div className="flex items-center gap-0 bg-[#f4f4f5] rounded-lg border border-[#e4e4e7]">
-                <button
-                  onClick={() => setSingleCreditQty(Math.max(1, singleCreditQty - 1))}
-                  className="w-9 h-9 flex items-center justify-center text-[#71717a] hover:text-[#18181b] transition-colors cursor-pointer rounded-l-lg hover:bg-[#e8e8ec]"
-                >
-                  <Minus className="w-3.5 h-3.5" />
-                </button>
-                <span
-                  className="w-10 text-center text-[14px] text-[#18181b] tabular-nums"
-                  style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}
-                >
-                  {singleCreditQty}
-                </span>
-                <button
-                  onClick={() => setSingleCreditQty(Math.min(50, singleCreditQty + 1))}
-                  className="w-9 h-9 flex items-center justify-center text-[#71717a] hover:text-[#18181b] transition-colors cursor-pointer rounded-r-lg hover:bg-[#e8e8ec]"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                </button>
-              </div>
-
-              <button
-                onClick={openCreditCheckout}
-                disabled={loadingPlan === "single"}
-                className="px-5 py-2.5 rounded-xl text-white text-[13px] transition-all cursor-pointer shadow-sm hover:shadow-md flex items-center justify-center gap-2 shrink-0 flex-1 md:flex-none disabled:opacity-60 disabled:cursor-not-allowed"
-                style={{
-                  fontFamily: "var(--font-body)",
-                  fontWeight: 600,
-                  background: "#c4876c",
-                }}
-              >
-                {loadingPlan === "single" ? (
-                  <>
-                    <motion.div
-                      animate={{ rotate: 360 }}
-                      transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                    >
-                      <Sparkles className="w-4 h-4" />
-                    </motion.div>
-                    Processing...
-                  </>
-                ) : (
-                  <>Buy for ${(singleCreditQty * 0.99).toFixed(2)}</>
-                )}
-              </button>
-            </div>
-          </div>
-        </motion.div>
-
-        {/* Free tier reminder */}
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{
-            delay: 0.5,
-            duration: 0.5,
-            ease: [0.22, 1, 0.36, 1],
-          }}
-          className="mt-4 text-center"
-        >
-          <p
-            className="text-[12px] text-[#a1a1aa]"
-            style={{ fontFamily: "var(--font-body)" }}
-          >
-            Currently on{" "}
-            <span
-              className="text-[#71717a]"
-              style={{ fontWeight: 500 }}
-            >
-              {currentPlan}
-            </span>{" "}
-            — {creditsTotal} credits/month included.
-          </p>
-        </motion.div>
-      </div>}
-
       {/* Commercial use banner */}
-      <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 pb-16">
+      <div className="relative z-10 max-w-3xl mx-auto px-4 sm:px-6 pb-12">
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
@@ -1175,16 +863,15 @@ export default function UpgradePage() {
                   className="text-[14px] sm:text-[15px] text-[#18181b] mb-1"
                   style={{ fontFamily: "var(--font-display)" }}
                 >
-                  Commercial use included on all plans
+                  Commercial use included on paid plans
                 </h3>
                 <p
                   className="text-[12px] sm:text-[13px] text-[#8a8480] leading-relaxed max-w-xl"
                   style={{ fontFamily: "var(--font-body)" }}
                 >
-                  Every session you generate belongs to you. Use it in your
+                  Every session you generate on a paid plan belongs to you. Use it in your
                   apps, courses, podcasts, therapy practice, or any commercial
-                  product. No additional licensing required — even on the free
-                  tier.
+                  product. No additional licensing required.
                 </p>
               </div>
             </div>
@@ -1238,12 +925,12 @@ export default function UpgradePage() {
             },
             {
               icon: Music,
-              label: "10+ soundscapes",
+              label: "40+ soundscapes",
               desc: "Ambient backgrounds",
             },
             {
               icon: Zap,
-              label: "6 protocols",
+              label: "57+ protocols",
               desc: "CBT-I, NSDR, PMR...",
             },
             {

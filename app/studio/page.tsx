@@ -1730,7 +1730,7 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, savedScript,
               <circle cx="9" cy="9" r="7" stroke="#e4e4e7" strokeWidth="2" />
               <circle cx="9" cy="9" r="7" stroke="#18181b" strokeWidth="2" strokeLinecap="round"
                 strokeDasharray={`${2 * Math.PI * 7}`}
-                strokeDashoffset={`${2 * Math.PI * 7 * (1 - (profile?.credits_remaining ?? 0) / Math.max(1, profile?.plan === "creator" ? 200 : profile?.plan === "personal" ? 50 : 10))}`}
+                strokeDashoffset={`${2 * Math.PI * 7 * (1 - (profile?.credits_remaining ?? 0) / Math.max(1, profile?.plan === "creator" ? 100 : profile?.plan === "personal" ? 30 : 2))}`}
                 style={{ transform: "rotate(-90deg)", transformOrigin: "center" }}
               />
             </svg>
@@ -1865,7 +1865,7 @@ function StudioSession({ prompt, voice, duration, sound, sessionId, savedScript,
               <circle cx="9" cy="9" r="7" stroke="#e4e4e7" strokeWidth="2" />
               <circle cx="9" cy="9" r="7" stroke="#18181b" strokeWidth="2" strokeLinecap="round"
                 strokeDasharray={`${2 * Math.PI * 7}`}
-                strokeDashoffset={`${2 * Math.PI * 7 * (1 - (profile?.credits_remaining ?? 0) / Math.max(1, profile?.plan === "creator" ? 200 : profile?.plan === "personal" ? 50 : 10))}`}
+                strokeDashoffset={`${2 * Math.PI * 7 * (1 - (profile?.credits_remaining ?? 0) / Math.max(1, profile?.plan === "creator" ? 100 : profile?.plan === "personal" ? 30 : 2))}`}
                 style={{ transform: "rotate(-90deg)", transformOrigin: "center" }}
               />
             </svg>
@@ -2488,6 +2488,13 @@ function StudioPageContent() {
   const [sessionsLoading, setSessionsLoading] = useState(true);
   const { profile, loading: profileLoading, refetch: refetchProfile } = useProfile();
   const [anonBannerDismissed, setAnonBannerDismissed] = useState(false);
+  // Gate studio access on profile — must have a non-anonymous profile
+  useEffect(() => {
+    if (profileLoading) return;
+    if (!profile || profile.is_anonymous) {
+      window.location.href = "/login";
+    }
+  }, [profileLoading, profile]);
   const [voicePlaying, setVoicePlaying] = useState<string | null>(null);
 
   // Bottom player state
@@ -2578,6 +2585,20 @@ function StudioPageContent() {
   useEffect(() => { fetchSessions(); }, [fetchSessions]);
   useEffect(() => { fetchGenerations(); }, [fetchGenerations]);
 
+  // Set initial history state and clean stale query params (e.g. ?reason=studio)
+  useEffect(() => {
+    if (!window.history.state?.studioNav) {
+      // Preserve only meaningful params (session, sessionId, prompt, checkout)
+      const params = new URLSearchParams(window.location.search);
+      const clean = new URLSearchParams();
+      for (const key of ["session", "sessionId", "prompt", "checkout"]) {
+        if (params.has(key)) clean.set(key, params.get(key)!);
+      }
+      const cleanUrl = clean.toString() ? `/studio?${clean}` : "/studio";
+      window.history.replaceState({ studioNav: "sessions", studioStep: "input" }, "", cleanUrl);
+    }
+  }, []);
+
   // Refresh all data when browser tab regains focus (e.g. after Stripe checkout, switching tabs)
   useEffect(() => {
     const onVisible = () => {
@@ -2638,9 +2659,8 @@ function StudioPageContent() {
         });
         setActiveNav("generate" as NavId);
         setGenStep("studio");
-        if (searchParams.get("sessionId")) {
-          router.replace(`/studio?session=${full.id}`, { scroll: false });
-        }
+        // Replace current history entry with studio nav state
+        window.history.replaceState({ studioNav: "generate", studioStep: "studio" }, "", `/studio?session=${full.id}`);
       } catch { /* ignore */ }
       setLoadingSession(false);
     })();
@@ -2657,19 +2677,21 @@ function StudioPageContent() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Trap browser back button inside studio — always navigate to sessions list instead of leaving
+  // Handle browser back button — only handle session→sessions transition
+  // (when a session was opened via pushState, back should return to sessions list)
   useEffect(() => {
-    // Push a duplicate entry so the first "back" stays on /studio
-    window.history.pushState({ studio: true }, "", "/studio");
-
-    const handlePopState = () => {
-      // Always re-push so user can never back out of studio via browser button
-      window.history.pushState({ studio: true }, "", "/studio");
-      // Reset to sessions list
-      setActiveNav("sessions" as NavId);
-      setGenStep("input");
-      fetchSessions();
-      refetchProfile();
+    const handlePopState = (e: PopStateEvent) => {
+      const state = e.state as { studioNav?: NavId; studioStep?: string } | null;
+      if (state?.studioNav) {
+        // Navigating back to a studio state (e.g. sessions list after viewing a session)
+        setActiveNav(state.studioNav);
+        setGenStep((state.studioStep as "input" | "choose" | "studio") || "input");
+        if (state.studioNav === "sessions") {
+          fetchSessions();
+          refetchProfile();
+        }
+      }
+      // If no studio state, let the browser navigate normally (e.g. back to /login or /)
     };
 
     window.addEventListener("popstate", handlePopState);
@@ -2810,7 +2832,7 @@ function StudioPageContent() {
     setGenConfig(prev => ({ ...prev, prompt: trimmed, supportChoice: sc }));
     setGeneratePrompt("");
     setGenStep("choose");
-    window.history.replaceState({ studio: true }, "", `/studio?prompt=${encodeURIComponent(trimmed)}`);
+    window.history.replaceState({ studioNav: "generate", studioStep: "choose" }, "", `/studio?prompt=${encodeURIComponent(trimmed)}`);
   };
 
   const navigateTo = (id: NavId) => {
@@ -2820,21 +2842,56 @@ function StudioPageContent() {
     if (id === "sessions") fetchSessions();
     if (id === "history") fetchGenerations();
     if (id === "sessions" || id === "history") refetchProfile();
-    // Clear session param when navigating away from a session
-    window.history.replaceState({ studio: true }, "", "/studio");
+    // Replace history state for tab switches — tabs shouldn't create history entries
+    window.history.replaceState({ studioNav: id, studioStep: "input" }, "", "/studio");
   };
 
   // Update URL to reflect the active session (or clear it) — use replaceState
   // so browser back always goes to sessions list via the popstate handler
   const updateSessionUrl = useCallback((sessionId: string | null) => {
     if (sessionId) {
-      window.history.replaceState({ studio: true }, "", `/studio?session=${sessionId}`);
+      window.history.replaceState({ studioNav: "generate", studioStep: "studio" }, "", `/studio?session=${sessionId}`);
     } else {
-      window.history.replaceState({ studio: true }, "", "/studio");
+      window.history.replaceState({ studioNav: "sessions", studioStep: "input" }, "", "/studio");
     }
   }, []);
 
   const filteredSessions = sessions;
+
+  // Show loading state while profile is loading or user isn't authorized
+  if (profileLoading || !profile || profile.is_anonymous) {
+    return (
+      <div className="h-screen flex flex-col items-center justify-center" style={{ backgroundColor: "var(--color-sand-50)" }}>
+        <div className="animate-[breathe_6s_ease-in-out_infinite]">
+          <svg width={36} height={38} fill="none" viewBox="0 0 36 37.8281" className="text-[var(--color-sand-300)]">
+            <path d={svgPaths.p1c4d2300} fill="currentColor" />
+            <path d={svgPaths.p2128f680} fill="currentColor" />
+            <path d={svgPaths.p1c2ff500} fill="currentColor" />
+          </svg>
+        </div>
+        <div className="flex gap-1.5 mt-4">
+          <span className="w-2 h-2 rounded-full animate-[dot-bounce_1.4s_ease-in-out_infinite]" style={{ backgroundColor: "#c9a96e", animationDelay: "0s" }} />
+          <span className="w-2 h-2 rounded-full animate-[dot-bounce_1.4s_ease-in-out_infinite]" style={{ backgroundColor: "#c9a96e", animationDelay: "0.2s" }} />
+          <span className="w-2 h-2 rounded-full animate-[dot-bounce_1.4s_ease-in-out_infinite]" style={{ backgroundColor: "#c9a96e", animationDelay: "0.4s" }} />
+        </div>
+      </div>
+    );
+  }
+
+  // If no profile — show loading (useEffect above handles creating or redirecting)
+  if (!profile) {
+    return (
+      <div className="h-screen flex flex-col items-center justify-center" style={{ backgroundColor: "var(--color-sand-50)" }}>
+        <div className="animate-[breathe_6s_ease-in-out_infinite]">
+          <svg width={36} height={38} fill="none" viewBox="0 0 36 37.8281" className="text-[var(--color-sand-300)]">
+            <path d={svgPaths.p1c4d2300} fill="currentColor" />
+            <path d={svgPaths.p2128f680} fill="currentColor" />
+            <path d={svgPaths.p1c2ff500} fill="currentColor" />
+          </svg>
+        </div>
+      </div>
+    );
+  }
 
   // Studio view — sidebar stays, top header hidden
   if (activeNav === "generate" && genStep === "studio") {
@@ -2886,7 +2943,7 @@ function StudioPageContent() {
               <>
               <div className="flex items-center gap-2.5 mb-3 flex-wrap">
                 {profile?.avatar_url ? (
-                  <img src={profile.avatar_url} alt="" className="w-8 h-8 rounded-full shrink-0 object-cover" />
+                  <img src={profile.avatar_url} alt="" className="w-8 h-8 rounded-full shrink-0 object-cover" referrerPolicy="no-referrer" />
                 ) : (
                   <div className="w-8 h-8 rounded-full bg-[var(--color-sand-300)] flex items-center justify-center shrink-0">
                     <span className="text-xs text-[var(--color-sand-700)]" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>{profile?.display_name?.[0]?.toUpperCase() || "U"}</span>
@@ -2905,7 +2962,7 @@ function StudioPageContent() {
               <div className="px-2 mb-2 space-y-1">
                 <div className="flex items-center justify-between">
                   <span className="text-[11px] text-[var(--color-sand-500)]" style={{ fontFamily: "var(--font-body)" }}>Total</span>
-                  <span className="text-[11px] text-[var(--color-sand-900)] tabular-nums" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>{profile?.plan === "creator" ? 200 : profile?.plan === "personal" ? 50 : 10} credits</span>
+                  <span className="text-[11px] text-[var(--color-sand-900)] tabular-nums" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>{profile?.plan === "creator" ? 100 : profile?.plan === "personal" ? 30 : 2} credits</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-[11px] text-[var(--color-sand-500)]" style={{ fontFamily: "var(--font-body)" }}>Remaining</span>
@@ -3048,7 +3105,7 @@ function StudioPageContent() {
             <>
             <div className="flex items-center gap-2.5 mb-3 flex-wrap">
               {profile?.avatar_url ? (
-                <img src={profile.avatar_url} alt="" className="w-8 h-8 rounded-full shrink-0 object-cover" />
+                <img src={profile.avatar_url} alt="" className="w-8 h-8 rounded-full shrink-0 object-cover" referrerPolicy="no-referrer" />
               ) : (
                 <div className="w-8 h-8 rounded-full bg-[var(--color-sand-300)] flex items-center justify-center shrink-0">
                   <span className="text-xs text-[var(--color-sand-700)]" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>{profile?.display_name?.[0]?.toUpperCase() || "U"}</span>
@@ -3067,7 +3124,7 @@ function StudioPageContent() {
             <div className="px-2 mb-2 space-y-1">
               <div className="flex items-center justify-between">
                 <span className="text-[11px] text-[var(--color-sand-500)]" style={{ fontFamily: "var(--font-body)" }}>Total</span>
-                <span className="text-[11px] text-[var(--color-sand-800)] tabular-nums" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>{profile?.plan === "creator" ? 200 : profile?.plan === "personal" ? 50 : 10} credits</span>
+                <span className="text-[11px] text-[var(--color-sand-800)] tabular-nums" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>{profile?.plan === "creator" ? 100 : profile?.plan === "personal" ? 30 : 2} credits</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-[11px] text-[var(--color-sand-500)]" style={{ fontFamily: "var(--font-body)" }}>Remaining</span>
@@ -3122,7 +3179,7 @@ function StudioPageContent() {
                   You&apos;re using Incraft as a guest.
                 </p>
                 <p className="text-xs text-[var(--color-sand-500)] mt-0.5" style={{ fontFamily: "var(--font-body)" }}>
-                  Sign up to save your sessions and unlock 3 free credits.
+                  Sign up to save your sessions and unlock 2 free credits.
                 </p>
               </div>
               <a
@@ -3201,7 +3258,7 @@ function StudioPageContent() {
                           setActiveNav("generate" as NavId);
                           setGenStep("studio");
                           setLoadingSession(false);
-                          updateSessionUrl(session.id);
+                          window.history.pushState({ studioNav: "generate", studioStep: "studio" }, "", `/studio?session=${session.id}`);
                         }}
                         onRegen={() => setConfirmDialog({ type: "regenerate", sessionId: session.id, sessionTitle: session.title })}
                         onGenerate={() => setConfirmDialog({ type: "generate", sessionId: session.id, sessionTitle: session.title })}
@@ -3281,7 +3338,7 @@ function StudioPageContent() {
                         <span className="text-[11px] uppercase tracking-wide text-[var(--color-sand-900)]" style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}></span>
                       </div>
                       {paged.map((gen, i) => {
-                        const isGenPlaying = gen.sessionId ? nowPlayingId === gen.id && playerPlaying : false;
+                        const isGenPlaying = gen.sessionId ? nowPlayingId === gen.sessionId && playerPlaying : false;
                         const genSession = gen.sessionId ? sessions.find(s => s.id === gen.sessionId) : null;
                         const genAccent = genSession ? (categoryColors[genSession.category] || categoryColors.focus).accent : "#18181b";
                         return (
@@ -3318,7 +3375,7 @@ function StudioPageContent() {
                           <div className="flex items-center justify-end gap-1">
                             <div className="relative group/tip">
                               <button
-                                onClick={(e) => { e.stopPropagation(); handlePlaySession(gen.id); }}
+                                onClick={(e) => { e.stopPropagation(); if (gen.sessionId) handlePlaySession(gen.sessionId); }}
                                 disabled={!gen.sessionId || (gen.status as string) === "failed"}
                                 className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-[#27272a] transition-colors shadow-sm disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
                                 style={{ background: isGenPlaying ? genAccent : "#18181b", color: "#fff" }}
@@ -3419,7 +3476,7 @@ function StudioPageContent() {
                               setActiveNav("generate" as NavId);
                               setGenStep("studio");
                               setLoadingSession(false);
-                              updateSessionUrl(session.id);
+                              window.history.pushState({ studioNav: "generate", studioStep: "studio" }, "", `/studio?session=${session.id}`);
                             }}
                             className="group grid grid-cols-[1fr_60px_70px_80px] sm:grid-cols-[1fr_100px_80px_80px_140px_130px] gap-2 sm:gap-4 items-center px-3 sm:px-5 py-3.5 border-b border-[#f4f4f5] last:border-b-0 hover:bg-[#fafafa] transition-colors cursor-pointer"
                           >
@@ -3660,7 +3717,7 @@ function StudioPageContent() {
                         const newMode = allowedModes.find(m => m.id === genConfig.mode) ? genConfig.mode : (allowedModes[0]?.id || "still");
                         setGenConfig(prev => ({ ...prev, supportChoice: s.id, mode: newMode, preferredApproach: "auto" }));
                       }}
-                        className={`px-3 py-2 rounded-lg text-xs text-left transition-all cursor-pointer ${genConfig.supportChoice === s.id ? "bg-[var(--color-sand-900)] text-[var(--color-sand-50)] shadow-sm" : "bg-white/60 text-[var(--color-sand-600)] hover:bg-white border border-[var(--color-sand-200)]"}`}
+                        className={`px-3 py-2 rounded-lg text-xs text-left transition-all cursor-pointer border ${genConfig.supportChoice === s.id ? "bg-[var(--color-sand-900)] text-[var(--color-sand-50)] shadow-sm border-transparent" : "bg-white/60 text-[var(--color-sand-600)] hover:bg-white border-[var(--color-sand-200)]"}`}
                         style={{ fontFamily: "var(--font-body)" }}>
                         <span className="font-medium block">{s.label}</span>
                       </button>
@@ -3676,7 +3733,7 @@ function StudioPageContent() {
                       <div key={d} className="flex-1 flex flex-col items-center">
                         <span className={`text-[8px] tracking-wide uppercase mb-1 h-3 ${d === 7 && genConfig.duration !== 7 ? "text-[var(--color-sand-400)]" : "text-transparent select-none"}`} style={{ fontFamily: "var(--font-body)" }}>{d === 7 ? "Default" : "\u00A0"}</span>
                         <button onClick={() => setGenConfig(prev => ({ ...prev, duration: d }))}
-                          className={`w-full py-2.5 rounded-full text-sm transition-all cursor-pointer ${genConfig.duration === d ? "bg-[var(--color-sand-900)] text-[var(--color-sand-50)] shadow-sm" : "bg-white/60 text-[var(--color-sand-600)] hover:bg-white border border-[var(--color-sand-200)]"}`}
+                          className={`w-full py-2.5 rounded-full text-sm transition-all cursor-pointer border ${genConfig.duration === d ? "bg-[var(--color-sand-900)] text-[var(--color-sand-50)] shadow-sm border-transparent" : "bg-white/60 text-[var(--color-sand-600)] hover:bg-white border-[var(--color-sand-200)]"}`}
                           style={{ fontFamily: "var(--font-body)" }}>{d}m</button>
                       </div>
                     ))}
@@ -3692,7 +3749,7 @@ function StudioPageContent() {
                       const isVoicePlaying = voicePlaying === v.id;
                       return (
                         <button key={v.id} onClick={(e) => { e.stopPropagation(); setGenConfig(prev => ({ ...prev, voice: v.id })); setVoicePlaying(v.id); setTimeout(() => setVoicePlaying((cur) => cur === v.id ? null : cur), 3000); }}
-                          className={`relative flex items-center gap-3 p-4 rounded-xl transition-all cursor-pointer text-left overflow-hidden ${isActive ? "bg-[var(--color-sand-900)] text-[var(--color-sand-50)] shadow-md" : "bg-white text-[var(--color-sand-900)] hover:shadow-sm border border-[var(--color-sand-200)] hover:border-[var(--color-sand-300)]"}`}>
+                          className={`relative flex items-center gap-3 p-4 rounded-xl transition-all cursor-pointer text-left overflow-hidden border ${isActive ? "bg-[var(--color-sand-900)] text-[var(--color-sand-50)] shadow-md border-transparent" : "bg-white text-[var(--color-sand-900)] hover:shadow-sm border-[var(--color-sand-200)] hover:border-[var(--color-sand-300)]"}`}>
                           <div className="flex-1 min-w-0">
                             <span className="text-sm font-medium flex items-center gap-1.5" style={{ fontFamily: "var(--font-body)" }}>
                               {v.label}
@@ -3752,7 +3809,7 @@ function StudioPageContent() {
                             <div className="flex gap-1.5">
                               {availModes.map((m) => (
                                 <button key={m.id} onClick={() => setGenConfig(prev => ({ ...prev, mode: m.id, preferredApproach: "auto" }))}
-                                  className={`flex-1 py-2.5 rounded-full text-sm transition-all cursor-pointer ${genConfig.mode === m.id ? "bg-[var(--color-sand-900)] text-[var(--color-sand-50)] shadow-sm" : "bg-white/60 text-[var(--color-sand-600)] hover:bg-white border border-[var(--color-sand-200)]"}`}
+                                  className={`flex-1 py-2.5 rounded-full text-sm transition-all cursor-pointer border ${genConfig.mode === m.id ? "bg-[var(--color-sand-900)] text-[var(--color-sand-50)] shadow-sm border-transparent" : "bg-white/60 text-[var(--color-sand-600)] hover:bg-white border-[var(--color-sand-200)]"}`}
                                   style={{ fontFamily: "var(--font-body)" }}>{m.label}</button>
                               ))}
                             </div>
@@ -3770,7 +3827,7 @@ function StudioPageContent() {
                         <div className="grid grid-cols-2 gap-2">
                           <button
                             onClick={() => setGenConfig(prev => ({ ...prev, preferredApproach: "auto" }))}
-                            className={`p-3 rounded-xl text-left text-sm transition-all cursor-pointer ${genConfig.preferredApproach === "auto" ? "bg-[var(--color-sand-900)] text-[var(--color-sand-50)] shadow-md" : "bg-white/60 text-[var(--color-sand-600)] hover:bg-white border border-[var(--color-sand-200)]"}`}
+                            className={`p-3 rounded-xl text-left text-sm transition-all cursor-pointer border ${genConfig.preferredApproach === "auto" ? "bg-[var(--color-sand-900)] text-[var(--color-sand-50)] shadow-md border-transparent" : "bg-white/60 text-[var(--color-sand-600)] hover:bg-white border-[var(--color-sand-200)]"}`}
                             style={{ fontFamily: "var(--font-body)" }}
                           >
                             <span className="font-medium">Auto</span>
@@ -3780,7 +3837,7 @@ function StudioPageContent() {
                             <button
                               key={a.value}
                               onClick={() => setGenConfig(prev => ({ ...prev, preferredApproach: a.value }))}
-                              className={`p-3 rounded-xl text-left text-sm transition-all cursor-pointer ${genConfig.preferredApproach === a.value ? "bg-[var(--color-sand-900)] text-[var(--color-sand-50)] shadow-md" : "bg-white/60 text-[var(--color-sand-600)] hover:bg-white border border-[var(--color-sand-200)]"}`}
+                              className={`p-3 rounded-xl text-left text-sm transition-all cursor-pointer border ${genConfig.preferredApproach === a.value ? "bg-[var(--color-sand-900)] text-[var(--color-sand-50)] shadow-md border-transparent" : "bg-white/60 text-[var(--color-sand-600)] hover:bg-white border-[var(--color-sand-200)]"}`}
                               style={{ fontFamily: "var(--font-body)" }}
                             >
                               <span className="font-medium">{a.label}</span>
@@ -3800,7 +3857,7 @@ function StudioPageContent() {
                   {/* Open in Studio — primary CTA with border glow */}
                   <div className="relative rounded-full group w-full">
                     <div className="absolute -inset-[2.5px] rounded-full bg-[length:300%_300%] animate-[border-glow_4s_ease_infinite] opacity-90 group-hover:opacity-100 transition-opacity duration-300" style={{ background: "linear-gradient(135deg, var(--color-sage), var(--color-ocean), var(--color-dusk), var(--color-ember), var(--color-sage))", backgroundSize: "300% 300%" }} />
-                    <button disabled={isQuickGenerating} onClick={() => { if (!genConfig.prompt.trim()) { setGenPromptError(true); return; } setGenPromptError(false); setGenStep("studio"); if (genConfig.sessionId) { updateSessionUrl(genConfig.sessionId); } else { router.replace(`/studio?prompt=${encodeURIComponent(genConfig.prompt.trim())}`, { scroll: false }); } }}
+                    <button disabled={isQuickGenerating} onClick={() => { if (!genConfig.prompt.trim()) { setGenPromptError(true); return; } setGenPromptError(false); setGenStep("studio"); setActiveNav("generate" as NavId); if (genConfig.sessionId) { updateSessionUrl(genConfig.sessionId); } else { window.history.replaceState({ studioNav: "generate", studioStep: "studio" }, "", `/studio?prompt=${encodeURIComponent(genConfig.prompt.trim())}`); } }}
                       className="relative w-full flex items-center justify-center gap-2.5 py-4 rounded-full bg-[var(--color-sand-900)] text-[var(--color-sand-50)] hover:bg-[var(--color-sand-800)] transition-all shadow-lg cursor-pointer text-sm disabled:opacity-60 disabled:cursor-not-allowed"
                       style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>
                       <PenLine className="w-4 h-4" />

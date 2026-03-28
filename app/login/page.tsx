@@ -249,15 +249,8 @@ function LoginContent() {
   const [isHovered, setIsHovered] = useState(false);
   const [loadingProvider, setLoadingProvider] = useState<"google" | "apple" | null>(null);
 
-  // Redirect to studio if already signed in
-  useEffect(() => {
-    const checkAuth = async () => {
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) router.replace(next);
-    };
-    checkAuth();
-  }, [router, next]);
+  // After OAuth sign-in, the auth callback redirects to /studio directly.
+  // No auto-redirect needed here — the login page is always for signing in.
 
   const handleOAuthLogin = async (provider: "google" | "apple") => {
     setLoadingProvider(provider);
@@ -404,7 +397,17 @@ function LoginContent() {
                   You&apos;ve used your free trial.
                 </p>
                 <p className="text-xs text-[var(--color-sand-500)] mt-0.5" style={{ fontFamily: "var(--font-body)" }}>
-                  Sign up to get 3 credits — free.
+                  Sign up to get 2 credits — free.
+                </p>
+              </div>
+            )}
+            {reason === "studio" && (
+              <div className="mb-5 px-4 py-3 rounded-xl border border-[var(--color-dusk)]/25 bg-[var(--color-dusk)]/5">
+                <p className="text-sm text-[var(--color-sand-900)]" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>
+                  Incraft Studio requires an account.
+                </p>
+                <p className="text-xs text-[var(--color-sand-500)] mt-0.5" style={{ fontFamily: "var(--font-body)" }}>
+                  Sign up to access the full studio with script editing, session history, and more.
                 </p>
               </div>
             )}

@@ -22,7 +22,6 @@ import {
   MessageCircle,
   ArrowRight,
 } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
 import {
   Logo,
   AmbientBackground,
@@ -192,10 +191,17 @@ const timelineSteps = [
 export default function HomePage() {
   const router = useRouter();
 
-  // Redirect authenticated (non-anonymous) users to studio
+  // Redirect users with a real (non-anonymous) profile to studio
   useEffect(() => {
-    createClient().auth.getUser().then(({ data: { user } }) => {
-      if (user && !user.is_anonymous) router.replace("/studio");
+    fetch("/api/user").then(async (res) => {
+      if (res.ok) {
+        const profile = await res.json();
+        console.log("[home] /api/user response:", JSON.stringify(profile?._debug));
+        if (profile && !profile.is_anonymous) {
+          console.log("[home] Redirecting to studio");
+          router.replace("/studio");
+        }
+      }
     });
   }, [router]);
 
@@ -444,18 +450,18 @@ export default function HomePage() {
             </div>
 
             {/* Step hint */}
-            <p className="text-[11px] text-[var(--color-sand-400)] -mt-4 mb-6 flex items-center gap-1.5" style={{ fontFamily: "var(--font-body)" }}>
+            <p className="text-[11px] -mt-4 mb-6 flex items-center gap-1.5" style={{ fontFamily: "var(--font-body)" }}>
               <span className="inline-flex items-center justify-center w-[18px] h-[18px] rounded-full bg-[var(--color-sand-900)] text-[var(--color-sand-50)] text-[10px] !leading-[0] font-medium">1</span>
-              <span>Prompt</span>
+              <span className="text-[var(--color-sand-700)]">Prompt</span>
               <span className="text-[var(--color-sand-300)]">→</span>
-              <span className="text-[var(--color-sand-300)]">Customize</span>
+              <span className="text-[var(--color-sand-400)]">Customize</span>
               <span className="text-[var(--color-sand-300)]">→</span>
-              <span className="text-[var(--color-sand-300)]">Generate</span>
+              <span className="text-[var(--color-sand-400)]">Generate</span>
             </p>
 
             {/* Suggestions */}
             <div className="w-full flex flex-col items-center gap-3">
-              <span className="text-xs text-[var(--color-sand-400)]" style={{ fontFamily: "var(--font-body)" }}>
+              <span className="text-xs text-[var(--color-sand-600)]" style={{ fontFamily: "var(--font-body)" }}>
                 or try one of these
               </span>
               <div className="flex flex-wrap gap-2 justify-center">
@@ -532,47 +538,36 @@ export default function HomePage() {
                       />
                     )}
 
-                    <div className="relative z-10 p-3 lg:p-4">
-                      <div className="flex items-center justify-between mb-2 lg:mb-3">
-                        <span className="text-sm lg:text-base text-white/90 font-medium" style={{ fontFamily: "var(--font-display)" }}>
+                    <div className="relative z-10 p-3">
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className="text-[13px] text-white/90 font-medium" style={{ fontFamily: "var(--font-display)" }}>
                           {s.label}
-                          {s.sampleStart ? <span className="text-[10px] lg:text-[11px] text-white/60 font-normal ml-2" style={{ fontFamily: "var(--font-body)" }}>· from mid-session</span> : null}
+                          {s.sampleStart ? <span className="text-[9px] text-white/50 font-normal ml-1.5" style={{ fontFamily: "var(--font-body)" }}>· from mid-session</span> : null}
                         </span>
-                        <div className={`shrink-0 w-8 h-8 lg:w-9 lg:h-9 rounded-full flex items-center justify-center transition-all ${isActive ? "bg-white text-[var(--color-sand-900)]" : "bg-white/10 text-white/60"}`}>
-                          {isActive ? <Pause className="w-3 h-3 lg:w-3.5 lg:h-3.5" /> : <Play className="w-3 h-3 lg:w-3.5 lg:h-3.5 ml-0.5" />}
+                        <div className={`shrink-0 w-7 h-7 rounded-full flex items-center justify-center transition-all ${isActive ? "bg-white text-[var(--color-sand-900)]" : "bg-white/10 text-white/50"}`}>
+                          {isActive ? <Pause className="w-2.5 h-2.5" /> : <Play className="w-2.5 h-2.5 ml-0.5" />}
                         </div>
                       </div>
 
-                      <div className="space-y-1 lg:space-y-2 mb-2 lg:mb-3" style={{ fontFamily: "var(--font-body)" }}>
-                        <div className="flex items-baseline gap-2 lg:gap-3">
-                          <span className="text-[9px] lg:text-[10px] uppercase tracking-wider text-white/25 w-12 lg:w-16 shrink-0">Prompt</span>
-                          <span className="text-[11px] lg:text-xs text-white/50 italic">&ldquo;{s.prompt}&rdquo;</span>
+                      <div className="space-y-1" style={{ fontFamily: "var(--font-body)" }}>
+                        <div className="flex items-baseline gap-2">
+                          <span className="text-[8px] uppercase tracking-wider text-white/20 w-11 shrink-0">Prompt</span>
+                          <span className="text-[10px] text-white/45 italic truncate">&ldquo;{s.prompt}&rdquo;</span>
                         </div>
-                        <div className="flex items-baseline gap-2 lg:gap-3">
-                          <span className="text-[9px] lg:text-[10px] uppercase tracking-wider text-white/25 w-12 lg:w-16 shrink-0">Voice</span>
-                          <span className="text-[11px] lg:text-xs text-white/50">{s.voice}</span>
-                        </div>
-                        <div className="flex items-center gap-2 lg:gap-3">
-                          <span className="text-[9px] lg:text-[10px] uppercase tracking-wider text-white/25 w-12 lg:w-16 shrink-0">Sound</span>
-                          <div className="flex flex-wrap gap-1">
-                            {s.sounds.map((sound) => {
-                              const isSelected = sampleSound[s.id] === sound.label;
-                              return (
-                                <button
-                                  key={sound.label}
-                                  onClick={(e) => { e.stopPropagation(); setSampleSound((prev) => ({ ...prev, [s.id]: sound.label })); }}
-                                  className={`px-1.5 lg:px-2 py-0.5 rounded-full text-[9px] lg:text-[10px] transition-all cursor-pointer ${isSelected ? "bg-white/20 text-white/90" : "bg-white/[0.04] text-white/35 hover:bg-white/10 hover:text-white/60"}`}
-                                >
-                                  {sound.label}
-                                </button>
-                              );
-                            })}
+                        <div className="flex items-baseline gap-3">
+                          <div className="flex items-baseline gap-2">
+                            <span className="text-[8px] uppercase tracking-wider text-white/20 w-11 shrink-0">Voice</span>
+                            <span className="text-[10px] text-white/45">{s.voice}</span>
+                          </div>
+                          <div className="flex items-baseline gap-2">
+                            <span className="text-[8px] uppercase tracking-wider text-white/20 shrink-0">Protocol</span>
+                            <span className="text-[10px] text-white/45">{s.protocol}</span>
                           </div>
                         </div>
-                        <div className="flex items-center gap-2 lg:gap-3">
-                          <span className="text-[9px] lg:text-[10px] uppercase tracking-wider text-white/25 w-12 lg:w-16 shrink-0">BG Vol</span>
-                          <div className="flex items-center gap-2 flex-1" onClick={(e) => e.stopPropagation()}>
-                            <Volume2 className="w-3 h-3 text-white/25 shrink-0" />
+                        <div className="flex items-center gap-2">
+                          <span className="text-[8px] uppercase tracking-wider text-white/20 w-11 shrink-0">Sound</span>
+                          <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
+                            <Volume2 className="w-2.5 h-2.5 text-white/20 shrink-0" />
                             <input
                               type="range"
                               min={0}
@@ -580,18 +575,26 @@ export default function HomePage() {
                               step={0.01}
                               value={bgVolume[s.id] ?? 0.3}
                               onChange={(e) => setBgVolume((prev) => ({ ...prev, [s.id]: parseFloat(e.target.value) }))}
-                              className="w-16 lg:w-28 accent-white/60"
+                              className="w-12 accent-white/60"
                               style={{ height: "2px" }}
                             />
-                            <span className="text-[9px] lg:text-[10px] text-white/35 tabular-nums w-7 text-right">{Math.round((bgVolume[s.id] ?? 0.3) * 100)}%</span>
+                          </div>
+                          <div className="flex flex-wrap gap-0.5">
+                            {s.sounds.map((sound) => {
+                              const isSelected = sampleSound[s.id] === sound.label;
+                              return (
+                                <button
+                                  key={sound.label}
+                                  onClick={(e) => { e.stopPropagation(); setSampleSound((prev) => ({ ...prev, [s.id]: sound.label })); }}
+                                  className={`px-1.5 py-[2px] rounded-full text-[8px] transition-all cursor-pointer ${isSelected ? "bg-white/20 text-white/85" : "bg-white/[0.04] text-white/30 hover:bg-white/10 hover:text-white/55"}`}
+                                >
+                                  {sound.label}
+                                </button>
+                              );
+                            })}
                           </div>
                         </div>
-                        <div className="flex items-baseline gap-2 lg:gap-3">
-                          <span className="text-[9px] lg:text-[10px] uppercase tracking-wider text-white/25 w-12 lg:w-16 shrink-0">Protocol</span>
-                          <span className="text-[11px] lg:text-xs text-white/50">{s.protocol}</span>
-                        </div>
                       </div>
-
                     </div>
                   </div>
                 </FadeIn>
