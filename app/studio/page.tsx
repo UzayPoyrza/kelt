@@ -3661,23 +3661,6 @@ function StudioPageContent() {
                   </div>
                 </motion.div>
 
-                {/* Mode (conditional) */}
-                {(() => {
-                  const availModes = modeRules[genConfig.supportChoice] ? modes.filter(m => modeRules[genConfig.supportChoice]!.includes(m.id)) : modes;
-                  return availModes.length > 1 ? (
-                    <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.09 }} className="mb-8">
-                      <p className="text-xs uppercase tracking-widest text-[var(--color-sand-400)] mb-3" style={{ fontFamily: "var(--font-body)" }}>Mode</p>
-                      <div className="flex gap-1.5">
-                        {availModes.map((m) => (
-                          <button key={m.id} onClick={() => setGenConfig(prev => ({ ...prev, mode: m.id, preferredApproach: "auto" }))}
-                            className={`flex-1 py-2.5 rounded-full text-sm transition-all cursor-pointer ${genConfig.mode === m.id ? "bg-[var(--color-sand-900)] text-[var(--color-sand-50)] shadow-sm" : "bg-white/60 text-[var(--color-sand-600)] hover:bg-white border border-[var(--color-sand-200)]"}`}
-                            style={{ fontFamily: "var(--font-body)" }}>{m.label}</button>
-                        ))}
-                      </div>
-                    </motion.div>
-                  ) : null;
-                })()}
-
                 {/* Duration */}
                 <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="mb-8">
                   <p className="text-xs uppercase tracking-widest text-[var(--color-sand-400)] mb-3" style={{ fontFamily: "var(--font-body)" }}>Duration</p>
@@ -3752,6 +3735,24 @@ function StudioPageContent() {
                       transition={{ duration: 0.25 }}
                       className="mt-4"
                     >
+                      {/* Mode */}
+                      {(() => {
+                        const availModes = modeRules[genConfig.supportChoice] ? modes.filter(m => modeRules[genConfig.supportChoice]!.includes(m.id)) : modes;
+                        return availModes.length > 1 ? (
+                          <div className="mb-5">
+                            <p className="text-xs uppercase tracking-widest text-[var(--color-sand-400)] mb-2" style={{ fontFamily: "var(--font-body)" }}>Mode</p>
+                            <div className="flex gap-1.5">
+                              {availModes.map((m) => (
+                                <button key={m.id} onClick={() => setGenConfig(prev => ({ ...prev, mode: m.id, preferredApproach: "auto" }))}
+                                  className={`flex-1 py-2.5 rounded-full text-sm transition-all cursor-pointer ${genConfig.mode === m.id ? "bg-[var(--color-sand-900)] text-[var(--color-sand-50)] shadow-sm" : "bg-white/60 text-[var(--color-sand-600)] hover:bg-white border border-[var(--color-sand-200)]"}`}
+                                  style={{ fontFamily: "var(--font-body)" }}>{m.label}</button>
+                              ))}
+                            </div>
+                          </div>
+                        ) : null;
+                      })()}
+
+                      {/* Approach */}
                       <p className="text-xs uppercase tracking-widest text-[var(--color-sand-400)] mb-1.5" style={{ fontFamily: "var(--font-body)" }}>Approach</p>
                       <p className="text-[11px] text-[var(--color-sand-400)] mb-3 italic" style={{ fontFamily: "var(--font-body)" }}>
                         Auto-chosen during generation based on your support choice. Override below for more control.
