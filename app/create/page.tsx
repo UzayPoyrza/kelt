@@ -88,6 +88,20 @@ function CreateContent() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [promptError, setPromptError] = useState(false);
 
+  // Scroll generate button into view after layout changes (with extra padding)
+  const scrollToGenerate = useCallback((delay = 100) => {
+    setTimeout(() => {
+      const el = generateRef.current;
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      const extra = 40; // extra px below the button
+      const targetY = window.scrollY + rect.bottom + extra - window.innerHeight;
+      if (targetY > window.scrollY) {
+        window.scrollTo({ top: targetY, behavior: "smooth" });
+      }
+    }, delay);
+  }, []);
+
   const handleGenerate = useCallback(async () => {
     if (!prompt.trim()) {
       setPromptError(true);
@@ -333,13 +347,13 @@ function CreateContent() {
                 <span className="text-[10px] text-[var(--color-sand-400)]" style={{ fontFamily: "var(--font-body)" }}>— optional</span>
               </div>
               {detectedSupportChoice !== "auto_detect" && !hasExplicitChoice && (
-                <button onClick={() => setSupportChoice(detectedSupportChoice)} className="text-[10px] text-[var(--color-sage)] hover:underline mb-1.5 block cursor-pointer" style={{ fontFamily: "var(--font-body)" }}>
+                <button onClick={() => { setSupportChoice(detectedSupportChoice); scrollToGenerate(150); }} className="text-[10px] text-[var(--color-sage)] hover:underline mb-1.5 block cursor-pointer" style={{ fontFamily: "var(--font-body)" }}>
                   Suggested: {supportChoices.find(s => s.id === detectedSupportChoice)?.label}
                 </button>
               )}
               <div className="flex flex-wrap gap-1">
                 {supportChoices.filter(s => s.id !== "auto_detect").map((s) => (
-                  <button key={s.id} onClick={() => setSupportChoice(supportChoice === s.id ? "auto_detect" : s.id)}
+                  <button key={s.id} onClick={() => { const next = supportChoice === s.id ? "auto_detect" : s.id; setSupportChoice(next); if (next !== "auto_detect") scrollToGenerate(150); }}
                     className={`px-3 py-1.5 rounded-lg text-[11px] transition-all cursor-pointer whitespace-nowrap ${supportChoice === s.id ? "bg-[var(--color-sand-800)] text-[var(--color-sand-50)]" : "bg-white text-[var(--color-sand-600)] hover:bg-[var(--color-sand-100)] border border-[var(--color-sand-200)]"}`}
                     style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>
                     {s.label}
@@ -352,7 +366,7 @@ function CreateContent() {
             {hasExplicitChoice && (
             <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.18 }} className="mb-6">
               <button
-                onClick={() => { setShowAdvanced(!showAdvanced); if (!showAdvanced) setTimeout(() => generateRef.current?.scrollIntoView({ behavior: "instant", block: "nearest" }), 50); }}
+                onClick={() => { setShowAdvanced(!showAdvanced); if (!showAdvanced) scrollToGenerate(300); }}
                 className="flex items-center gap-2 w-full px-4 py-2.5 rounded-xl bg-white border border-[var(--color-sand-200)] hover:border-[var(--color-sand-300)] transition-all cursor-pointer group"
                 style={{ fontFamily: "var(--font-body)" }}
               >
