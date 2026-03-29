@@ -30,17 +30,21 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // Protect /studio — redirect to /login if not authenticated
-  if (!user && request.nextUrl.pathname.startsWith("/studio")) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/login";
-    return NextResponse.redirect(url);
+  // Protect /studio — only allow non-anonymous authenticated users
+  if (request.nextUrl.pathname.startsWith("/studio")) {
+    if (!user || user.is_anonymous) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/login";
+      url.search = "";
+      return NextResponse.redirect(url);
+    }
   }
 
-  // Auto login — redirect authenticated users away from /login
-  if (user && request.nextUrl.pathname === "/login") {
+  // Redirect OAuth users away from /login — they belong in /studio
+  if (user && !user.is_anonymous && request.nextUrl.pathname === "/login") {
     const url = request.nextUrl.clone();
     url.pathname = "/studio";
+    url.search = "";
     return NextResponse.redirect(url);
   }
 

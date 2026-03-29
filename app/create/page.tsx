@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "motion/react";
 import { Suspense } from "react";
@@ -47,6 +47,7 @@ import {
 } from "@/lib/shared";
 import { createClient } from "@/lib/supabase/client";
 
+
 function CreateContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -87,6 +88,18 @@ function CreateContent() {
 
   const [isGenerating, setIsGenerating] = useState(false);
   const [promptError, setPromptError] = useState(false);
+  const [generateError, setGenerateError] = useState<string | null>(null);
+
+  // Anonymous user detection (for signup gate at generate time)
+  const [isAnonymous, setIsAnonymous] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      const user = session?.user;
+      setIsAnonymous(!user || !!user.is_anonymous);
+    });
+  }, []);
 
   // Scroll generate button into view after layout changes (with extra padding)
   const scrollToGenerate = useCallback((delay = 100) => {
@@ -108,13 +121,24 @@ function CreateContent() {
       return;
     }
     setPromptError(false);
+    setGenerateError(null);
+
+    // Gate: anonymous users redirect to signup page
+    if (isAnonymous) {
+      const voiceLabel = voices.find(v => v.id === voice)?.label || voice;
+      const signupParams = new URLSearchParams({
+        next: `/create?prompt=${encodeURIComponent(prompt)}`,
+        prompt,
+        duration: String(duration),
+        voice: voiceLabel,
+      });
+      router.push(`/signup?${signupParams.toString()}`);
+      return;
+    }
+
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
-    console.log("[create] Auth status:", user ? `authenticated (${user.id}, anonymous: ${user.is_anonymous})` : "not authenticated");
-    if (user) {
-      const { data: profile } = await supabase.from("profiles").select("credits_remaining, is_anonymous").eq("id", user.id).single();
-      console.log("[create] Profile:", profile ? `credits: ${profile.credits_remaining}, anonymous: ${profile.is_anonymous}` : "no profile found");
-    }
+    console.log("[create] Auth:", user ? `${user.id.slice(0, 8)}… anon=${user.is_anonymous}` : "none");
 
     const generateBody = {
       prompt,
@@ -147,48 +171,28 @@ function CreateContent() {
 
     setIsGenerating(true);
     try {
-      let activeUser = user;
-
-      // If not authenticated, sign in anonymously first
-      if (!activeUser) {
-        const { data: anonData, error: anonError } = await supabase.auth.signInAnonymously();
-        console.log("[create] Anonymous sign-in:", anonError ? anonError.message : "success", anonData?.user?.id);
-        if (anonError || !anonData.user) {
-          console.error("[create] Anonymous auth failed:", anonError);
-          // Fall through to URL params flow below
-          setIsGenerating(false);
-        } else {
-          activeUser = anonData.user;
-          // Create anonymous profile with 1 credit
-          const profileRes = await fetch("/api/anon-profile", { method: "POST" });
-          console.log("[create] Anon profile:", profileRes.status);
-        }
-      }
-
-      if (activeUser) {
+      if (user) {
         const success = await callGenerateApi();
         if (success) return;
-        console.error("[create] Generate API call failed");
       }
+      // No user or API failed — show error
+      setGenerateError("Something went wrong. Please try again.");
     } catch (err) {
       console.error("[create] Generate flow error:", err);
+      setGenerateError("Something went wrong. Please try again.");
     } finally {
       setIsGenerating(false);
     }
-
-    // Fallback: unauthenticated URL params flow
-    const params = new URLSearchParams({
-      prompt,
-      voice,
-      duration: String(duration),
-      intent: detectedIntent,
-    });
-    router.push(`/session?${params.toString()}`);
-  }, [router, prompt, voice, duration, detectedIntent, supportChoice, selectedMode, preferredApproach]);
+  }, [router, prompt, voice, duration, supportChoice, selectedMode, preferredApproach, isAnonymous]);
 
   if (!initialPrompt) {
-    router.push("/");
+    router.replace("/");
     return null;
+  }
+
+  // Wait for auth check to complete before rendering to avoid flash of unlocked content
+  if (isAnonymous === null) {
+    return <LoadingFallback />;
   }
 
   return (
@@ -210,7 +214,7 @@ function CreateContent() {
             {/* Back + "Your intention" on same line */}
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="relative flex items-center justify-center mb-3">
               <button
-                onClick={() => router.push("/")}
+                onClick={() => router.back()}
                 className="absolute left-0 flex items-center gap-1 text-sm text-[var(--color-sand-400)] hover:text-[var(--color-sand-700)] transition-colors cursor-pointer"
                 style={{ fontFamily: "var(--font-body)" }}
               >
@@ -232,9 +236,10 @@ function CreateContent() {
                     setPrompt(text);
                   }}
                   onInput={(e) => {
-                    const text = e.currentTarget.textContent || "";
+                    let text = e.currentTarget.textContent || "";
                     if (text.length > 50) {
-                      e.currentTarget.textContent = text.slice(0, 50);
+                      text = text.slice(0, 50);
+                      e.currentTarget.textContent = text;
                       const range = document.createRange();
                       const sel = window.getSelection();
                       range.selectNodeContents(e.currentTarget);
@@ -242,6 +247,7 @@ function CreateContent() {
                       sel?.removeAllRanges();
                       sel?.addRange(range);
                     }
+                    setPrompt(text);
                   }}
                   onKeyDown={(e) => { if (e.key === "Enter") e.preventDefault(); }}
                   onFocus={() => setPromptError(false)}
@@ -265,7 +271,7 @@ function CreateContent() {
                 <div className="flex items-center rounded-xl overflow-visible border border-[var(--color-sand-200)]">
                   {durations.map((d, i) => (
                     <button key={d} onClick={() => setDuration(d)}
-                      className={`flex-1 py-2 text-[13px] cursor-pointer ${duration === d ? "bg-[var(--color-sand-900)] text-[var(--color-sand-50)]" : "bg-white text-[var(--color-sand-600)] hover:bg-[var(--color-sand-100)]"} ${i > 0 ? "border-l border-[var(--color-sand-200)]" : ""} ${i === 0 ? "rounded-l-xl" : ""} ${i === durations.length - 1 ? "rounded-r-xl" : ""}`}
+                      className={`flex-1 py-2 text-[13px] relative cursor-pointer ${duration === d ? "bg-[var(--color-sand-900)] text-[var(--color-sand-50)]" : "bg-white text-[var(--color-sand-600)] hover:bg-[var(--color-sand-100)]"} ${i > 0 ? "border-l border-[var(--color-sand-200)]" : ""} ${i === 0 ? "rounded-l-xl" : ""} ${i === durations.length - 1 ? "rounded-r-xl" : ""}`}
                       style={{ fontFamily: "var(--font-body)" }}
                     >
                       {d}m
@@ -288,7 +294,7 @@ function CreateContent() {
                     <button
                       key={v.id}
                       onClick={(e) => { e.stopPropagation(); setVoice(v.id); setVoicePlaying(v.id); setTimeout(() => setVoicePlaying((cur) => cur === v.id ? null : cur), 3000); }}
-                      className={`flex-1 relative overflow-hidden rounded-xl transition-all cursor-pointer ${isActive ? "shadow-md" : "hover:shadow-sm border border-[var(--color-sand-200)] hover:border-[var(--color-sand-300)]"}`}
+                      className={`flex-1 relative overflow-hidden rounded-xl transition-all border cursor-pointer ${isActive ? "shadow-md border-transparent" : "hover:shadow-sm border-[var(--color-sand-200)] hover:border-[var(--color-sand-300)]"}`}
                       style={{
                         background: isActive
                           ? `linear-gradient(135deg, var(--color-sand-900), var(--color-sand-800))`
@@ -299,11 +305,13 @@ function CreateContent() {
                       <div className="h-[3px] w-full" style={{ background: accent, opacity: isActive ? 1 : 0.3 }} />
 
                       <div className="px-2 pt-2 pb-2.5 flex flex-col items-center">
-                        <span className={`text-[12px] font-medium ${isActive ? "text-[var(--color-sand-50)]" : "text-[var(--color-sand-900)]"}`} style={{ fontFamily: "var(--font-body)" }}>{v.label}</span>
+                        <span className={`text-[12px] font-medium ${isActive ? "text-[var(--color-sand-50)]" : "text-[var(--color-sand-900)]"}`} style={{ fontFamily: "var(--font-body)" }}>
+                          {v.label}
+                        </span>
                         <span className={`text-[9px] mt-0.5 ${isActive ? "text-white/40" : "text-[var(--color-sand-400)]"}`} style={{ fontFamily: "var(--font-body)" }}>{v.description}</span>
 
                         {/* Play/Pause */}
-                        <div className="mt-2 flex items-center gap-1.5">
+                        <div className="mt-2 flex items-center gap-1.5 h-6">
                           <div
                             onClick={(e) => {
                               e.stopPropagation();
@@ -311,7 +319,7 @@ function CreateContent() {
                               setVoicePlaying(isVoicePlaying ? null : v.id);
                               if (!isVoicePlaying) setTimeout(() => setVoicePlaying((cur) => cur === v.id ? null : cur), 3000);
                             }}
-                            className="w-6 h-6 rounded-full flex items-center justify-center transition-all"
+                            className="w-6 h-6 rounded-full flex items-center justify-center shrink-0 transition-all"
                             style={{
                               background: isActive ? "rgba(255,255,255,0.15)" : `color-mix(in srgb, ${accent} 12%, transparent)`,
                               color: isActive ? "white" : accent,
@@ -319,19 +327,17 @@ function CreateContent() {
                           >
                             {isVoicePlaying ? <Pause className="w-2.5 h-2.5" /> : <Play className="w-2.5 h-2.5 ml-px" />}
                           </div>
-                          {isVoicePlaying && (
-                            <div className="flex items-end gap-[2px] h-3">
-                              {Array.from({ length: 6 }).map((_, i) => (
-                                <motion.div
-                                  key={i}
-                                  className="w-[2px] rounded-full"
-                                  style={{ background: isActive ? "rgba(255,255,255,0.4)" : accent }}
-                                  animate={{ height: [`${20 + Math.random() * 40}%`, `${50 + Math.random() * 50}%`, `${20 + Math.random() * 40}%`] }}
-                                  transition={{ duration: 0.3 + Math.random() * 0.3, repeat: Infinity, ease: "easeInOut" }}
-                                />
-                              ))}
-                            </div>
-                          )}
+                          <div className="flex items-end gap-[2px] h-3 w-[20px]">
+                            {isVoicePlaying && Array.from({ length: 6 }).map((_, i) => (
+                              <motion.div
+                                key={i}
+                                className="w-[2px] rounded-full"
+                                style={{ background: isActive ? "rgba(255,255,255,0.4)" : accent }}
+                                animate={{ height: [`${20 + Math.random() * 40}%`, `${50 + Math.random() * 50}%`, `${20 + Math.random() * 40}%`] }}
+                                transition={{ duration: 0.3 + Math.random() * 0.3, repeat: Infinity, ease: "easeInOut" }}
+                              />
+                            ))}
+                          </div>
                         </div>
                       </div>
                     </button>
@@ -354,7 +360,7 @@ function CreateContent() {
               <div className="flex flex-wrap gap-1">
                 {supportChoices.filter(s => s.id !== "auto_detect").map((s) => (
                   <button key={s.id} onClick={() => { const next = supportChoice === s.id ? "auto_detect" : s.id; setSupportChoice(next); if (next !== "auto_detect") scrollToGenerate(150); }}
-                    className={`px-3 py-1.5 rounded-lg text-[11px] transition-all cursor-pointer whitespace-nowrap ${supportChoice === s.id ? "bg-[var(--color-sand-800)] text-[var(--color-sand-50)]" : "bg-white text-[var(--color-sand-600)] hover:bg-[var(--color-sand-100)] border border-[var(--color-sand-200)]"}`}
+                    className={`px-3 py-1.5 rounded-lg text-[11px] transition-all whitespace-nowrap border cursor-pointer ${supportChoice === s.id ? "bg-[var(--color-sand-800)] text-[var(--color-sand-50)] border-transparent" : "bg-white text-[var(--color-sand-600)] hover:bg-[var(--color-sand-100)] border-[var(--color-sand-200)]"}`}
                     style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>
                     {s.label}
                   </button>
@@ -389,7 +395,7 @@ function CreateContent() {
                       <div className="flex flex-wrap gap-1">
                         {availableModes.map((m) => (
                           <button key={m.id} onClick={() => setSelectedMode(m.id)}
-                            className={`px-3 py-1.5 rounded-lg text-[11px] transition-all cursor-pointer flex items-center gap-1 ${selectedMode === m.id ? "bg-[var(--color-sand-800)] text-[var(--color-sand-50)]" : "bg-white text-[var(--color-sand-600)] hover:bg-[var(--color-sand-100)] border border-[var(--color-sand-200)]"}`}
+                            className={`px-3 py-1.5 rounded-lg text-[11px] transition-all cursor-pointer flex items-center gap-1 border ${selectedMode === m.id ? "bg-[var(--color-sand-800)] text-[var(--color-sand-50)] border-transparent" : "bg-white text-[var(--color-sand-600)] hover:bg-[var(--color-sand-100)] border-[var(--color-sand-200)]"}`}
                             style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>
                             <span>{m.label}</span>
                             <span className={`text-[9px] font-normal ${selectedMode === m.id ? "opacity-40" : "text-[var(--color-sand-400)]"}`}>
@@ -410,7 +416,7 @@ function CreateContent() {
                         <button
                           key={a.value}
                           onClick={() => setPreferredApproach(preferredApproach === a.value ? "auto" : a.value)}
-                          className={`px-3 py-1.5 rounded-lg text-[11px] transition-all cursor-pointer ${preferredApproach === a.value ? "bg-[var(--color-sand-800)] text-[var(--color-sand-50)]" : "bg-white text-[var(--color-sand-600)] hover:bg-[var(--color-sand-100)] border border-[var(--color-sand-200)]"}`}
+                          className={`px-3 py-1.5 rounded-lg text-[11px] transition-all cursor-pointer border ${preferredApproach === a.value ? "bg-[var(--color-sand-800)] text-[var(--color-sand-50)] border-transparent" : "bg-white text-[var(--color-sand-600)] hover:bg-[var(--color-sand-100)] border-[var(--color-sand-200)]"}`}
                           style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}
                         >
                           {a.label}
@@ -426,7 +432,7 @@ function CreateContent() {
             )}
 
             {/* Generate button */}
-            <motion.div ref={generateRef} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }} className="flex justify-center">
+            <motion.div ref={generateRef} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }} className="flex flex-col items-center gap-3">
               <div className="relative rounded-2xl group w-full sm:w-auto">
                 <div className="absolute -inset-[2.5px] rounded-2xl bg-[length:300%_300%] animate-[border-glow_4s_ease_infinite] opacity-90 group-hover:opacity-100 transition-opacity duration-300" style={{ background: "linear-gradient(135deg, var(--color-sage), var(--color-ocean), var(--color-dusk), var(--color-ember), var(--color-sage))", backgroundSize: "300% 300%" }} />
                 <motion.button
@@ -446,9 +452,17 @@ function CreateContent() {
                   {isGenerating ? "Generating..." : "Generate Meditation"}
                 </motion.button>
               </div>
+
+              {/* Error message */}
+              {generateError && (
+                <p className="text-[12px] text-[var(--color-ember)]" style={{ fontFamily: "var(--font-body)" }}>
+                  {generateError}
+                </p>
+              )}
             </motion.div>
           </motion.div>
         </div>
+
       </section>
     </div>
   );

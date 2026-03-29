@@ -8,11 +8,11 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { priceId, mode, quantity } = body;
+    const { priceId } = body;
 
-    if (!priceId || !mode) {
+    if (!priceId) {
       return NextResponse.json(
-        { error: "priceId and mode are required" },
+        { error: "priceId is required" },
         { status: 400 }
       );
     }
@@ -42,11 +42,10 @@ export async function POST(request: NextRequest) {
 
     const origin = request.headers.get("origin") || "http://localhost:3000";
 
-    // Use embedded Checkout Session — works for both subscriptions and one-time
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
-      mode: mode as "subscription" | "payment",
-      line_items: [{ price: priceId, quantity: quantity || 1 }],
+      mode: "subscription",
+      line_items: [{ price: priceId, quantity: 1 }],
       ui_mode: "embedded",
       return_url: `${origin}/studio?checkout=success&session_id={CHECKOUT_SESSION_ID}`,
       metadata: { userId: user!.id },

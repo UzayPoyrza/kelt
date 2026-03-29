@@ -783,6 +783,8 @@ export default function UpgradePage() {
                         <Check className="w-3.5 h-3.5" />
                         Current Plan
                       </div>
+                    ) : plan.id === "free" && profile?.plan && profile.plan !== "free" ? (
+                      null
                     ) : (
                       <button
                         onClick={() => openPlanCheckout(plan)}

@@ -4,8 +4,8 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import Stripe from "stripe";
 
 const CREDIT_AMOUNTS: Record<string, number> = {
-  personal: 50,
-  creator: 200,
+  personal: 30,
+  creator: 100,
 };
 
 export async function POST(request: NextRequest) {
@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
         const plan = getPlanFromPriceId(priceId);
         const recurring = sub.items.data[0]?.price.recurring;
         const billing = recurring && "interval" in recurring && recurring.interval === "year" ? "yearly" : "monthly";
-        const credits = CREDIT_AMOUNTS[plan] || 50;
+        const credits = CREDIT_AMOUNTS[plan] || 30;
 
         // Get period dates from the subscription object
         const subAny = sub as unknown as Record<string, unknown>;
@@ -86,28 +86,6 @@ export async function POST(request: NextRequest) {
           reason: `${plan}_subscription`,
           stripe_session_id: session.id,
         });
-      } else if (session.mode === "payment") {
-        // Single credit purchase
-        const amountTotal = session.amount_total || 0;
-        const credits = Math.max(1, Math.round(amountTotal / 99)); // $0.99 per credit
-
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("credits_remaining")
-          .eq("id", userId)
-          .single();
-
-        await supabase
-          .from("profiles")
-          .update({ credits_remaining: (profile?.credits_remaining || 0) + credits })
-          .eq("id", userId);
-
-        await supabase.from("credit_ledger").insert({
-          user_id: userId,
-          amount: credits,
-          reason: "credit_purchase",
-          stripe_session_id: session.id,
-        });
       }
       break;
     }
@@ -131,7 +109,7 @@ export async function POST(request: NextRequest) {
           plan,
           billing_cycle: billing,
           status: sub.status === "active" ? "active" : sub.status === "past_due" ? "past_due" : sub.status as string,
-          credits_per_month: CREDIT_AMOUNTS[plan] || 50,
+          credits_per_month: CREDIT_AMOUNTS[plan] || 30,
           current_period_start: pStart ? new Date(pStart * 1000).toISOString() : null,
           current_period_end: pEnd ? new Date(pEnd * 1000).toISOString() : null,
         })

@@ -193,23 +193,28 @@ export default function HomePage() {
 
   // Redirect users with a real (non-anonymous) profile to studio
   useEffect(() => {
-    fetch("/api/user").then(async (res) => {
+    const checkUser = async () => {
+      const { createClient } = await import("@/lib/supabase/client");
+      const supabase = createClient();
+      const { data: { session } } = await supabase.auth.getSession();
+      // Only call /api/user if we have a non-anonymous session
+      if (!session?.user || session.user.is_anonymous) return;
+      const res = await fetch("/api/user");
       if (res.ok) {
         const profile = await res.json();
-        console.log("[home] /api/user response:", JSON.stringify(profile?._debug));
         if (profile && !profile.is_anonymous) {
-          console.log("[home] Redirecting to studio");
           router.replace("/studio");
         }
       }
-    });
+    };
+    checkUser();
   }, [router]);
 
   const [prompt, setPrompt] = useState("");
   const [playing, setPlaying] = useState<string | null>(null);
   const [sampleProgress, setSampleProgress] = useState<Record<string, number>>({});
   const [sampleSound, setSampleSound] = useState<Record<string, string>>(
-    Object.fromEntries(samples.map((s) => [s.id, s.ambient]))
+    Object.fromEntries(samples.map((s) => [s.id, s.sounds.recommended.label]))
   );
   const [bgVolume, setBgVolume] = useState<Record<string, number>>(
     Object.fromEntries(samples.map((s) => [s.id, 0.3]))
@@ -258,7 +263,8 @@ export default function HomePage() {
 
     // Background sound
     const selectedSound = sampleSound[id];
-    const soundEntry = sample.sounds.find((s) => s.label === selectedSound);
+    const allSounds = [sample.sounds.recommended, ...sample.sounds.alternatives, ...sample.sounds.others];
+    const soundEntry = allSounds.find((s) => s.label === selectedSound);
     if (soundEntry) {
       const bg = new Audio(soundEntry.src);
       bg.loop = true;
@@ -301,7 +307,8 @@ export default function HomePage() {
     const sample = samples.find((s) => s.id === playing);
     if (!sample) return;
     const selectedSound = sampleSound[playing];
-    const soundEntry = sample.sounds.find((s) => s.label === selectedSound);
+    const allSounds = [sample.sounds.recommended, ...sample.sounds.alternatives, ...sample.sounds.others];
+    const soundEntry = allSounds.find((s) => s.label === selectedSound);
 
     if (bgAudioRef.current) {
       bgAudioRef.current.pause();
@@ -524,7 +531,7 @@ export default function HomePage() {
             </p>
           </FadeIn>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 lg:gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 lg:gap-3 max-w-4xl mx-auto">
             {samples.map((s, idx) => {
               const isActive = playing === s.id;
               const pct = sampleProgress[s.id] || 0;
@@ -538,34 +545,34 @@ export default function HomePage() {
                       />
                     )}
 
-                    <div className="relative z-10 p-3">
-                      <div className="flex items-center justify-between mb-1.5">
-                        <span className="text-[13px] text-white/90 font-medium" style={{ fontFamily: "var(--font-display)" }}>
+                    <div className="relative z-10 p-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-[15px] text-white/90 font-medium" style={{ fontFamily: "var(--font-display)" }}>
                           {s.label}
-                          {s.sampleStart ? <span className="text-[9px] text-white/50 font-normal ml-1.5" style={{ fontFamily: "var(--font-body)" }}>· from mid-session</span> : null}
+                          {s.sampleStart ? <span className="text-[10px] text-white/50 font-normal ml-1.5" style={{ fontFamily: "var(--font-body)" }}>· from mid-session</span> : null}
                         </span>
-                        <div className={`shrink-0 w-7 h-7 rounded-full flex items-center justify-center transition-all ${isActive ? "bg-white text-[var(--color-sand-900)]" : "bg-white/10 text-white/50"}`}>
-                          {isActive ? <Pause className="w-2.5 h-2.5" /> : <Play className="w-2.5 h-2.5 ml-0.5" />}
+                        <div className={`shrink-0 w-8 h-8 rounded-full flex items-center justify-center transition-all ${isActive ? "bg-white text-[var(--color-sand-900)]" : "bg-white/10 text-white/50"}`}>
+                          {isActive ? <Pause className="w-3 h-3" /> : <Play className="w-3 h-3 ml-0.5" />}
                         </div>
                       </div>
 
-                      <div className="space-y-1" style={{ fontFamily: "var(--font-body)" }}>
-                        <div className="flex items-baseline gap-2">
-                          <span className="text-[8px] uppercase tracking-wider text-white/20 w-11 shrink-0">Prompt</span>
-                          <span className="text-[10px] text-white/45 italic truncate">&ldquo;{s.prompt}&rdquo;</span>
+                      <div className="space-y-1.5" style={{ fontFamily: "var(--font-body)" }}>
+                        <div className="flex items-baseline gap-2.5">
+                          <span className="text-[9px] uppercase tracking-wider text-white/25 w-12 shrink-0">Prompt</span>
+                          <span className="text-[11px] text-white/45 italic truncate">&ldquo;{s.prompt}&rdquo;</span>
                         </div>
                         <div className="flex items-baseline gap-3">
-                          <div className="flex items-baseline gap-2">
-                            <span className="text-[8px] uppercase tracking-wider text-white/20 w-11 shrink-0">Voice</span>
-                            <span className="text-[10px] text-white/45">{s.voice}</span>
+                          <div className="flex items-baseline gap-2.5">
+                            <span className="text-[9px] uppercase tracking-wider text-white/25 w-12 shrink-0">Voice</span>
+                            <span className="text-[11px] text-white/45">{s.voice}</span>
                           </div>
                           <div className="flex items-baseline gap-2">
-                            <span className="text-[8px] uppercase tracking-wider text-white/20 shrink-0">Protocol</span>
-                            <span className="text-[10px] text-white/45">{s.protocol}</span>
+                            <span className="text-[9px] uppercase tracking-wider text-white/25 shrink-0">Protocol</span>
+                            <span className="text-[11px] text-white/45">{s.protocol}</span>
                           </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-[8px] uppercase tracking-wider text-white/20 w-11 shrink-0">Sound</span>
+                        <div className="flex items-center gap-2.5">
+                          <span className="text-[9px] uppercase tracking-wider text-white/25 w-12 shrink-0">Sound</span>
                           <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
                             <Volume2 className="w-2.5 h-2.5 text-white/20 shrink-0" />
                             <input
@@ -579,19 +586,44 @@ export default function HomePage() {
                               style={{ height: "2px" }}
                             />
                           </div>
-                          <div className="flex flex-wrap gap-0.5">
-                            {s.sounds.map((sound) => {
-                              const isSelected = sampleSound[s.id] === sound.label;
-                              return (
-                                <button
-                                  key={sound.label}
-                                  onClick={(e) => { e.stopPropagation(); setSampleSound((prev) => ({ ...prev, [s.id]: sound.label })); }}
-                                  className={`px-1.5 py-[2px] rounded-full text-[8px] transition-all cursor-pointer ${isSelected ? "bg-white/20 text-white/85" : "bg-white/[0.04] text-white/30 hover:bg-white/10 hover:text-white/55"}`}
-                                >
-                                  {sound.label}
-                                </button>
-                              );
-                            })}
+                          <div className="flex flex-wrap items-center gap-1">
+                            {/* Recommended (always 1) */}
+                            <button
+                              onClick={(e) => { e.stopPropagation(); setSampleSound((prev) => ({ ...prev, [s.id]: s.sounds.recommended.label })); }}
+                              className={`px-2 py-[3px] rounded-full text-[9px] transition-all cursor-pointer ${sampleSound[s.id] === s.sounds.recommended.label ? "bg-white/20 text-white/85" : "bg-white/[0.04] text-white/30 hover:bg-white/10 hover:text-white/55"}`}
+                            >
+                              {s.sounds.recommended.label}
+                            </button>
+                            {/* Alternatives */}
+                            {s.sounds.alternatives.length > 0 && (
+                              <>
+                                <span className="text-[8px] text-white/15 mx-0.5">·</span>
+                                {s.sounds.alternatives.map((sound) => (
+                                  <button
+                                    key={sound.label}
+                                    onClick={(e) => { e.stopPropagation(); setSampleSound((prev) => ({ ...prev, [s.id]: sound.label })); }}
+                                    className={`px-2 py-[3px] rounded-full text-[9px] transition-all cursor-pointer ${sampleSound[s.id] === sound.label ? "bg-white/20 text-white/85" : "bg-white/[0.04] text-white/30 hover:bg-white/10 hover:text-white/55"}`}
+                                  >
+                                    {sound.label}
+                                  </button>
+                                ))}
+                              </>
+                            )}
+                            {/* Others */}
+                            {s.sounds.others.length > 0 && (
+                              <>
+                                <span className="text-[8px] text-white/15 mx-0.5">·</span>
+                                {s.sounds.others.map((sound) => (
+                                  <button
+                                    key={sound.label}
+                                    onClick={(e) => { e.stopPropagation(); setSampleSound((prev) => ({ ...prev, [s.id]: sound.label })); }}
+                                    className={`px-2 py-[3px] rounded-full text-[9px] transition-all cursor-pointer ${sampleSound[s.id] === sound.label ? "bg-white/20 text-white/85" : "bg-white/[0.04] text-white/25 hover:bg-white/10 hover:text-white/45"}`}
+                                  >
+                                    {sound.label}
+                                  </button>
+                                ))}
+                              </>
+                            )}
                           </div>
                         </div>
                       </div>

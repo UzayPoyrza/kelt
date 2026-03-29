@@ -31,7 +31,9 @@ import {
   soundscapePresets,
   soundIdToUrl,
   soundIdToLabel,
+  protocolLabel,
 } from "@/lib/shared";
+import { createClient } from "@/lib/supabase/client";
 
 function SessionContent() {
   const router = useRouter();
@@ -42,12 +44,25 @@ function SessionContent() {
   const [paramDuration, setParamDuration] = useState(parseInt(searchParams.get("duration") || "10"));
   const [paramIntent, setParamIntent] = useState(searchParams.get("intent") || "default");
 
+  const [sessionTitle, setSessionTitle] = useState<string | null>(null);
+  const [sessionProtocol, setSessionProtocol] = useState<string | null>(null);
   const prompt = paramPrompt;
   const voice = paramVoice;
   const duration = paramDuration;
   const detectedIntent = paramIntent;
 
-  const [stage, setStage] = useState<"generating" | "ready">("generating");
+  // Auth state for "Edit in Studio" link
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  useEffect(() => {
+    createClient().auth.getUser().then(({ data: { user } }) => {
+      setIsAuthenticated(!!user && !user.is_anonymous);
+    });
+  }, []);
+
+  // Stages: loading (fetching session) → rendering (TTS) → ready (playable)
+  const [stage, setStage] = useState<"generating" | "rendering" | "ready" | "loading">(sessionId ? "loading" : "generating");
+  const [renderPhase, setRenderPhase] = useState(0); // 0-3 for sub-phases during rendering
+  const renderStartTime = useRef<number>(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [playbackPct, setPlaybackPct] = useState(0);
   const progressRef = useRef<HTMLDivElement>(null);
@@ -82,12 +97,18 @@ function SessionContent() {
         setParamVoice(session.voice || "aria");
         setParamDuration(session.duration || 10);
         setParamIntent(session.intent || session.category || "default");
+        if (session.title) setSessionTitle(session.title);
+        if (session.protocol) setSessionProtocol(session.protocol);
         if (session.soundscape) setSoundscape(session.soundscape);
         if (session.sound_options) setSoundOptions(session.sound_options);
+        // Don't go to "ready" yet — let the audio fetch effect determine the next stage
+        setStage("rendering");
+        renderStartTime.current = Date.now();
+      } else {
         setStage("ready");
       }
     } catch {
-      // Fall through to URL params behavior
+      setStage("ready");
     }
   }, [sessionId]);
 
@@ -104,29 +125,36 @@ function SessionContent() {
         if (!genRes.ok) throw new Error("Failed to fetch generations");
         const gens = await genRes.json();
         if (gens.length > 0 && gens[0].audio_url) {
-          if (!cancelled) setAudioUrl(gens[0].audio_url);
+          if (!cancelled) {
+            setAudioUrl(gens[0].audio_url);
+            setStage("ready");
+          }
           return;
         }
 
-        // No audio yet — trigger render
+        // No audio yet — trigger render with generation_id for unique audio file
+        const latestGenId = gens.length > 0 ? gens[0].id : undefined;
         if (!cancelled) setRenderLoading(true);
         const renderRes = await fetch("/api/render", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ session_id: sessionId }),
+          body: JSON.stringify({ session_id: sessionId, generation_id: latestGenId }),
         });
         if (!renderRes.ok) throw new Error("Render failed");
         const renderResult = await renderRes.json();
         if (!cancelled) {
           if (renderResult.audio_url) {
             setAudioUrl(renderResult.audio_url);
+            setStage("ready");
           } else {
             setRenderError("Render completed but no audio URL was returned.");
+            setStage("ready");
           }
         }
       } catch (err) {
         if (!cancelled) {
           setRenderError(err instanceof Error ? err.message : "Failed to load audio");
+          setStage("ready");
         }
       } finally {
         if (!cancelled) setRenderLoading(false);
@@ -221,6 +249,21 @@ function SessionContent() {
     }
   }, [detectedIntent, sessionId]);
 
+  // Progress through render sub-phases for the loading experience
+  useEffect(() => {
+    if (stage !== "rendering") return;
+    // Phase 0: "Preparing your voice" (immediate)
+    // Phase 1: "Shaping the soundscape" (after 8s)
+    // Phase 2: "Adding final touches" (after 25s)
+    // Phase 3: "Almost there" (after 45s)
+    const timers = [
+      setTimeout(() => setRenderPhase(1), 8000),
+      setTimeout(() => setRenderPhase(2), 25000),
+      setTimeout(() => setRenderPhase(3), 45000),
+    ];
+    return () => timers.forEach(clearTimeout);
+  }, [stage]);
+
   // Simulate generation (only for non-persisted sessions)
   useEffect(() => {
     if (sessionId) return;
@@ -269,17 +312,28 @@ function SessionContent() {
     };
   }, []);
 
+  // Compute the "Edit in Studio" href based on auth status
+  const studioHref = sessionId
+    ? isAuthenticated
+      ? `/studio?sessionId=${sessionId}`
+      : `/login?next=${encodeURIComponent(`/studio?sessionId=${sessionId}`)}`
+    : "/login";
+
   if (!prompt && !sessionId) {
-    router.push("/");
+    router.replace("/");
     return null;
   }
 
   // Build soundscape lists from API sound_options (preferred) or fallback to hardcoded presets
-  const hasSoundOptions = soundOptions && (soundOptions.recommended.length > 0 || soundOptions.other.length > 0);
+  const allRecommended = soundOptions?.recommended || [];
+  const allOther = soundOptions?.other || [];
+  const hasSoundOptions = soundOptions && (allRecommended.length > 0 || allOther.length > 0);
 
-  // Sound ID-based lists (from API)
-  const soundIdRecommended = soundOptions?.recommended || [];
-  const soundIdOther = soundOptions?.other || [];
+  // The selected sound (selected_sound_id) is always the primary recommendation
+  // Rest of recommended list (excluding selected) are alternatives
+  const soundIdRecommended = soundscape ? [soundscape] : allRecommended.slice(0, 1);
+  const soundIdAlternatives = allRecommended.filter(sid => sid !== soundscape);
+  const soundIdOther = allOther.filter(sid => sid !== soundscape);
 
   // Legacy preset-based lists (fallback)
   const intentPresets = soundscapePresets[detectedIntent] || soundscapePresets.default;
@@ -299,42 +353,172 @@ function SessionContent() {
         <Header />
 
         <div className="relative z-10 flex-1 flex items-start justify-center px-4 sm:px-6 pt-6 sm:pt-8 pb-6">
+          {/* Audio elements — always in DOM so refs and event listeners work */}
+          {audioUrl && <audio ref={audioRef} src={audioUrl} preload="metadata" />}
+          <audio ref={bgAudioRef} loop preload="none" />
+
           <AnimatePresence mode="wait">
 
-            {/* ─── Generating ─── */}
+            {/* ─── Loading (brief, fetching session data from DB) ─── */}
+            {stage === "loading" && (
+              <motion.div key="loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3 }} className="absolute inset-0 flex flex-col items-center justify-center -mt-16">
+                <motion.div
+                  className="w-12 h-12 rounded-full flex items-center justify-center mb-6"
+                  style={{ background: "var(--color-sand-100)" }}
+                  animate={{ scale: [1, 1.08, 1] }}
+                  transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
+                >
+                  <Sparkles className="w-5 h-5 text-[var(--color-sand-400)]" />
+                </motion.div>
+              </motion.div>
+            )}
+
+            {/* ─── Generating (shown on /create fallback, brief) ─── */}
             {stage === "generating" && (
               <motion.div key="generating" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} transition={{ duration: 0.5 }} className="absolute inset-0 flex flex-col items-center justify-center -mt-16">
-                <div className="relative w-40 h-40 flex items-center justify-center mb-12">
-                  <div className="absolute inset-0 rounded-full border border-[var(--color-sand-300)] animate-pulse-ring" />
-                  <div className="absolute inset-3 rounded-full border border-[var(--color-sand-300)] animate-pulse-ring" style={{ animationDelay: "0.5s" }} />
-                  <div className="absolute inset-6 rounded-full border border-[var(--color-sand-300)] animate-pulse-ring" style={{ animationDelay: "1s" }} />
-                  <motion.div className="w-16 h-16 rounded-full bg-[var(--color-sand-900)] flex items-center justify-center" animate={{ scale: [1, 1.1, 1] }} transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}>
-                    <Sparkles className="w-6 h-6 text-[var(--color-sand-50)]" />
+                <motion.div
+                  className="w-16 h-16 rounded-full bg-[var(--color-sand-900)] flex items-center justify-center mb-8"
+                  animate={{ scale: [1, 1.1, 1] }}
+                  transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+                >
+                  <Sparkles className="w-6 h-6 text-[var(--color-sand-50)]" />
+                </motion.div>
+                <h2 className="text-xl text-[var(--color-sand-900)] mb-2 text-center" style={{ fontFamily: "var(--font-display)" }}>Crafting your meditation</h2>
+                <p className="text-sm text-[var(--color-sand-400)] text-center" style={{ fontFamily: "var(--font-body)" }}>Composing guidance and timing pauses...</p>
+              </motion.div>
+            )}
+
+            {/* ─── Rendering (the main loading experience — 30-60s of TTS) ─── */}
+            {stage === "rendering" && (
+              <motion.div
+                key="rendering"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.6 }}
+                className="absolute inset-0 flex flex-col items-center justify-center -mt-8"
+              >
+                {/* Breathing orb */}
+                <div className="relative w-32 h-32 sm:w-40 sm:h-40 flex items-center justify-center mb-10">
+                  {/* Outer ring — slow rotation */}
+                  <motion.div
+                    className="absolute inset-0 rounded-full"
+                    style={{ border: "1px solid var(--color-sand-200)" }}
+                    animate={{ rotate: 360, scale: [1, 1.04, 1] }}
+                    transition={{ rotate: { duration: 20, repeat: Infinity, ease: "linear" }, scale: { duration: 4, repeat: Infinity, ease: "easeInOut" } }}
+                  />
+                  {/* Mid ring — counter-rotate */}
+                  <motion.div
+                    className="absolute inset-4 rounded-full"
+                    style={{ border: "1px solid var(--color-sand-200)" }}
+                    animate={{ rotate: -360, scale: [1, 1.06, 1] }}
+                    transition={{ rotate: { duration: 15, repeat: Infinity, ease: "linear" }, scale: { duration: 5, repeat: Infinity, ease: "easeInOut", delay: 0.5 } }}
+                  />
+                  {/* Inner ring */}
+                  <motion.div
+                    className="absolute inset-8 rounded-full"
+                    style={{ border: "1px solid var(--color-sand-300)" }}
+                    animate={{ scale: [1, 1.08, 1] }}
+                    transition={{ duration: 3.5, repeat: Infinity, ease: "easeInOut", delay: 1 }}
+                  />
+                  {/* Center orb */}
+                  <motion.div
+                    className="w-14 h-14 sm:w-16 sm:h-16 rounded-full flex items-center justify-center"
+                    style={{ background: "linear-gradient(135deg, var(--color-sand-800), var(--color-sand-900))" }}
+                    animate={{ scale: [1, 1.1, 1] }}
+                    transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+                  >
+                    {/* Waveform bars inside the orb */}
+                    <div className="flex items-end gap-[3px] h-5">
+                      {Array.from({ length: 5 }).map((_, i) => (
+                        <motion.div
+                          key={i}
+                          className="w-[3px] rounded-full bg-[var(--color-sand-300)]"
+                          animate={{ height: ["30%", `${50 + Math.random() * 50}%`, "30%"] }}
+                          transition={{ duration: 1.2 + i * 0.2, repeat: Infinity, ease: "easeInOut", delay: i * 0.15 }}
+                        />
+                      ))}
+                    </div>
                   </motion.div>
                 </div>
-                <h2 className="text-2xl sm:text-3xl text-[var(--color-sand-900)] mb-3 text-center">Crafting your meditation</h2>
-                <p className="text-[var(--color-sand-500)] text-center" style={{ fontFamily: "var(--font-body)" }}>Composing guidance, timing pauses, mixing audio...</p>
+
+                {/* Session info — fades in with real data */}
+                {sessionTitle && (
+                  <motion.p
+                    initial={{ opacity: 0, y: 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5 }}
+                    className="text-lg sm:text-xl text-[var(--color-sand-900)] mb-2 text-center px-4"
+                    style={{ fontFamily: "var(--font-display)" }}
+                  >
+                    {sessionTitle}
+                  </motion.p>
+                )}
+
+                {/* Phase messages — crossfade between them */}
+                <div className="h-12 flex flex-col items-center justify-center">
+                  <AnimatePresence mode="wait">
+                    <motion.p
+                      key={renderPhase}
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -8 }}
+                      transition={{ duration: 0.4 }}
+                      className="text-sm text-[var(--color-sand-600)] text-center"
+                      style={{ fontFamily: "var(--font-body)" }}
+                    >
+                      {renderPhase === 0 && "Script is ready — generating voice..."}
+                      {renderPhase === 1 && "Shaping the soundscape..."}
+                      {renderPhase === 2 && "Adding final touches..."}
+                      {renderPhase === 3 && "Almost there..."}
+                    </motion.p>
+                  </AnimatePresence>
+                </div>
+
+                {/* Metadata pills — appear once we have the data */}
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.8, duration: 0.5 }}
+                  className="flex items-center justify-center gap-2 flex-wrap mt-2"
+                >
+                  <span className="px-2.5 py-1 rounded-full bg-[var(--color-sand-100)] text-[var(--color-sand-700)] text-xs" style={{ fontFamily: "var(--font-body)" }}>{duration} min</span>
+                  <span className="px-2.5 py-1 rounded-full bg-[var(--color-sand-100)] text-[var(--color-sand-700)] text-xs" style={{ fontFamily: "var(--font-body)" }}>{voiceLabel(voice)}</span>
+                  {sessionProtocol && (
+                    <span className="px-2.5 py-1 rounded-full bg-[var(--color-sand-100)] text-[var(--color-sand-700)] text-xs" style={{ fontFamily: "var(--font-body)" }}>
+                      {protocolLabel(sessionProtocol)}
+                    </span>
+                  )}
+                </motion.div>
+
+                {/* Reassurance — user can leave */}
+                <motion.p
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 3, duration: 0.6 }}
+                  className="text-[11px] text-[var(--color-sand-500)] text-center mt-8"
+                  style={{ fontFamily: "var(--font-body)" }}
+                >
+                  You can close this tab — find your session in Studio when it&apos;s ready.
+                </motion.p>
               </motion.div>
             )}
 
             {/* ─── Ready ─── */}
             {stage === "ready" && (
               <motion.div key="ready" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="w-full max-w-xl mx-auto">
-                {/* Hidden audio element */}
-                {audioUrl && <audio ref={audioRef} src={audioUrl} preload="metadata" />}
-                <audio ref={bgAudioRef} loop preload="none" />
 
                 {/* Top row: Back + (Edit in Incraft Studio (Free) when picker is open) */}
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-center justify-between mb-3">
                   <button
-                    onClick={() => router.push(`/create?prompt=${encodeURIComponent(prompt)}`)}
+                    onClick={() => router.back()}
                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm text-[var(--color-sand-600)] hover:text-[var(--color-sand-900)] hover:bg-white/60 border border-[var(--color-sand-200)] hover:border-[var(--color-sand-300)] transition-all cursor-pointer"
                     style={{ fontFamily: "var(--font-body)" }}
                   >
                     <ChevronLeft className="w-4 h-4" />Back
                   </button>
                   {showBgPicker && (
-                    <a href={sessionId ? `/login?next=/studio?sessionId=${sessionId}` : "/login"} className="relative rounded-lg group">
+                    <a href={studioHref} className="relative rounded-lg group">
                       <div className="absolute -inset-[2px] rounded-lg bg-[length:300%_300%] animate-[border-glow_4s_ease_infinite] opacity-80 group-hover:opacity-100 transition-opacity duration-300 blur-[0.5px]" style={{ background: "linear-gradient(135deg, var(--color-sage), var(--color-ocean), var(--color-dusk), var(--color-ember), var(--color-sage))", backgroundSize: "300% 300%" }} />
                       <span
                         className="relative flex items-center gap-2 px-4 py-1.5 rounded-lg bg-[var(--color-sand-900)] text-[var(--color-sand-50)] text-sm cursor-pointer hover:bg-[var(--color-sand-800)] transition-colors"
@@ -349,15 +533,17 @@ function SessionContent() {
 
                 {/* Header */}
                 <div className="text-center mb-3">
-                  <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }} className="text-xs text-[var(--color-sand-500)] mb-1" style={{ fontFamily: "var(--font-body)" }}>Your meditation is ready</motion.p>
-                  <motion.h1 initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="text-lg sm:text-xl text-[var(--color-sand-900)] mb-2 px-2 sm:px-0" style={{ fontFamily: "var(--font-display)" }}>&ldquo;{prompt}&rdquo;</motion.h1>
+                  <motion.p initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15, duration: 0.4 }} className="text-xs text-[var(--color-sage)] mb-1 font-medium" style={{ fontFamily: "var(--font-body)" }}>Your meditation is ready</motion.p>
+                  <motion.h1 initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="text-lg sm:text-xl text-[var(--color-sand-900)] mb-2 px-2 sm:px-0" style={{ fontFamily: "var(--font-display)" }}>{sessionTitle || prompt}</motion.h1>
                   <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }} className="flex items-center justify-center gap-2 flex-wrap">
                     <span className="px-2.5 py-1 rounded-full bg-[var(--color-sand-100)] text-[var(--color-sand-700)] text-xs" style={{ fontFamily: "var(--font-body)" }}>{duration} min</span>
                     <span className="px-2.5 py-1 rounded-full bg-[var(--color-sand-100)] text-[var(--color-sand-700)] text-xs" style={{ fontFamily: "var(--font-body)" }}>{voiceLabel(voice)}</span>
+                    {sessionProtocol && (
                     <span className="px-2.5 py-1 rounded-full bg-[var(--color-sage-light)] text-[var(--color-sage)] text-xs font-medium" style={{ fontFamily: "var(--font-body)" }}>
                       <BrainCircuit className="w-3 h-3 inline mr-1" />
-                      {detectedIntent === "sleep" ? "CBT-I + NSDR" : detectedIntent === "focus" ? "MBSR" : detectedIntent === "stress" ? "PMR + ACT" : "MBSR"}
+                      {protocolLabel(sessionProtocol)}
                     </span>
+                    )}
                   </motion.div>
                 </div>
 
@@ -407,11 +593,25 @@ function SessionContent() {
                         )}
                       </button>
                     </div>
-                    {/* Audio error */}
+                    {/* Audio status messages */}
                     {!renderLoading && !audioUrl && renderError && (
                       <div className="flex items-center justify-center mb-3">
                         <span className="text-xs text-red-500 text-center" style={{ fontFamily: "var(--font-body)" }}>
                           Audio generation failed. Try again or edit in Studio.
+                        </span>
+                      </div>
+                    )}
+                    {!sessionId && !audioUrl && !renderLoading && !renderError && (
+                      <div className="flex items-center justify-center mb-3">
+                        <span className="text-xs text-[var(--color-sand-500)] text-center" style={{ fontFamily: "var(--font-body)" }}>
+                          Audio is being generated. This may take a moment.
+                        </span>
+                      </div>
+                    )}
+                    {sessionId && !audioUrl && !renderLoading && !renderError && (
+                      <div className="flex items-center justify-center mb-3">
+                        <span className="text-xs text-[var(--color-sand-400)] text-center" style={{ fontFamily: "var(--font-body)" }}>
+                          Audio is being prepared...
                         </span>
                       </div>
                     )}
@@ -518,7 +718,7 @@ function SessionContent() {
 
                           {hasSoundOptions ? (
                             <>
-                              {/* Recommended sounds (from API) */}
+                              {/* Recommended (1 sound — the default pick) */}
                               <div>
                                 <p className="text-[10px] uppercase tracking-wider text-[var(--color-sand-400)] mb-2 font-medium" style={{ fontFamily: "var(--font-body)" }}>Recommended</p>
                                 <div className="flex flex-wrap gap-1.5">
@@ -534,7 +734,25 @@ function SessionContent() {
                                 </div>
                               </div>
 
-                              {/* Other sounds (from API) */}
+                              {/* Alternatives (rest of the recommended list) */}
+                              {soundIdAlternatives.length > 0 && (
+                                <div>
+                                  <p className="text-[10px] uppercase tracking-wider text-[var(--color-sand-400)] mb-2 font-medium" style={{ fontFamily: "var(--font-body)" }}>Alternatives</p>
+                                  <div className="flex flex-wrap gap-1.5">
+                                    {soundIdAlternatives.map((sid) => {
+                                      const isSel = soundscape === sid;
+                                      return (
+                                        <button key={sid} onClick={() => setSoundscape(sid)} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs transition-colors cursor-pointer ${isSel ? "bg-[var(--color-sand-900)] text-[var(--color-sand-50)] border border-[var(--color-sand-900)]" : "bg-[var(--color-sand-50)] text-[var(--color-sand-700)] hover:bg-[var(--color-sand-100)] border border-[var(--color-sand-200)]"}`} style={{ fontFamily: "var(--font-body)" }}>
+                                          <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: isSel ? "var(--color-sand-50)" : "var(--color-sage)" }} />
+                                          {soundIdToLabel(sid)}
+                                        </button>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* Other sounds */}
                               {soundIdOther.length > 0 && (
                                 <div>
                                   <p className="text-[10px] uppercase tracking-wider text-[var(--color-sand-400)] mb-2 font-medium" style={{ fontFamily: "var(--font-body)" }}>Others</p>
@@ -612,7 +830,7 @@ function SessionContent() {
                 {/* Edit in Incraft Studio — slim CTA with hover demo */}
                 {!showBgPicker && (
                   <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }} className="mt-4">
-                    <a href={sessionId ? `/login?next=/studio?sessionId=${sessionId}` : "/login"} className="block relative rounded-xl group">
+                    <a href={studioHref} className="block relative rounded-xl group">
                       <div className="absolute -inset-[1.5px] rounded-xl bg-[length:300%_300%] animate-[border-glow_4s_ease_infinite] opacity-70 group-hover:opacity-100 transition-opacity duration-300" style={{ background: "linear-gradient(135deg, var(--color-sage), var(--color-ocean), var(--color-dusk), var(--color-ember), var(--color-sage))", backgroundSize: "300% 300%" }} />
                       <div className="relative bg-[var(--color-sand-900)] rounded-xl overflow-hidden cursor-pointer">
                         {/* Main bar */}

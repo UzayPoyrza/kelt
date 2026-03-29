@@ -1,7 +1,8 @@
 "use client";
 
-import { useRef, useState, useEffect } from "react";
+import { useRef, useState, useEffect, useCallback } from "react";
 import { motion, useInView, AnimatePresence } from "motion/react";
+import { createClient } from "@/lib/supabase/client";
 import {
   CloudRain,
   Waves,
@@ -129,6 +130,38 @@ export function getApproaches(supportChoice: string, mode: string): { value: str
 const AUDIO_BASE = "https://audio.neurotypeapp.com/faded";
 
 /* Sound ID → filename mapping (from MindFlow API) */
+/** Map API routed_protocol codes to display labels */
+export function protocolLabel(code: string): string {
+  // Clean up common patterns: "BREATH_SLOW" → "Slow Breathing", "FA_BREATH" → "Focused Attention"
+  const map: Record<string, string> = {
+    BREATH_SLOW: "Slow Breathing",
+    BREATH_FAST: "Energizing Breathwork",
+    FA_BREATH: "Focused Attention",
+    FA_OBJECT: "Focused Attention",
+    BODY_SCAN: "Body Scan",
+    BODY_SCAN_PMR: "Body Scan / PMR",
+    PMR: "Progressive Relaxation",
+    OPEN_MONITORING: "Open Monitoring",
+    GROUNDING: "Grounding",
+    NSDR: "NSDR / Deep Rest",
+    CBT: "CBT",
+    CBT_I: "CBT-I",
+    MBCT: "MBCT",
+    MBRP: "MBRP",
+    CFT_MSC: "Self-Compassion",
+    VISUALIZATION: "Visualization",
+    MANTRA: "Mantra",
+    SOUND_MEDITATION: "Sound Meditation",
+    MOVEMENT: "Movement",
+    INTEROCEPTIVE: "Interoceptive Exposure",
+  };
+  if (map[code]) return map[code];
+  // Fallback: try partial match then title-case
+  const partial = Object.entries(map).find(([k]) => code.includes(k));
+  if (partial) return partial[1];
+  return code.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+}
+
 export const SOUND_MAP: Record<string, string> = {
   S01: "chimes_and_tones.mp3",
   S02: "fireplace.mp3",
@@ -311,49 +344,63 @@ export const samples = [
     src: `${VOICE_BASE}/U010.mp3`,
     prompt: "I just need something calming in the background while I decompress",
     description: "An 8-min ambient session built around a single warm drone. Minimal guidance lets the sound do the work.",
-    voice: "Aditya", ambient: "Calm Drone",
-    sounds: [
-      { label: "Calm Drone", src: `${AUDIO_BASE}/plain_stereo_calm_drone.mp3` },
-    ],
+    voice: "Aditya",
+    sounds: {
+      recommended: { label: "Calm Drone", src: `${AUDIO_BASE}/plain_stereo_calm_drone.mp3` },
+      alternatives: [],
+      others: [],
+    },
   },
   {
     id: "U008", label: "Shoulder Drop Scan", duration: "9:00", protocol: "Progressive Muscle Relaxation",
     src: `${VOICE_BASE}/U008.mp3`,
     prompt: "Help me release tension in my shoulders and upper body",
     description: "A 9-min PMR session focused on the shoulders and neck. Progressive tension-release cues guide you through each muscle group.",
-    voice: "Aditya", ambient: "Rain",
-    sounds: [
-      { label: "Rain", src: `${AUDIO_BASE}/rain.mp3` },
-      { label: "River", src: `${AUDIO_BASE}/river.mp3` },
-      { label: "Calm Drone", src: `${AUDIO_BASE}/plain_stereo_calm_drone.mp3` },
-    ],
+    voice: "Aditya",
+    sounds: {
+      recommended: { label: "Rain", src: `${AUDIO_BASE}/rain.mp3` },
+      alternatives: [
+        { label: "River", src: `${AUDIO_BASE}/river.mp3` },
+      ],
+      others: [
+        { label: "Calm Drone", src: `${AUDIO_BASE}/plain_stereo_calm_drone.mp3` },
+      ],
+    },
   },
   {
     id: "U020", label: "Probability Rebalance", duration: "13:00", protocol: "CBT-style Cognitive Skill",
     src: `${VOICE_BASE}/U020.mp3`,
     prompt: "Help me challenge catastrophic thinking and see things more clearly",
     description: "A 13-min CBT session that walks through probability estimation and cognitive reframing. Background layers shift as the session deepens.",
-    voice: "Aditya", ambient: "Fireplace",
-    sounds: [
-      { label: "Fireplace", src: `${AUDIO_BASE}/fireplace.mp3` },
-      { label: "Calm Drone", src: `${AUDIO_BASE}/plain_stereo_calm_drone.mp3` },
-      { label: "River", src: `${AUDIO_BASE}/river.mp3` },
-      { label: "Rain", src: `${AUDIO_BASE}/rain.mp3` },
-      { label: "Deep Space", src: `${AUDIO_BASE}/deep_space.mp3` },
-    ],
+    voice: "Aditya",
+    sounds: {
+      recommended: { label: "Fireplace", src: `${AUDIO_BASE}/fireplace.mp3` },
+      alternatives: [
+        { label: "Calm Drone", src: `${AUDIO_BASE}/plain_stereo_calm_drone.mp3` },
+        { label: "River", src: `${AUDIO_BASE}/river.mp3` },
+      ],
+      others: [
+        { label: "Rain", src: `${AUDIO_BASE}/rain.mp3` },
+        { label: "Deep Space", src: `${AUDIO_BASE}/deep_space.mp3` },
+      ],
+    },
   },
   {
     id: "U006", label: "Gentle Even Breathing", duration: "5:00", protocol: "Slow Breathing", sampleStart: 80, sampleLimit: 30,
     src: `${VOICE_BASE}/U006.mp3`,
     prompt: "Guide me through calm, even breathing to settle my nerves",
     description: "A 5-min slow breathing session with gentle pacing cues. Pink noise and a calm drone layer underneath to ease you into rhythm.",
-    voice: "Aditya", ambient: "Pink Noise",
-    sounds: [
-      { label: "Pink Noise", src: `${AUDIO_BASE}/pink_noise.mp3` },
-      { label: "Room Tone", src: `${AUDIO_BASE}/room_tone.mp3` },
-      { label: "Calm Drone", src: `${AUDIO_BASE}/plain_stereo_calm_drone.mp3` },
-      { label: "Rain", src: `${AUDIO_BASE}/rain.mp3` },
-    ],
+    voice: "Aditya",
+    sounds: {
+      recommended: { label: "Pink Noise", src: `${AUDIO_BASE}/pink_noise.mp3` },
+      alternatives: [
+        { label: "Room Tone", src: `${AUDIO_BASE}/room_tone.mp3` },
+        { label: "Calm Drone", src: `${AUDIO_BASE}/plain_stereo_calm_drone.mp3` },
+      ],
+      others: [
+        { label: "Rain", src: `${AUDIO_BASE}/rain.mp3` },
+      ],
+    },
   },
 ];
 
@@ -440,6 +487,12 @@ export function FadeIn({ children, className = "", delay = 0 }: { children: Reac
 export function Header({ showNavLinks = false, hideFloatingNav = false, onScrollToInfo, onScrollToHow, onGenerate }: { showNavLinks?: boolean; hideFloatingNav?: boolean; onScrollToInfo?: () => void; onScrollToHow?: () => void; onGenerate?: () => void }) {
   const [showBlob, setShowBlob] = useState(false);
   const lastScrollY = useRef(0);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  useEffect(() => {
+    createClient().auth.getUser().then(({ data: { user } }) => {
+      setIsAuthenticated(!!user && !user.is_anonymous);
+    });
+  }, []);
 
   useEffect(() => {
     if (hideFloatingNav) return;
@@ -489,11 +542,11 @@ export function Header({ showNavLinks = false, hideFloatingNav = false, onScroll
               </div>
             )}
             <a
-              href="/login"
+              href={isAuthenticated ? "/studio" : "/login"}
               className="px-3 sm:px-4 py-2 rounded-xl bg-[var(--color-sand-900)] hover:bg-[var(--color-sand-800)] transition-colors text-xs sm:text-sm cursor-pointer whitespace-nowrap"
               style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}
             >
-              <span className="text-[var(--color-sand-50)]">Sign in / </span>
+              {!isAuthenticated && <span className="text-[var(--color-sand-50)]">Sign in / </span>}
               <span
                 className="bg-clip-text text-transparent bg-[length:300%_300%] animate-[border-glow_4s_ease_infinite]"
                 style={{ backgroundImage: "linear-gradient(135deg, var(--color-sage), var(--color-ocean), var(--color-dusk), var(--color-ember), var(--color-sage))", backgroundSize: "300% 300%" }}
@@ -535,11 +588,11 @@ export function Header({ showNavLinks = false, hideFloatingNav = false, onScroll
               </button>
 
               <a
-                href="/login"
+                href={isAuthenticated ? "/studio" : "/login"}
                 className="flex items-center gap-0 px-3 sm:px-3.5 py-1.5 rounded-full bg-white/10 hover:bg-white/15 text-xs sm:text-sm transition-colors cursor-pointer text-[var(--color-sand-50)]"
                 style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}
               >
-                Sign in
+                {isAuthenticated ? "Studio" : "Sign in"}
               </a>
             </div>
           </motion.div>

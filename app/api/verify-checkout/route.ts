@@ -4,8 +4,8 @@ import { stripe } from "@/lib/stripe";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 const CREDIT_AMOUNTS: Record<string, number> = {
-  personal: 50,
-  creator: 200,
+  personal: 30,
+  creator: 100,
 };
 
 function getPlanFromPriceId(priceId: string): "personal" | "creator" {
@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
       const plan = getPlanFromPriceId(priceId);
       const recurring = sub.items.data[0]?.price.recurring;
       const billing = recurring && "interval" in recurring && recurring.interval === "year" ? "yearly" : "monthly";
-      const credits = CREDIT_AMOUNTS[plan] || 50;
+      const credits = CREDIT_AMOUNTS[plan] || 30;
 
       const subAny = sub as unknown as Record<string, unknown>;
       const periodStart = subAny.current_period_start as number | undefined;
@@ -89,27 +89,6 @@ export async function POST(request: NextRequest) {
         user_id: user!.id,
         amount: credits,
         reason: `${plan}_subscription`,
-        stripe_session_id: session.id,
-      });
-    } else if (session.mode === "payment") {
-      const amountTotal = session.amount_total || 0;
-      const credits = Math.max(1, Math.round(amountTotal / 99));
-
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("credits_remaining")
-        .eq("id", user!.id)
-        .single();
-
-      await supabase
-        .from("profiles")
-        .update({ credits_remaining: (profile?.credits_remaining || 0) + credits })
-        .eq("id", user!.id);
-
-      await supabase.from("credit_ledger").insert({
-        user_id: user!.id,
-        amount: credits,
-        reason: "credit_purchase",
         stripe_session_id: session.id,
       });
     }

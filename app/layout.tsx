@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import AuthProvider from "@/lib/components/AuthProvider";
 
 export const metadata: Metadata = {
   title: "Incraft — AI Guided Meditation",
@@ -15,7 +16,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body style={{ backgroundColor: "#faf9f7" }}>
-        {children}
+        <AuthProvider>{children}</AuthProvider>
       </body>
     </html>
   );

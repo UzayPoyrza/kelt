@@ -63,7 +63,9 @@ export async function GET(request: Request) {
         }
       }
 
-      return NextResponse.redirect(`${origin}${next}`);
+      // Validate next param to prevent open redirects
+      const safePath = next.startsWith("/") && !next.startsWith("//") ? next : "/studio";
+      return NextResponse.redirect(`${origin}${safePath}`);
     }
   }
 

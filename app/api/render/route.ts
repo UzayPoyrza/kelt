@@ -20,10 +20,24 @@ export async function POST(request: NextRequest) {
   const { user, supabase, error } = await getAuthUser();
   if (error) return error;
 
-  const { session_id } = await request.json();
+  const { session_id, generation_id } = await request.json();
 
   if (!session_id) {
     return NextResponse.json({ error: "session_id is required" }, { status: 400 });
+  }
+
+  // Resolve the target generation (explicit or latest)
+  let targetGenId = generation_id;
+  if (!targetGenId) {
+    const { data: latestGen } = await supabase
+      .from("generations")
+      .select("id")
+      .eq("session_id", session_id)
+      .eq("user_id", user!.id)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .single();
+    targetGenId = latestGen?.id;
   }
 
   // Fetch session with script, voice, and title
@@ -49,10 +63,10 @@ export async function POST(request: NextRequest) {
     scriptText = scriptData;
   } else if (Array.isArray(scriptData)) {
     // ScriptBlock[] from studio editor
-    const voiceBlocks = (scriptData as Array<{ type: string; text?: string; duration?: number }>)
+    const voiceBlocks = (scriptData as Array<{ type: string; text?: string; pauseDuration?: number; duration?: number }>)
       .map((block) => {
         if (block.type === "voice" && block.text) return block.text;
-        if (block.type === "pause" && block.duration) return `[pause: ${block.duration}]`;
+        if (block.type === "pause" && (block.pauseDuration || block.duration)) return `[pause: ${block.pauseDuration || block.duration}]`;
         return null;
       })
       .filter(Boolean);
@@ -63,19 +77,23 @@ export async function POST(request: NextRequest) {
   }
 
   if (!scriptText) {
+    console.error("[render] No script found. scriptData type:", typeof scriptData, "value preview:", JSON.stringify(scriptData)?.slice(0, 200));
     return NextResponse.json({ error: "No script found on session" }, { status: 400 });
   }
 
+  console.log("[render] Script type:", typeof scriptData, "| text length:", scriptText.length, "| first 100 chars:", scriptText.slice(0, 100));
   const voiceId = toTtsVoiceId(session.voice || "aria");
 
+  // Use generation_id as the audio file identifier so each render is unique
+  const audioFileId = targetGenId || session_id;
   const payload = {
-    session_id,
+    session_id: audioFileId,
     script: scriptText,
     voice_id: voiceId,
     title: session.title || "",
   };
   console.log("[render] Invoking mindflow-tts Lambda:", JSON.stringify({
-    session_id, voice_id: voiceId, script_length: scriptText.length, title: session.title,
+    session_id, generation_id: targetGenId, audio_file_id: audioFileId, voice_id: voiceId, script_length: scriptText.length,
   }));
 
   try {
@@ -98,23 +116,12 @@ export async function POST(request: NextRequest) {
     const result = JSON.parse(new TextDecoder().decode(response.Payload));
     console.log("[render] TTS success:", JSON.stringify(result));
 
-    // Persist audio_url to the latest generation for this session
-    if (result.audio_url) {
-      const { data: latestGen } = await supabase
+    // Persist audio_url to the specific generation
+    if (result.audio_url && targetGenId) {
+      await supabase
         .from("generations")
-        .select("id")
-        .eq("session_id", session_id)
-        .eq("user_id", user!.id)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .single();
-
-      if (latestGen) {
-        await supabase
-          .from("generations")
-          .update({ audio_url: result.audio_url })
-          .eq("id", latestGen.id);
-      }
+        .update({ audio_url: result.audio_url })
+        .eq("id", targetGenId);
     }
 
     return NextResponse.json({

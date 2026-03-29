@@ -30,14 +30,22 @@ export function generateScript(prompt: string): ScriptBlock[] {
 }
 
 export function deriveSessionName(prompt: string): string {
-  const lower = prompt.toLowerCase();
-  if (/sleep|insomnia|bed|night|dream|tired/i.test(lower)) return "Deep Sleep Session";
-  if (/focus|concentrat|work|study|morning|productivity/i.test(lower)) return "Focus & Clarity";
-  if (/stress|anxi|worry|overwhelm|calm|relax|tension/i.test(lower)) return "Calm & Release";
-  if (/breath/i.test(lower)) return "Breathing Reset";
-  if (/body scan|muscle/i.test(lower)) return "Body Scan";
-  const words = prompt.split(/\s+/).slice(0, 4).join(" ");
-  return words.length > 30 ? words.slice(0, 30) + "\u2026" : words;
+  // Clean up and title-case the prompt
+  const cleaned = prompt.trim().replace(/\s+/g, " ");
+  if (!cleaned) return "Meditation Session";
+
+  // Title case: capitalize first letter of each word (skip small words in middle)
+  const small = new Set(["a", "an", "the", "and", "but", "or", "for", "in", "on", "at", "to", "of", "with", "my", "me"]);
+  const titleCase = cleaned.split(" ").map((w, i) => {
+    const lower = w.toLowerCase();
+    if (i > 0 && small.has(lower)) return lower;
+    return lower.charAt(0).toUpperCase() + lower.slice(1);
+  }).join(" ");
+
+  // Truncate at ~50 chars on a word boundary
+  if (titleCase.length <= 50) return titleCase;
+  const truncated = titleCase.slice(0, 50).replace(/\s\S*$/, "");
+  return truncated + "\u2026";
 }
 
 /**

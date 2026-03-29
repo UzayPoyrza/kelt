@@ -1,7 +1,9 @@
-import { NextRequest, NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
+import { createHash } from "crypto";
 import { getAuthUser } from "@/app/api/_lib/auth";
+import { createAdminClient } from "@/lib/supabase/admin";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   const { user, supabase, error } = await getAuthUser();
   if (error) return error;
 
@@ -13,6 +15,25 @@ export async function GET() {
 
   if (dbError) {
     return NextResponse.json({ error: dbError.message }, { status: 500 });
+  }
+
+  // For anonymous users, include daily generation count from IP-based rate limit
+  if (data?.is_anonymous) {
+    const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim()
+      || request.headers.get("x-real-ip")
+      || "unknown";
+    const ipHash = createHash("sha256").update(ip).digest("hex");
+    const today = new Date().toISOString().slice(0, 10);
+    const admin = createAdminClient();
+
+    const { data: rateRow } = await admin
+      .from("anon_rate_limits")
+      .select("count")
+      .eq("ip_hash", ipHash)
+      .eq("date", today)
+      .single();
+
+    return NextResponse.json({ ...data, generations_today: rateRow?.count ?? 0 });
   }
 
   return NextResponse.json(data);
