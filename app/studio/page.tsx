@@ -2972,7 +2972,7 @@ function StudioPageContent() {
       // Preserve only meaningful params (session, sessionId, prompt, checkout)
       const params = new URLSearchParams(window.location.search);
       const clean = new URLSearchParams();
-      for (const key of ["session", "sessionId", "prompt", "checkout"]) {
+      for (const key of ["session", "sessionId", "prompt", "checkout", "nav"]) {
         if (params.has(key)) clean.set(key, params.get(key)!);
       }
       const cleanUrl = clean.toString() ? `/studio?${clean}` : "/studio";
