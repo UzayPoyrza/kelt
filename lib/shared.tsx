@@ -428,9 +428,8 @@ export const rotatingPhrases = [
 export const suggestions = [
   "Calm my anxiety before a big meeting",
   "Help me wind down and fall asleep",
-  "5-min breathing reset",
+  "I want singing bowls while I decompress",
   "PMR session for muscle tension",
-  "HRV coherence breathing at 5.5 breaths/min",
 ];
 
 export const protocols = [
