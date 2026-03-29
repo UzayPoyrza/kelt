@@ -36,6 +36,24 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ ...data, generations_today: rateRow?.count ?? 0 });
   }
 
+  // Include subscription status for non-free plans
+  if (data && data.plan !== "free") {
+    const admin = createAdminClient();
+    const { data: sub } = await admin
+      .from("subscriptions")
+      .select("status, current_period_end")
+      .eq("user_id", user!.id)
+      .maybeSingle();
+
+    if (sub) {
+      return NextResponse.json({
+        ...data,
+        subscription_status: sub.status,
+        subscription_period_end: sub.current_period_end,
+      });
+    }
+  }
+
   return NextResponse.json(data);
 }
 

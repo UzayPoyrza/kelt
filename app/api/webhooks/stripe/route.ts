@@ -103,18 +103,23 @@ export async function POST(request: NextRequest) {
       const pStart = subAny2.current_period_start as number | undefined;
       const pEnd = subAny2.current_period_end as number | undefined;
 
+      // Detect canceling state: subscription is still active but set to cancel at period end
+      const isCanceling = sub.status === "active" && sub.cancel_at_period_end === true;
+      const resolvedStatus = isCanceling ? "canceling" : sub.status === "active" ? "active" : sub.status === "past_due" ? "past_due" : sub.status as string;
+
       await supabase
         .from("subscriptions")
         .update({
           plan,
           billing_cycle: billing,
-          status: sub.status === "active" ? "active" : sub.status === "past_due" ? "past_due" : sub.status as string,
+          status: resolvedStatus,
           credits_per_month: CREDIT_AMOUNTS[plan] || 30,
           current_period_start: pStart ? new Date(pStart * 1000).toISOString() : null,
           current_period_end: pEnd ? new Date(pEnd * 1000).toISOString() : null,
         })
         .eq("user_id", userId);
 
+      // Keep the plan active while canceling — only revert on actual deletion
       await supabase
         .from("profiles")
         .update({ plan })

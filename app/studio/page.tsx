@@ -4476,11 +4476,30 @@ function StudioPageContent() {
                       </div>
                       )}
                       <div className="pt-4 border-t border-[var(--color-sand-100)]">
+                        {/* Canceling / expiring banner */}
+                        {profile?.subscription_status === "canceling" && (
+                          <div className="mb-3 px-3.5 py-3 rounded-xl bg-amber-50 border border-amber-200">
+                            <p className="text-[12px] text-amber-800 mb-1" style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}>Your subscription is expiring</p>
+                            <p className="text-[11px] text-amber-600 leading-relaxed" style={{ fontFamily: "var(--font-body)" }}>
+                              Your {profile.plan === "creator" ? "Pro" : "Personal"} plan will end on{" "}
+                              <span style={{ fontWeight: 600 }}>
+                                {profile.subscription_period_end
+                                  ? new Date(profile.subscription_period_end).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })
+                                  : "your next billing date"}
+                              </span>
+                              . After that you&apos;ll be on the Free plan with 2 credits/month. Go to Manage to renew.
+                            </p>
+                          </div>
+                        )}
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                           <div>
                             <span className="text-[12px] text-[var(--color-sand-700)] block" style={{ fontFamily: "var(--font-body)", fontWeight: 450 }}>Subscription</span>
                             <span className="text-[11px] text-[var(--color-sand-400)]" style={{ fontFamily: "var(--font-body)" }}>
-                              {profile?.plan === "free" ? "Upgrade to get more credits" : "Manage billing, invoices, and plan changes"}
+                              {profile?.plan === "free"
+                                ? "Upgrade to get more credits"
+                                : profile?.subscription_status === "canceling"
+                                  ? "Expiring — go to Manage to renew"
+                                  : "Manage billing, invoices, and plan changes"}
                             </span>
                           </div>
                           {profile?.plan === "free" ? (
@@ -4507,8 +4526,8 @@ function StudioPageContent() {
                                 router.push("/upgrade");
                               }
                             }}
-                            className="px-4 py-2 rounded-full border border-[var(--color-sand-200)] text-[12px] text-[var(--color-sand-600)] hover:bg-[var(--color-sand-50)] hover:border-[var(--color-sand-300)] transition-all cursor-pointer shrink-0 self-start sm:self-center disabled:opacity-50 disabled:cursor-wait"
-                            style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>
+                            className={`px-4 py-2 rounded-full text-[12px] transition-all cursor-pointer shrink-0 self-start sm:self-center disabled:opacity-50 disabled:cursor-wait ${profile?.subscription_status === "canceling" ? "border-2 border-amber-400 text-amber-700 hover:bg-amber-50" : "border border-[var(--color-sand-200)] text-[var(--color-sand-600)] hover:bg-[var(--color-sand-50)] hover:border-[var(--color-sand-300)]"}`}
+                            style={{ fontFamily: "var(--font-body)", fontWeight: profile?.subscription_status === "canceling" ? 600 : 500 }}>
                             Manage
                           </button>
                           )}

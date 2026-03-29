@@ -1,6 +1,6 @@
 export type Plan = "free" | "personal" | "creator";
 export type GenerationStatus = "pending" | "processing" | "completed" | "failed";
-export type SubscriptionStatus = "active" | "canceled" | "past_due" | "trialing";
+export type SubscriptionStatus = "active" | "canceled" | "past_due" | "trialing" | "canceling";
 export type BillingCycle = "monthly" | "yearly";
 
 export interface Profile {
@@ -20,6 +20,9 @@ export interface Profile {
   created_at: string;
   is_anonymous: boolean;
   updated_at: string;
+  // Joined from subscriptions table by /api/user
+  subscription_status?: SubscriptionStatus | null;
+  subscription_period_end?: string | null;
 }
 
 export interface Session {
