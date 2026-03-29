@@ -483,11 +483,11 @@ function SessionCard({ session, delay, isNowPlaying, generatingPhase, onPlay, on
 
 /* ─── Bottom Player Bar ─── */
 
-function PlayerBar({ session, isPlaying, onTogglePlay, onClose, inline, sound, volume, onSoundChange, onVolumeChange, audioUrl, isRendering, soundOptions, onDownload, isDownloading }: {
+function PlayerBar({ session, isPlaying, onTogglePlay, onClose, inline, sound, volume, onSoundChange, onVolumeChange, audioUrl, isRendering, renderError, soundOptions, onDownload, isDownloading }: {
   session: SessionItem; isPlaying: boolean;
   onTogglePlay: () => void; onClose: () => void; inline?: boolean;
   sound?: string; volume?: number; onSoundChange?: (s: string) => void; onVolumeChange?: (v: number) => void;
-  audioUrl?: string | null; isRendering?: boolean; soundOptions?: { recommended: string[]; other: string[] } | null;
+  audioUrl?: string | null; isRendering?: boolean; renderError?: string | null; soundOptions?: { recommended: string[]; other: string[] } | null;
   onDownload?: () => void; isDownloading?: boolean;
 }) {
   const [progress, setProgress] = useState(0);
@@ -699,7 +699,14 @@ function PlayerBar({ session, isPlaying, onTogglePlay, onClose, inline, sound, v
 
         {/* Controls */}
         <div className="flex items-center gap-1 sm:gap-2 shrink-0">
-          {isRendering && !hasRealAudio ? (
+          {renderError && !hasRealAudio ? (
+            <>
+              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center bg-[var(--color-ember)]/10">
+                <AlertCircle className="w-4 h-4 text-[var(--color-ember)]" />
+              </div>
+              <span className="text-[12px] text-[var(--color-ember)] whitespace-nowrap" style={{ fontFamily: "var(--font-body)" }}>{renderError}</span>
+            </>
+          ) : isRendering && !hasRealAudio ? (
             <>
               <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center bg-[#18181b]">
                 <motion.div animate={{ rotate: 360 }} transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}>
@@ -824,8 +831,8 @@ function EmptyState({ label }: { label: string }) {
 
 /* ─── Studio Session View ─── */
 
-function StudioSession({ prompt, voice, duration, sound, soundOptions: initialSoundOptions, sessionId, savedScript, savedTitle, savedVolume, onBack, onToggleSidebar, onGenerated, onSessionCreated, onLoadingPhaseChange, onStopOtherPlayers, initialAudioUrl }: {
-  prompt: string; voice: string; duration: number; sound: string; soundOptions?: { recommended: string[]; other: string[] } | null; sessionId: string | null; savedScript?: ScriptBlock[] | null; savedTitle?: string | null; savedVolume?: number; onBack: () => void; onToggleSidebar?: () => void; onGenerated?: () => void; onSessionCreated?: (id: string) => void; onLoadingPhaseChange?: (phase: "script" | "audio" | null) => void; onStopOtherPlayers?: () => void; initialAudioUrl?: string | null;
+function StudioSession({ prompt, voice, duration, sound, soundOptions: initialSoundOptions, sessionId, savedScript, savedTitle, savedVolume, onBack, onToggleSidebar, onGenerated, onSessionCreated, onLoadingPhaseChange, onStopOtherPlayers, initialAudioUrl, initialRenderError }: {
+  prompt: string; voice: string; duration: number; sound: string; soundOptions?: { recommended: string[]; other: string[] } | null; sessionId: string | null; savedScript?: ScriptBlock[] | null; savedTitle?: string | null; savedVolume?: number; onBack: () => void; onToggleSidebar?: () => void; onGenerated?: () => void; onSessionCreated?: (id: string) => void; onLoadingPhaseChange?: (phase: "script" | "audio" | null) => void; onStopOtherPlayers?: () => void; initialAudioUrl?: string | null; initialRenderError?: string | null;
 }) {
   const { profile } = useProfile();
   const [script, setScript] = useState<ScriptBlock[]>(() => savedScript && savedScript.length > 0 ? savedScript : generateScript(prompt));
@@ -852,6 +859,7 @@ function StudioSession({ prompt, voice, duration, sound, soundOptions: initialSo
   const [mobilePanel, setMobilePanel] = useState<"settings" | "history" | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [renderingAudio, setRenderingAudio] = useState(false);
+  const [renderError, setRenderError] = useState<string | null>(initialRenderError || null);
   const [studioAudioUrl, setStudioAudioUrl] = useState<string | null>(initialAudioUrl || null);
   const [studioPlaying, setStudioPlaying] = useState(false);
   const [showStudioPlayer, setShowStudioPlayer] = useState(!!initialAudioUrl);
@@ -930,8 +938,15 @@ function StudioSession({ prompt, voice, duration, sound, soundOptions: initialSo
                 setStudioAudioUrl(renderData.audio_url);
                 setStudioPlaying(true);
               }
+            } else {
+              console.error("[studio-session] Auto-render failed:", renderRes.status);
+              setRenderError("Audio rendering failed. Your credit has been refunded.");
+              setSessionGenerations(prev => prev.map((g, i) => i === 0 ? { ...g, status: "failed" } : g));
             }
-          } catch { /* ignore */ }
+          } catch {
+            setRenderError("Audio rendering failed. Please try again.");
+            setSessionGenerations(prev => prev.map((g, i) => i === 0 ? { ...g, status: "failed" } : g));
+          }
           setRenderingAudio(false);
         }
       } catch { /* ignore */ }
@@ -1146,6 +1161,7 @@ function StudioSession({ prompt, voice, duration, sound, soundOptions: initialSo
     // Cancel any pending autosave to prevent race condition
     if (saveTimerRef.current) { clearTimeout(saveTimerRef.current); saveTimerRef.current = null; }
     setGenerateWarning(null);
+    setRenderError(null);
     setErrorPauseIds(new Set());
     setIsGenerating(true);
     onLoadingPhaseChange?.("script");
@@ -1239,9 +1255,15 @@ function StudioSession({ prompt, voice, duration, sound, soundOptions: initialSo
             }
           } else {
             console.error("[studio-gen] Render failed:", renderRes.status);
+            setGenerateWarning("Audio rendering failed. Your credit has been refunded. Please try again.");
+            setRenderError("Audio rendering failed. Your credit has been refunded.");
+            setSessionGenerations(prev => prev.map((g, i) => i === 0 ? { ...g, status: "failed" } : g));
           }
         } catch (err) {
           console.error("[studio-gen] Render error:", err);
+          setGenerateWarning("Audio rendering failed. Please try again.");
+          setRenderError("Audio rendering failed. Please try again.");
+          setSessionGenerations(prev => prev.map((g, i) => i === 0 ? { ...g, status: "failed" } : g));
         }
         setRenderingAudio(false);
         onLoadingPhaseChange?.(null);
@@ -2122,6 +2144,7 @@ function StudioSession({ prompt, voice, duration, sound, soundOptions: initialSo
             onVolumeChange={setSoundVolume}
             audioUrl={studioAudioUrl}
             isRendering={renderingAudio}
+            renderError={renderError}
             soundOptions={sessionSoundOptions}
             onDownload={async () => {
               if (!studioAudioUrl) return;
@@ -2977,9 +3000,13 @@ function StudioPageContent() {
                 } else {
                   console.warn("[studio] Render succeeded but no audio_url returned");
                 }
+              } else {
+                console.error("[studio] Auto-render failed:", renderRes.status);
+                setAutoRenderError("Audio rendering failed. Your credit has been refunded.");
               }
             } catch (err) {
               console.error("[studio] Auto-render failed:", err);
+              setAutoRenderError("Audio rendering failed. Please try again.");
             }
             setLoadingPhase(null);
           } else if (gens.length > 0 && gens[0].audio_url) {
@@ -3066,6 +3093,7 @@ function StudioPageContent() {
   const [loadingPhaseStep, setLoadingPhaseStep] = useState(0);
   // Audio URL from auto-render (when session loaded via ?session=X with no audio)
   const [autoRenderedAudioUrl, setAutoRenderedAudioUrl] = useState<string | null>(null);
+  const [autoRenderError, setAutoRenderError] = useState<string | null>(null);
   // User can dismiss the loading overlay — audio keeps generating in background
   const [loadingDismissed, setLoadingDismissed] = useState(false);
   // Track which session is currently being generated (for session card status)
@@ -3237,10 +3265,17 @@ function StudioPageContent() {
         }
       }
 
-      // Done — navigate to session, keep overlay up until session loads
-      if (audioUrl) {
-        setAutoRenderedAudioUrl(audioUrl);
+      if (!audioUrl) {
+        // TTS failed — show error, refund already handled server-side
+        setQuickGenError("Audio rendering failed. Your credit has been refunded. Please try again.");
+        setLoadingPhase(null);
+        setGeneratingSession(null);
+        refetchProfile(); // Refresh credits to reflect refund
+        return;
       }
+
+      // Done — navigate to session, keep overlay up until session loads
+      setAutoRenderedAudioUrl(audioUrl);
       loadedSessionRef.current = null;
       router.push(`/studio?session=${data.session.id}`);
       // Delay clearing overlay so session renders underneath before reveal
@@ -3458,6 +3493,7 @@ function StudioPageContent() {
             onLoadingPhaseChange={(phase) => { console.log("[studio] loadingPhase changed to:", phase); setLoadingPhase(phase); setLoadingPhaseStep(0); if (phase === "script") setLoadingDismissed(false); }}
             onStopOtherPlayers={() => { setPlayerPlaying(false); setNowPlayingId(null); }}
             initialAudioUrl={autoRenderedAudioUrl}
+            initialRenderError={autoRenderError}
           />
         </div>
       </div>

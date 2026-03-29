@@ -16,6 +16,29 @@ function toTtsVoiceId(frontendVoice: string): string {
   return VOICE_MAP[frontendVoice] || "Graham";
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function refundOnTtsFailure(supabase: any, targetGenId: string | null) {
+  if (!targetGenId) return;
+  // Mark generation as failed
+  await supabase.from("generations").update({ status: "failed" }).eq("id", targetGenId);
+  // Check if this generation cost a credit
+  const { data: gen } = await supabase
+    .from("generations")
+    .select("credit_cost, user_id")
+    .eq("id", targetGenId)
+    .single();
+  if (gen && gen.credit_cost > 0) {
+    await supabase.rpc("refund_credit", { user_id_input: gen.user_id });
+    await supabase.from("credit_ledger").insert({
+      user_id: gen.user_id,
+      amount: 1,
+      reason: "refund_tts_failed",
+      generation_id: targetGenId,
+    });
+    console.log("[render] Credit refunded for failed TTS. Generation:", targetGenId);
+  }
+}
+
 export async function POST(request: NextRequest) {
   const { user, supabase, error } = await getAuthUser();
   if (error) return error;
@@ -110,7 +133,8 @@ export async function POST(request: NextRequest) {
     if (response.FunctionError) {
       const errorBody = new TextDecoder().decode(response.Payload);
       console.error("[render] Lambda error:", errorBody);
-      return NextResponse.json({ error: "TTS Lambda failed" }, { status: 502 });
+      await refundOnTtsFailure(supabase, targetGenId);
+      return NextResponse.json({ error: "TTS Lambda failed", refunded: true }, { status: 502 });
     }
 
     const result = JSON.parse(new TextDecoder().decode(response.Payload));
@@ -130,6 +154,7 @@ export async function POST(request: NextRequest) {
     });
   } catch (err) {
     console.error("[render] Lambda invocation failed:", err);
-    return NextResponse.json({ error: "Render failed" }, { status: 502 });
+    await refundOnTtsFailure(supabase, targetGenId);
+    return NextResponse.json({ error: "Render failed", refunded: true }, { status: 502 });
   }
 }
