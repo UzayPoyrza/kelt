@@ -839,7 +839,7 @@ function StudioSession({ prompt, voice, duration, sound, soundOptions: initialSo
   const [selectedBlock, setSelectedBlock] = useState<string | null>(null);
   const [editOriginalText, setEditOriginalText] = useState<string | null>(null);
   const [sessionVoice, setSessionVoice] = useState(voice);
-  const [sessionSound, setSessionSound] = useState(sound);
+  const [sessionSound, setSessionSound] = useState(soundIdToLabel(sound) || sound);
   const [sessionSoundOptions, setSessionSoundOptions] = useState<{ recommended: string[]; other: string[] } | null>(initialSoundOptions || null);
   const [showVoiceDropdown, setShowVoiceDropdown] = useState(false);
   const [showSoundDropdown, setShowSoundDropdown] = useState(false);
