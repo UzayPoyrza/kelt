@@ -55,6 +55,10 @@ export async function POST(request: NextRequest) {
 
     if (session.mode === "subscription") {
       const subscriptionId = session.subscription as string;
+      // Ensure userId is set on the subscription metadata for webhook events
+      await stripe.subscriptions.update(subscriptionId, {
+        metadata: { userId: user!.id },
+      });
       const sub = await stripe.subscriptions.retrieve(subscriptionId);
       const priceId = sub.items.data[0]?.price.id;
       const plan = getPlanFromPriceId(priceId);

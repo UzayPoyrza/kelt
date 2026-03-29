@@ -430,6 +430,7 @@ export const suggestions = [
   "Help me wind down and fall asleep",
   "I want singing bowls while I decompress",
   "PMR session for muscle tension",
+  "CBT-i session to help me sleep",
 ];
 
 export const protocols = [

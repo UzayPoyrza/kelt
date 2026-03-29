@@ -49,6 +49,10 @@ export async function POST(request: NextRequest) {
 
       if (session.mode === "subscription") {
         const subscriptionId = session.subscription as string;
+        // Ensure userId is set on the subscription metadata for future events
+        await stripe.subscriptions.update(subscriptionId, {
+          metadata: { userId },
+        });
         const sub = await stripe.subscriptions.retrieve(subscriptionId);
         const priceId = sub.items.data[0]?.price.id;
         const plan = getPlanFromPriceId(priceId);
@@ -193,10 +197,23 @@ function getPlanFromPriceId(priceId: string): "personal" | "creator" {
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function getUserIdFromCustomer(supabase: any, customerId: string): Promise<string | null> {
+  // First try the subscriptions table
   const { data } = await supabase
     .from("subscriptions")
     .select("user_id")
     .eq("stripe_customer_id", customerId)
     .maybeSingle();
-  return data?.user_id || null;
+  if (data?.user_id) return data.user_id;
+
+  // Fallback: check Stripe customer metadata
+  try {
+    const stripe = getStripe();
+    const customer = await stripe.customers.retrieve(customerId);
+    if (!customer.deleted && customer.metadata?.userId) {
+      return customer.metadata.userId;
+    }
+  } catch {
+    // ignore
+  }
+  return null;
 }

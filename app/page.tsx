@@ -191,25 +191,6 @@ const timelineSteps = [
 export default function HomePage() {
   const router = useRouter();
 
-  // Redirect users with a real (non-anonymous) profile to studio
-  useEffect(() => {
-    const checkUser = async () => {
-      const { createClient } = await import("@/lib/supabase/client");
-      const supabase = createClient();
-      const { data: { session } } = await supabase.auth.getSession();
-      // Only call /api/user if we have a non-anonymous session
-      if (!session?.user || session.user.is_anonymous) return;
-      const res = await fetch("/api/user");
-      if (res.ok) {
-        const profile = await res.json();
-        if (profile && !profile.is_anonymous) {
-          router.replace("/studio");
-        }
-      }
-    };
-    checkUser();
-  }, [router]);
-
   const [prompt, setPrompt] = useState("");
   const [playing, setPlaying] = useState<string | null>(null);
   const [sampleProgress, setSampleProgress] = useState<Record<string, number>>({});
