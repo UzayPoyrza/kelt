@@ -174,11 +174,16 @@ export async function POST(request: NextRequest) {
     if (!scriptResponse.ok) {
       const errBody = await scriptResponse.text();
       console.error("[generate] Script API failed:", scriptResponse.status, errBody);
-      // Mark generation failed
+      // Mark generation failed and clean up the empty session
       await supabase
         .from("generations")
         .update({ status: "failed" })
         .eq("id", generation.id);
+      // Delete the session if we just created it (no prior script)
+      if (!sessionId) {
+        await supabase.from("generations").delete().eq("session_id", activeSessionId);
+        await supabase.from("sessions").delete().eq("id", activeSessionId);
+      }
       // Refund credit (OAuth only — anonymous doesn't use credits)
       if (!isAnonymous) {
         await supabase.rpc("refund_credit", { user_id_input: user!.id });
@@ -210,8 +215,11 @@ export async function POST(request: NextRequest) {
     }
     if (!scriptResult.final_script && !scriptResult.script) {
       console.error("[generate] API returned no script content");
-      // Mark generation failed and refund
       await supabase.from("generations").update({ status: "failed" }).eq("id", generation.id);
+      if (!sessionId) {
+        await supabase.from("generations").delete().eq("session_id", activeSessionId);
+        await supabase.from("sessions").delete().eq("id", activeSessionId);
+      }
       if (!isAnonymous) {
         await supabase.rpc("refund_credit", { user_id_input: user!.id });
         await supabase.from("credit_ledger").insert({

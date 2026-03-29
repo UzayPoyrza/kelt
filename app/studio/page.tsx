@@ -2711,7 +2711,7 @@ function StudioPageContent() {
     }
   }, [profileLoading, profile]);
   const [voicePlaying, setVoicePlaying] = useState<string | null>(null);
-  const [downloadingId, setDownloadingId] = useState<string | null>(null);
+  const [downloadingIds, setDownloadingIds] = useState<Set<string>>(new Set());
 
   const resolveBgSoundUrl = useCallback((session: SessionItem | null): string | null => {
     if (!session) return null;
@@ -2730,7 +2730,7 @@ function StudioPageContent() {
     }
     const filename = `meditation-${sessionTitle || "session"}.mp3`;
     console.log("[download] Starting studio download:", { audioUrl, filename, bgSoundUrl, bgVolume });
-    setDownloadingId(id);
+    setDownloadingIds(prev => new Set(prev).add(id));
     try {
       await downloadMixedAudio(audioUrl, filename, bgSoundUrl, bgVolume);
     } catch (err) {
@@ -2740,13 +2740,13 @@ function StudioPageContent() {
       a.download = filename;
       a.click();
     } finally {
-      setDownloadingId(null);
+      setDownloadingIds(prev => { const next = new Set(prev); next.delete(id); return next; });
     }
   }, []);
 
   const handleDownloadSession = useCallback(async (sessionId: string, sessionTitle?: string) => {
     console.log("[download] Fetching audio for session:", sessionId);
-    setDownloadingId(sessionId);
+    setDownloadingIds(prev => new Set(prev).add(sessionId));
     try {
       const session = sessions.find(s => s.id === sessionId) || null;
       const bgUrl = resolveBgSoundUrl(session);
@@ -2765,7 +2765,7 @@ function StudioPageContent() {
     } catch (err) {
       console.error("[download] Session download failed:", err);
     } finally {
-      setDownloadingId(null);
+      setDownloadingIds(prev => { const next = new Set(prev); next.delete(sessionId); return next; });
     }
   }, [sessions, resolveBgSoundUrl]);
 
@@ -3136,6 +3136,29 @@ function StudioPageContent() {
     setLoadingPhase("script");
     setLoadingPhaseStep(0);
 
+    // Add a placeholder session card immediately so "All Sessions" shows generating state
+    const placeholderId = `generating-${Date.now()}`;
+    setGeneratingSession({ id: placeholderId, phase: "script" });
+    setSessions(prev => [{
+      id: placeholderId,
+      title: deriveSessionName(genConfig.prompt),
+      duration: `${genConfig.duration} min`,
+      voice: voices.find(v => v.id === genConfig.voice)?.name || "Aria",
+      protocol: "Custom",
+      sound: genConfig.sound,
+      soundId: null,
+      soundOptions: null,
+      soundVolume: 70,
+      createdAt: "Just now",
+      createdAtRaw: new Date().toISOString(),
+      createdAtShort: "Just now",
+      accessedAt: "Just now",
+      category: "focus",
+      icon: Brain,
+      hasGeneration: false,
+      script: null,
+    }, ...prev]);
+
     try {
       // Phase 1: Script generation
       console.log("[quick-gen] Starting script generation...");
@@ -3157,20 +3180,29 @@ function StudioPageContent() {
         setQuickGenError("You're out of credits. Redirecting to upgrade...");
         setLoadingPhase(null);
         setIsQuickGenerating(false);
+        setGeneratingSession(null);
+        setSessions(prev => prev.filter(s => s.id !== placeholderId));
         setTimeout(() => router.push("/upgrade"), 1500);
         return;
       }
       if (!res.ok) {
         console.error("[quick-gen] Script generation failed:", res.status);
-        setQuickGenError("Generation failed. Please try again.");
+        setQuickGenError("Generation failed — this can happen with unclear prompts. Try describing what you need more clearly. If the issue persists, contact support.");
         setLoadingPhase(null);
+        setGeneratingSession(null);
+        setSessions(prev => prev.filter(s => s.id !== placeholderId));
         return;
       }
       const data = await res.json();
       console.log("[quick-gen] Script done. Session:", data.session?.id, "Generation:", data.generation?.id);
-      if (data.session?.id) setGeneratingSession({ id: data.session.id, phase: "audio" });
+      // Replace placeholder with real session ID and switch to audio phase
+      if (data.session?.id) {
+        setGeneratingSession({ id: data.session.id, phase: "audio" });
+        // Remove placeholder from sessions list — fetchSessions will add the real one
+        setSessions(prev => prev.filter(s => s.id !== placeholderId));
+      }
       refetchProfile();
-      fetchSessions(); // Refresh session list so the new session appears
+      fetchSessions(); // Refresh session list so the real session appears
 
       // Capture session info for loading screen display
       setLoadingSessionInfo({
@@ -3218,9 +3250,10 @@ function StudioPageContent() {
       }, 800);
     } catch (err) {
       console.error("[quick-gen] Error:", err);
-      setQuickGenError("Something went wrong. Please try again.");
+      setQuickGenError("Something went wrong — try rephrasing your prompt. If the issue persists, contact support.");
       setLoadingPhase(null);
       setGeneratingSession(null);
+      setSessions(prev => prev.filter(s => s.id !== placeholderId));
     } finally {
       setIsQuickGenerating(false);
     }
@@ -3876,10 +3909,10 @@ function StudioPageContent() {
                             <div className="relative group/tip">
                               <button
                                 onClick={(e) => { e.stopPropagation(); handleDownloadAudio(gen.id, gen.audioUrl, gen.prompt?.slice(0, 30), resolveBgSoundUrl(genSession ?? null), genSession?.soundVolume ?? 70); }}
-                                disabled={(gen.status as string) === "failed" || !gen.audioUrl || downloadingId === gen.id}
+                                disabled={(gen.status as string) === "failed" || !gen.audioUrl || downloadingIds.has(gen.id)}
                                 className="w-8 h-8 rounded-lg hover:bg-[#e7e5e4] flex items-center justify-center text-[#3f3f46] hover:text-[#18181b] transition-colors disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
                               >
-                                {downloadingId === gen.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+                                {downloadingIds.has(gen.id) ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
                               </button>
                               <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 px-2 py-1 rounded-md bg-[#18181b] text-white text-[10px] whitespace-nowrap opacity-0 group-hover/tip:opacity-100 transition-opacity pointer-events-none z-10" style={{ fontFamily: "var(--font-body)" }}>Download</span>
                             </div>

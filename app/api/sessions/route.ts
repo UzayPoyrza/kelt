@@ -16,6 +16,8 @@ export async function GET(request: NextRequest) {
     .select("*, generations(count)")
     .eq("user_id", user!.id)
     .is("deleted_at", null)
+    .not("script", "is", null)
+    .not("script", "eq", "[]")
     .order("updated_at", { ascending: false })
     .range(offset, offset + limit - 1);
 
