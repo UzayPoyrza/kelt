@@ -3015,6 +3015,14 @@ function StudioPageContent() {
     }
   }, [searchParams, refetchProfile]);
 
+  // Handle ?nav=settings (e.g. return from Stripe billing portal)
+  useEffect(() => {
+    if (searchParams.get("nav") === "settings") {
+      setActiveNav("settings");
+      window.history.replaceState({}, "", "/studio");
+    }
+  }, [searchParams]);
+
   // Open a specific session from URL param (e.g. from /session "Open in Studio", or ?session= deep link)
   const loadedSessionRef = useRef<string | null>(null);
   useEffect(() => {
