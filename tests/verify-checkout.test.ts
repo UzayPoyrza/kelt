@@ -1,10 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
-import { stripe } from "@/lib/stripe";
+import { getStripe } from "@/lib/stripe";
 import { mockFrom, mockSupabaseChain } from "./setup";
 
 // Import the route handler
 import { POST } from "@/app/api/verify-checkout/route";
+
+const stripe = getStripe();
 
 // Helper to create a NextRequest with JSON body
 function makeRequest(body: Record<string, unknown>): NextRequest {

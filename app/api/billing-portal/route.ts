@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthUser } from "@/app/api/_lib/auth";
-import { stripe } from "@/lib/stripe";
+import { getStripe } from "@/lib/stripe";
 
 export async function POST(request: NextRequest) {
   const { user, supabase, error } = await getAuthUser();
@@ -22,6 +22,7 @@ export async function POST(request: NextRequest) {
 
   const origin = request.headers.get("origin") || "http://localhost:3000";
 
+  const stripe = getStripe();
   const session = await stripe.billingPortal.sessions.create({
     customer: subscription.stripe_customer_id,
     return_url: `${origin}/studio?nav=settings`,

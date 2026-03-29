@@ -1,9 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
-import { stripe } from "@/lib/stripe";
+import { getStripe } from "@/lib/stripe";
 import { mockSupabaseChain } from "./setup";
 
 import { POST } from "@/app/api/create-payment-intent/route";
+
+const stripe = getStripe();
 
 function makeRequest(body: Record<string, unknown>): NextRequest {
   return new NextRequest("http://localhost:3000/api/create-payment-intent", {

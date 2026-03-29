@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthUser } from "@/app/api/_lib/auth";
-import { stripe } from "@/lib/stripe";
+import { getStripe } from "@/lib/stripe";
 
 export async function POST(request: NextRequest) {
   const { user, supabase, error } = await getAuthUser();
@@ -12,6 +12,8 @@ export async function POST(request: NextRequest) {
   if (!priceId || !mode) {
     return NextResponse.json({ error: "priceId and mode are required" }, { status: 400 });
   }
+
+  const stripe = getStripe();
 
   // Look up existing Stripe customer
   const { data: subscription } = await supabase

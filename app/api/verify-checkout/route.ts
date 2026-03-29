@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthUser } from "@/app/api/_lib/auth";
-import { stripe } from "@/lib/stripe";
+import { getStripe } from "@/lib/stripe";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 const CREDIT_AMOUNTS: Record<string, number> = {
@@ -27,6 +27,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "sessionId is required" }, { status: 400 });
     }
 
+    const stripe = getStripe();
     const session = await stripe.checkout.sessions.retrieve(sessionId);
 
     if (session.payment_status !== "paid") {
