@@ -520,7 +520,7 @@ export default function UpgradePage() {
       </nav>
 
       {/* Heading + billing toggle */}
-      <div className="relative z-10 max-w-3xl mx-auto text-center px-4 sm:px-6 pb-5">
+      <div className={`relative z-10 max-w-3xl mx-auto text-center px-4 sm:px-6 pb-5 transition-opacity duration-300 ${profileLoading ? "opacity-0" : "opacity-100"}`}>
         <motion.h1
           initial={{ opacity: 0, y: 14 }}
           animate={{ opacity: 1, y: 0 }}
@@ -631,7 +631,7 @@ export default function UpgradePage() {
       </div>
 
       {/* Plans */}
-      <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 pb-6">
+      <div className={`relative z-10 max-w-4xl mx-auto px-4 sm:px-6 pb-6 transition-opacity duration-300 ${profileLoading ? "opacity-0" : "opacity-100"}`}>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
           {plans.map((plan, i) => {
             const price =
@@ -859,7 +859,7 @@ export default function UpgradePage() {
         </div>
       </div>
       {/* Commercial use banner */}
-      <div className="relative z-10 max-w-3xl mx-auto px-4 sm:px-6 pb-12">
+      <div className={`relative z-10 max-w-3xl mx-auto px-4 sm:px-6 pb-12 transition-opacity duration-300 ${profileLoading ? "opacity-0" : "opacity-100"}`}>
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
@@ -987,7 +987,7 @@ export default function UpgradePage() {
       </div>
 
       {/* FAQs */}
-      <div className="relative z-10 max-w-2xl mx-auto px-4 sm:px-6 pb-16">
+      <div className={`relative z-10 max-w-2xl mx-auto px-4 sm:px-6 pb-16 transition-opacity duration-300 ${profileLoading ? "opacity-0" : "opacity-100"}`}>
         <motion.h2
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}

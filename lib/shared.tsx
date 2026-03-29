@@ -216,6 +216,20 @@ export function soundIdToLabel(id: string): string {
   return found?.label || base.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
 };
 
+/** Fetch audio via same-origin proxy to avoid CORS issues with S3/CDN URLs */
+async function fetchAudioProxied(url: string): Promise<ArrayBuffer> {
+  // Same-origin URLs can be fetched directly
+  if (url.startsWith("/") || url.startsWith(window.location.origin)) {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`Fetch failed: ${res.status}`);
+    return res.arrayBuffer();
+  }
+  // Cross-origin: proxy through our API
+  const res = await fetch(`/api/audio-proxy?url=${encodeURIComponent(url)}`);
+  if (!res.ok) throw new Error(`Proxy fetch failed: ${res.status}`);
+  return res.arrayBuffer();
+}
+
 export async function downloadMixedAudio(
   audioUrl: string,
   filename: string,
@@ -227,25 +241,30 @@ export async function downloadMixedAudio(
 
   if (!hasBg) {
     console.log("[download] No background sound — downloading voice only");
-    const a = document.createElement("a");
-    a.href = audioUrl;
-    a.download = filename;
-    a.click();
+    // Still proxy to get a downloadable blob (cross-origin <a> downloads may not trigger)
+    try {
+      const buf = await fetchAudioProxied(audioUrl);
+      const blob = new Blob([buf], { type: "audio/mpeg" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      // Last resort: direct link (works if server sets Content-Disposition)
+      const a = document.createElement("a");
+      a.href = audioUrl;
+      a.download = filename;
+      a.click();
+    }
     return;
   }
 
-  console.log("[download] Fetching audio files...");
-  const [voiceResponse, bgResponse] = await Promise.all([
-    fetch(audioUrl),
-    fetch(bgSoundUrl!),
-  ]);
-  console.log("[download] Voice response:", voiceResponse.status, "BG response:", bgResponse.status);
-  if (!voiceResponse.ok) throw new Error(`Voice fetch failed: ${voiceResponse.status}`);
-  if (!bgResponse.ok) throw new Error(`BG fetch failed: ${bgResponse.status}`);
-
+  console.log("[download] Fetching audio files via proxy...");
   const [voiceArrayBuf, bgArrayBuf] = await Promise.all([
-    voiceResponse.arrayBuffer(),
-    bgResponse.arrayBuffer(),
+    fetchAudioProxied(audioUrl),
+    fetchAudioProxied(bgSoundUrl!),
   ]);
   console.log("[download] Voice buffer:", voiceArrayBuf.byteLength, "BG buffer:", bgArrayBuf.byteLength);
 
@@ -263,10 +282,12 @@ export async function downloadMixedAudio(
   const length = voiceBuf.length;
   const offline = new OfflineAudioContext(channels, length, sampleRate);
 
+  // Voice at full volume
   const voiceSource = offline.createBufferSource();
   voiceSource.buffer = voiceBuf;
   voiceSource.connect(offline.destination);
 
+  // Background sound at the user's knob volume
   const bgGain = offline.createGain();
   bgGain.gain.value = (bgVolume ?? 50) / 100;
   bgGain.connect(offline.destination);
@@ -279,7 +300,7 @@ export async function downloadMixedAudio(
   voiceSource.start(0);
   bgSource.start(0);
 
-  console.log("[download] Mixing audio...");
+  console.log("[download] Mixing audio (bg volume: " + (bgVolume ?? 50) + "%)...");
   const renderedBuffer = await offline.startRendering();
   console.log("[download] Mix complete, encoding MP3...");
 

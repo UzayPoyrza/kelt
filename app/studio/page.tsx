@@ -161,7 +161,7 @@ function buildSoundSections(
     // Recommended = the selected/default sound
     const recIds = currentSound ? [currentSound] : allRec.slice(0, 1);
     const recItems = recIds.map(sid => ({ id: sid, label: soundIdToLabel(sid) || sid }));
-    if (recItems.length > 0) sections.push({ label: "Recommended — Default", items: recItems });
+    if (recItems.length > 0) sections.push({ label: "Recommended for this Session", items: recItems });
     // Alternatives = rest of recommended, excluding selected
     const altSids = allRec.filter(sid => {
       const lbl = soundIdToLabel(sid) || sid;
@@ -237,9 +237,9 @@ function SessionsLoadingIcon() {
 }
 
 /* ─── Google Docs-style Session Card ─── */
-function SessionCard({ session, delay, isNowPlaying, isGeneratingAudio, onPlay, onOpenStudio, onDelete, onRegen, onGenerate, onDownload }: {
+function SessionCard({ session, delay, isNowPlaying, generatingPhase, onPlay, onOpenStudio, onDelete, onRegen, onGenerate, onDownload }: {
   session: SessionItem; delay: number;
-  isNowPlaying: boolean; isGeneratingAudio?: boolean; onPlay: () => void; onOpenStudio: () => void;
+  isNowPlaying: boolean; generatingPhase?: "script" | "audio" | null; onPlay: () => void; onOpenStudio: () => void;
   onDelete?: () => void; onRegen?: () => void; onGenerate?: () => void; onDownload?: () => void;
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -285,8 +285,8 @@ function SessionCard({ session, delay, isNowPlaying, isGeneratingAudio, onPlay, 
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay, duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-      className="group rounded-xl border border-[#e0e0e4] hover:border-[#c0c0c8] bg-white hover:shadow-[0_2px_12px_rgba(0,0,0,0.08)] transition-all duration-200 cursor-pointer flex flex-col"
-      onClick={onOpenStudio}
+      className={`group rounded-xl border border-[#e0e0e4] bg-white transition-all duration-200 flex flex-col ${generatingPhase ? "opacity-80 cursor-default" : "hover:border-[#c0c0c8] hover:shadow-[0_2px_12px_rgba(0,0,0,0.08)] cursor-pointer"}`}
+      onClick={generatingPhase ? undefined : onOpenStudio}
     >
       {/* Preview area — like a document thumbnail */}
       <div className="relative h-[160px] bg-[#f0eee9] border-b border-[#e4e0d8] overflow-hidden rounded-t-xl px-5 pt-4">
@@ -320,16 +320,18 @@ function SessionCard({ session, delay, isNowPlaying, isGeneratingAudio, onPlay, 
         {/* Fade-out gradient at bottom */}
         <div className="absolute bottom-0 left-0 w-full h-10 bg-gradient-to-t from-[#f8f8fa] to-transparent" />
 
-        {/* Generating audio overlay */}
-        {isGeneratingAudio && !isNowPlaying && (
-          <div className="absolute inset-0 bg-[var(--color-sand-50)]/80 backdrop-blur-[2px] flex flex-col items-center justify-center gap-2">
+        {/* Generating overlay — blocks interaction */}
+        {generatingPhase && !isNowPlaying && (
+          <div className="absolute inset-0 z-10 bg-[var(--color-sand-50)]/85 backdrop-blur-[2px] flex flex-col items-center justify-center gap-2">
             <motion.div
               animate={{ rotate: 360 }}
               transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
             >
               <Loader2 className="w-5 h-5 text-[var(--color-sand-500)]" />
             </motion.div>
-            <span className="text-[11px] text-[var(--color-sand-500)]" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>Generating audio...</span>
+            <span className="text-[11px] text-[var(--color-sand-500)]" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>
+              {generatingPhase === "script" ? "Writing script..." : "Generating audio..."}
+            </span>
           </div>
         )}
 
@@ -764,7 +766,7 @@ function PlayerBar({ session, isPlaying, onTogglePlay, onClose, inline, sound, v
             {showBgSound && (
               <>
                 <div className="fixed inset-0 z-[60]" onClick={() => setShowBgSound(false)} />
-                <div className="absolute bottom-full right-0 sm:right-auto sm:left-0 mb-2 w-52 bg-white rounded-lg border border-[#e4e4e7] shadow-lg z-[70] max-h-64 overflow-y-auto">
+                <div className="absolute bottom-full right-0 sm:right-auto sm:left-0 mb-2 w-60 bg-white rounded-lg border border-[#e4e4e7] shadow-lg z-[70] max-h-64 overflow-y-auto">
                   {buildSoundSections(soundOptions, bgSound).map((section, catIdx) => (
                     <div key={section.label}>
                       <div className={`px-3 py-1.5 bg-[#f7f7f8] ${catIdx > 0 ? "border-t border-[#e4e4e7]" : ""}`}>
@@ -2216,77 +2218,17 @@ function StudioSession({ prompt, voice, duration, sound, soundOptions: initialSo
             </div>
           </div>
 
-          {/* Sound */}
+          {/* Background Sound — info only */}
           <div>
-            <div className="flex items-center gap-1.5 mb-2.5">
-              <label className="text-[10px] uppercase tracking-wider text-[#71717a]" style={{ fontFamily: "var(--font-body)" }}>Background Sound</label>
-              <div className="relative">
-                <button
-                  onClick={() => setShowSoundInfo(!showSoundInfo)}
-                  className="w-4 h-4 rounded-full flex items-center justify-center text-[#a1a1aa] hover:text-[#18181b] hover:bg-[#f4f4f5] transition-all cursor-pointer">
-                  <Info className="w-3 h-3" />
-                </button>
-                {showSoundInfo && (
-                  <div className="absolute left-1/2 -translate-x-1/2 top-full mt-1.5 w-56 p-3 rounded-lg bg-[#18181b] text-white shadow-xl z-30">
-                    <p className="text-[11px] leading-relaxed" style={{ fontFamily: "var(--font-body)" }}>
-                      Sounds are recommended based on your session&apos;s intent, protocol, and voice. The system matches ambient layers to maximize therapeutic effectiveness.
-                    </p>
-                    <div className="w-2 h-2 bg-[#18181b] rotate-45 absolute -top-1 left-1/2 -translate-x-1/2" />
-                  </div>
-                )}
+            <label className="text-[10px] uppercase tracking-wider text-[#71717a] mb-2.5 block" style={{ fontFamily: "var(--font-body)" }}>Background Sound</label>
+            <div className="rounded-lg bg-[#f9f9fb] border border-transparent px-3 py-2.5">
+              <div className="flex items-center gap-2.5 mb-2">
+                <Music className="w-4 h-4 text-[#71717a] shrink-0" />
+                <span className="text-sm text-[#18181b]" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>{sessionSound}</span>
               </div>
-            </div>
-            <div className="relative">
-              <button
-                onClick={() => { setShowSoundDropdown(!showSoundDropdown); setShowVoiceDropdown(false); setShowSoundInfo(false); setShowDurationInfo(false); }}
-                className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg bg-white border border-[#e4e4e7] hover:border-[#d4d4d8] transition-colors cursor-pointer text-left">
-                <div className="flex items-center gap-2.5">
-                  <Music className="w-4 h-4 text-[#71717a]" />
-                  <div>
-                    <span className="text-sm text-[#18181b] block" style={{ fontFamily: "var(--font-body)" }}>{sessionSound}</span>
-                  </div>
-                </div>
-                <ChevronDown className={`w-3.5 h-3.5 text-[#a1a1aa] transition-transform ${showSoundDropdown ? "rotate-180" : ""}`} />
-              </button>
-              {showSoundDropdown && (
-                <>
-                  <div className="fixed inset-0 z-[200]" onClick={() => setShowSoundDropdown(false)} />
-                  <div className="absolute top-[calc(100%+2px)] left-0 right-0 bg-white rounded-lg border border-[#e4e4e7] shadow-lg z-[210] max-h-64 overflow-y-auto">
-                    {buildSoundSections(sessionSoundOptions, sessionSound).map((section, catIdx) => (
-                      <div key={section.label}>
-                        <div className={`px-3 py-1.5 bg-[#f7f7f8] ${catIdx > 0 ? "border-t border-[#e4e4e7]" : ""}`}>
-                          <span className="text-[9px] uppercase tracking-wider text-[#a1a1aa] font-medium" style={{ fontFamily: "var(--font-body)" }}>
-                            {section.label}
-                          </span>
-                        </div>
-                        {section.items.map((item, i) => (
-                          <button key={item.id} onClick={() => { setSessionSound(item.label); setShowSoundDropdown(false); markEdited(); }}
-                            className={`w-full flex items-center justify-between px-3 py-2.5 hover:bg-[#f4f4f5] transition-colors cursor-pointer text-left ${i > 0 ? "border-t border-[#f0f0f3]" : ""}`}>
-                            <span className="text-sm text-[#18181b]" style={{ fontFamily: "var(--font-body)" }}>{item.label}</span>
-                            {item.label === sessionSound && <Check className="w-3.5 h-3.5 text-[#6b9a70]" />}
-                          </button>
-                        ))}
-                      </div>
-                    ))}
-                  </div>
-                </>
-              )}
-            </div>
-            {/* Volume */}
-            <div className="flex items-center gap-2.5 mt-2.5">
-              <button onClick={() => setSoundVolume(soundVolume > 0 ? 0 : 70)} className="shrink-0 text-[#a1a1aa] hover:text-[#18181b] transition-colors cursor-pointer">
-                {soundVolume === 0 ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5" />}
-              </button>
-              <input
-                type="range"
-                min={0}
-                max={100}
-                value={soundVolume}
-                onChange={(e) => setSoundVolume(Number(e.target.value))}
-                className="flex-1 h-1 rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-[#18181b] [&::-webkit-slider-thumb]:cursor-pointer"
-                style={{ background: `linear-gradient(to right, #18181b ${soundVolume}%, #e4e4e7 ${soundVolume}%)` }}
-              />
-              <span className="text-[10px] text-[#a1a1aa] tabular-nums w-7 text-right" style={{ fontFamily: "var(--font-body)" }}>{soundVolume}%</span>
+              <p className="text-[11px] text-[#a1a1aa] leading-relaxed" style={{ fontFamily: "var(--font-body)" }}>
+                Matched to your script&apos;s intent, protocol, and pacing. Change it anytime from the player.
+              </p>
             </div>
           </div>
 
@@ -2587,63 +2529,17 @@ function StudioSession({ prompt, voice, duration, sound, soundOptions: initialSo
                     </div>
                   </div>
 
-                  {/* Sound */}
+                  {/* Background Sound — info only */}
                   <div>
                     <label className="text-[10px] uppercase tracking-wider text-[#71717a] mb-2.5 block" style={{ fontFamily: "var(--font-body)" }}>Background Sound</label>
-                    <div className="relative">
-                      <button
-                        onClick={() => { setShowSoundDropdown(!showSoundDropdown); setShowVoiceDropdown(false); setShowSoundInfo(false); setShowDurationInfo(false); }}
-                        className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg bg-white border border-[#e4e4e7] hover:border-[#d4d4d8] transition-colors cursor-pointer text-left">
-                        <div className="flex items-center gap-2.5">
-                          <Music className="w-4 h-4 text-[#71717a]" />
-                          <div>
-                            <span className="text-sm text-[#18181b] block" style={{ fontFamily: "var(--font-body)" }}>{sessionSound}</span>
-                            {soundCategories.recommended.items.includes(sessionSound) && (
-                              <span className="text-[9px] uppercase tracking-wider text-[#6b9a70]" style={{ fontFamily: "var(--font-body)" }}>Recommended</span>
-                            )}
-                          </div>
-                        </div>
-                        <ChevronDown className={`w-3.5 h-3.5 text-[#a1a1aa] transition-transform ${showSoundDropdown ? "rotate-180" : ""}`} />
-                      </button>
-                      {showSoundDropdown && (
-                        <>
-                          <div className="fixed inset-0 z-[310]" onClick={() => setShowSoundDropdown(false)} />
-                          <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-lg border border-[#e4e4e7] shadow-lg z-[320] max-h-48 overflow-y-auto">
-                            {buildSoundSections(sessionSoundOptions, sessionSound).map((section, catIdx) => (
-                              <div key={section.label}>
-                                <div className={`px-3 py-1.5 bg-[#f7f7f8] ${catIdx > 0 ? "border-t border-[#e4e4e7]" : ""}`}>
-                                  <span className="text-[9px] uppercase tracking-wider text-[#a1a1aa] font-medium" style={{ fontFamily: "var(--font-body)" }}>
-                                    {section.label}
-                                  </span>
-                                </div>
-                                {section.items.map((item, i) => (
-                                  <button key={item.id} onClick={() => { setSessionSound(item.label); setShowSoundDropdown(false); markEdited(); }}
-                                    className={`w-full flex items-center justify-between px-3 py-2.5 hover:bg-[#f4f4f5] transition-colors cursor-pointer text-left ${i > 0 ? "border-t border-[#f0f0f3]" : ""}`}>
-                                    <span className="text-sm text-[#18181b]" style={{ fontFamily: "var(--font-body)" }}>{item.label}</span>
-                                    {item.label === sessionSound && <Check className="w-3.5 h-3.5 text-[#6b9a70]" />}
-                                  </button>
-                                ))}
-                              </div>
-                            ))}
-                          </div>
-                        </>
-                      )}
-                    </div>
-                    {/* Volume */}
-                    <div className="flex items-center gap-2.5 mt-2.5">
-                      <button onClick={() => setSoundVolume(soundVolume > 0 ? 0 : 70)} className="shrink-0 text-[#a1a1aa] hover:text-[#18181b] transition-colors cursor-pointer">
-                        {soundVolume === 0 ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5" />}
-                      </button>
-                      <input
-                        type="range"
-                        min={0}
-                        max={100}
-                        value={soundVolume}
-                        onChange={(e) => setSoundVolume(Number(e.target.value))}
-                        className="flex-1 h-1 rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-[#18181b] [&::-webkit-slider-thumb]:cursor-pointer"
-                        style={{ background: `linear-gradient(to right, #18181b ${soundVolume}%, #e4e4e7 ${soundVolume}%)` }}
-                      />
-                      <span className="text-[10px] text-[#a1a1aa] tabular-nums w-7 text-right" style={{ fontFamily: "var(--font-body)" }}>{soundVolume}%</span>
+                    <div className="rounded-lg bg-[#f9f9fb] border border-transparent px-3 py-2.5">
+                      <div className="flex items-center gap-2.5 mb-2">
+                        <Music className="w-4 h-4 text-[#71717a] shrink-0" />
+                        <span className="text-sm text-[#18181b]" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>{sessionSound}</span>
+                      </div>
+                      <p className="text-[11px] text-[#a1a1aa] leading-relaxed" style={{ fontFamily: "var(--font-body)" }}>
+                        Matched to your script&apos;s intent, protocol, and pacing. Change it anytime from the player.
+                      </p>
                     </div>
                   </div>
 
@@ -3173,7 +3069,7 @@ function StudioPageContent() {
   // User can dismiss the loading overlay — audio keeps generating in background
   const [loadingDismissed, setLoadingDismissed] = useState(false);
   // Track which session is currently being generated (for session card status)
-  const [generatingSessionId, setGeneratingSessionId] = useState<string | null>(null);
+  const [generatingSession, setGeneratingSession] = useState<{ id: string; phase: "script" | "audio" } | null>(null);
   // Session info to display on loading screen during TTS phase
   const [loadingSessionInfo, setLoadingSessionInfo] = useState<{ title: string; duration: number; voice: string; protocol: string | null } | null>(null);
   const [genConfig, setGenConfig] = useState({ prompt: "", voice: "Graham", duration: 5, sound: "Rain", soundOptions: null as { recommended: string[]; other: string[] } | null, sessionId: null as string | null, script: null as ScriptBlock[] | null, title: null as string | null, soundVolume: 70, supportChoice: "auto_detect", mode: "still", preferredApproach: "auto" });
@@ -3272,7 +3168,7 @@ function StudioPageContent() {
       }
       const data = await res.json();
       console.log("[quick-gen] Script done. Session:", data.session?.id, "Generation:", data.generation?.id);
-      if (data.session?.id) setGeneratingSessionId(data.session.id);
+      if (data.session?.id) setGeneratingSession({ id: data.session.id, phase: "audio" });
       refetchProfile();
       fetchSessions(); // Refresh session list so the new session appears
 
@@ -3318,13 +3214,13 @@ function StudioPageContent() {
       // Delay clearing overlay so session renders underneath before reveal
       setTimeout(() => {
         setLoadingPhase(null);
-        setGeneratingSessionId(null);
+        setGeneratingSession(null);
       }, 800);
     } catch (err) {
       console.error("[quick-gen] Error:", err);
       setQuickGenError("Something went wrong. Please try again.");
       setLoadingPhase(null);
-      setGeneratingSessionId(null);
+      setGeneratingSession(null);
     } finally {
       setIsQuickGenerating(false);
     }
@@ -3807,7 +3703,7 @@ function StudioPageContent() {
                         session={session}
                         delay={0.04 + i * 0.03}
                         isNowPlaying={nowPlayingId === session.id && playerPlaying}
-                        isGeneratingAudio={generatingSessionId === session.id}
+                        generatingPhase={generatingSession?.id === session.id ? generatingSession.phase : null}
                         onPlay={() => handlePlaySession(session.id)}
                         onOpenStudio={async () => {
                           setLoadingSession(true);
