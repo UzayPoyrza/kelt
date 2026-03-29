@@ -52,9 +52,10 @@ import {
   Menu,
   Pencil,
   Loader2,
+  ArrowUpDown,
 } from "lucide-react";
 import svgPaths from "@/lib/svg-paths";
-import { suggestions, voices as sharedVoices, durations as sharedDurations, detectIntent, detectSupportChoice, supportChoices, modes, modeRules, getApproaches, rotatingPhrases, soundIdToLabel, soundIdToUrl, audioCatalog } from "@/lib/shared";
+import { suggestions, voices as sharedVoices, durations as sharedDurations, detectIntent, detectSupportChoice, supportChoices, modes, modeRules, getApproaches, rotatingPhrases, soundIdToLabel, soundIdToUrl, audioCatalog, protocolLabel, downloadMixedAudio } from "@/lib/shared";
 import { ProfileProvider, useProfile } from "@/lib/hooks/useProfile";
 import { generateScript as generateScriptFn, deriveSessionName, estimateDuration, serializeScript, parseRawScript, type ScriptBlock } from "@/lib/generateScript";
 import { useSearchParams } from "next/navigation";
@@ -236,10 +237,10 @@ function SessionsLoadingIcon() {
 }
 
 /* ─── Google Docs-style Session Card ─── */
-function SessionCard({ session, delay, isNowPlaying, onPlay, onOpenStudio, onDelete, onRegen, onGenerate }: {
+function SessionCard({ session, delay, isNowPlaying, isGeneratingAudio, onPlay, onOpenStudio, onDelete, onRegen, onGenerate, onDownload }: {
   session: SessionItem; delay: number;
-  isNowPlaying: boolean; onPlay: () => void; onOpenStudio: () => void;
-  onDelete?: () => void; onRegen?: () => void; onGenerate?: () => void;
+  isNowPlaying: boolean; isGeneratingAudio?: boolean; onPlay: () => void; onOpenStudio: () => void;
+  onDelete?: () => void; onRegen?: () => void; onGenerate?: () => void; onDownload?: () => void;
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [isRenaming, setIsRenaming] = useState(false);
@@ -318,6 +319,19 @@ function SessionCard({ session, delay, isNowPlaying, onPlay, onOpenStudio, onDel
 
         {/* Fade-out gradient at bottom */}
         <div className="absolute bottom-0 left-0 w-full h-10 bg-gradient-to-t from-[#f8f8fa] to-transparent" />
+
+        {/* Generating audio overlay */}
+        {isGeneratingAudio && !isNowPlaying && (
+          <div className="absolute inset-0 bg-[var(--color-sand-50)]/80 backdrop-blur-[2px] flex flex-col items-center justify-center gap-2">
+            <motion.div
+              animate={{ rotate: 360 }}
+              transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
+            >
+              <Loader2 className="w-5 h-5 text-[var(--color-sand-500)]" />
+            </motion.div>
+            <span className="text-[11px] text-[var(--color-sand-500)]" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>Generating audio...</span>
+          </div>
+        )}
 
         {/* Now playing overlay */}
         {isNowPlaying && (
@@ -420,7 +434,7 @@ function SessionCard({ session, delay, isNowPlaying, onPlay, onOpenStudio, onDel
                         <Play className="w-3.5 h-3.5 text-[#71717a]" /> Play
                       </button>
                       <button
-                        onClick={() => { setMenuOpen(false); }}
+                        onClick={() => { setMenuOpen(false); onDownload?.(); }}
                         className="w-full flex items-center gap-2.5 px-3 py-2.5 text-[12px] text-[#18181b] hover:bg-[#f4f4f5] transition-colors cursor-pointer"
                         style={{ fontFamily: "var(--font-body)", fontWeight: 450 }}
                       >
@@ -467,11 +481,12 @@ function SessionCard({ session, delay, isNowPlaying, onPlay, onOpenStudio, onDel
 
 /* ─── Bottom Player Bar ─── */
 
-function PlayerBar({ session, isPlaying, onTogglePlay, onClose, inline, sound, volume, onSoundChange, onVolumeChange, audioUrl, isRendering, soundOptions }: {
+function PlayerBar({ session, isPlaying, onTogglePlay, onClose, inline, sound, volume, onSoundChange, onVolumeChange, audioUrl, isRendering, soundOptions, onDownload, isDownloading }: {
   session: SessionItem; isPlaying: boolean;
   onTogglePlay: () => void; onClose: () => void; inline?: boolean;
   sound?: string; volume?: number; onSoundChange?: (s: string) => void; onVolumeChange?: (v: number) => void;
   audioUrl?: string | null; isRendering?: boolean; soundOptions?: { recommended: string[]; other: string[] } | null;
+  onDownload?: () => void; isDownloading?: boolean;
 }) {
   const [progress, setProgress] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
@@ -643,12 +658,8 @@ function PlayerBar({ session, isPlaying, onTogglePlay, onClose, inline, sound, v
   }, [hasRealAudio]);
 
   return (
-    <motion.div
-      initial={{ y: 40, opacity: 0 }}
-      animate={{ y: 0, opacity: 1 }}
-      exit={{ y: 40, opacity: 0 }}
-      transition={{ type: "spring", stiffness: 400, damping: 30, mass: 0.8 }}
-      className={inline ? "border-t border-[#e4e4e7] bg-white/95 backdrop-blur-xl" : "fixed bottom-0 left-0 lg:left-56 right-0 z-50 border-t border-[#e4e4e7] bg-white/95 backdrop-blur-xl"}
+    <div
+      className={inline ? "border-t border-[#e4e4e7] bg-white/95 backdrop-blur-xl animate-[slide-up_0.3s_ease-out]" : "fixed bottom-0 left-0 lg:left-56 right-0 z-50 border-t border-[#e4e4e7] bg-white/95 backdrop-blur-xl animate-[slide-up_0.3s_ease-out]"}
     >
       {/* Hidden audio elements */}
       {hasRealAudio && <audio ref={audioRef} src={audioUrl!} preload="metadata" />}
@@ -660,10 +671,9 @@ function PlayerBar({ session, isPlaying, onTogglePlay, onClose, inline, sound, v
         className={`h-[2px] bg-[#f0f0f3] ${hasRealAudio ? "cursor-pointer" : ""}`}
         onClick={handleSeek}
       >
-        <motion.div
-          className="h-full rounded-full"
+        <div
+          className="h-full rounded-full transition-[width] duration-100"
           style={{ background: colors.accent, width: `${progress}%` }}
-          transition={{ duration: 0.1 }}
         />
       </div>
 
@@ -704,18 +714,19 @@ function PlayerBar({ session, isPlaying, onTogglePlay, onClose, inline, sound, v
               </button>
               <button
                 onClick={onTogglePlay}
-                className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center transition-all cursor-pointer shadow-sm"
+                className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl relative transition-colors cursor-pointer shadow-sm"
                 style={{ background: isPlaying ? colors.accent : "#18181b", color: "#fff" }}
               >
-                {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4 ml-0.5" />}
+                <Pause className={`w-4 h-4 absolute inset-0 m-auto ${isPlaying ? "" : "invisible"}`} />
+                <Play className={`w-4 h-4 absolute inset-0 m-auto translate-x-[1px] ${isPlaying ? "invisible" : ""}`} />
               </button>
               <button onClick={handleSkipForward} className="relative w-8 h-8 sm:w-9 sm:h-9 rounded-lg hover:bg-[#f4f4f5] flex items-center justify-center text-[#71717a] hover:text-[#18181b] transition-colors cursor-pointer" title="Skip 10s">
                 <RotateCw className="w-4 h-4 sm:w-5 sm:h-5" />
                 <span className="absolute text-[6px] sm:text-[7px] font-bold" style={{ fontFamily: "var(--font-body)" }}>10</span>
               </button>
-              {hasRealAudio && duration > 0 && (
-                <span className="hidden sm:inline text-[11px] text-[#a1a1aa] tabular-nums whitespace-nowrap ml-1" style={{ fontFamily: "var(--font-body)" }}>
-                  {formatTime(currentTime)} / {formatTime(duration)}
+              {hasRealAudio && (
+                <span className={`hidden sm:inline text-[11px] text-[#a1a1aa] tabular-nums whitespace-nowrap ml-1 ${duration > 0 ? "" : "invisible"}`} style={{ fontFamily: "var(--font-body)", minWidth: "5.5em", display: "inline-block" }}>
+                  {formatTime(currentTime)} / {formatTime(duration || 0)}
                 </span>
               )}
             </>
@@ -775,8 +786,12 @@ function PlayerBar({ session, isPlaying, onTogglePlay, onClose, inline, sound, v
             )}
           </div>
 
-          <button className="hidden sm:flex w-8 h-8 rounded-lg hover:bg-[#f4f4f5] items-center justify-center text-[#71717a] hover:text-[#18181b] transition-colors cursor-pointer shrink-0">
-            <Download className="w-4 h-4" />
+          <button
+            onClick={onDownload}
+            disabled={!audioUrl || isDownloading}
+            className={`hidden sm:flex w-8 h-8 rounded-lg hover:bg-[#f4f4f5] items-center justify-center text-[#71717a] hover:text-[#18181b] transition-colors cursor-pointer shrink-0 ${!audioUrl || isDownloading ? "opacity-30 pointer-events-none" : ""}`}
+          >
+            {isDownloading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
           </button>
           <button
             onClick={onClose}
@@ -786,7 +801,7 @@ function PlayerBar({ session, isPlaying, onTogglePlay, onClose, inline, sound, v
           </button>
         </div>
       </div>
-    </motion.div>
+    </div>
   );
 }
 
@@ -838,6 +853,7 @@ function StudioSession({ prompt, voice, duration, sound, soundOptions: initialSo
   const [studioAudioUrl, setStudioAudioUrl] = useState<string | null>(initialAudioUrl || null);
   const [studioPlaying, setStudioPlaying] = useState(false);
   const [showStudioPlayer, setShowStudioPlayer] = useState(!!initialAudioUrl);
+  const [studioDownloading, setStudioDownloading] = useState(false);
 
   // Pick up auto-rendered audio URL when it arrives
   useEffect(() => {
@@ -1147,9 +1163,10 @@ function StudioSession({ prompt, voice, duration, sound, soundOptions: initialSo
       });
       console.log("[studio-gen] /api/generate response:", res.status);
       if (res.status === 402) {
-        setGenerateWarning("Insufficient credits. Please upgrade your plan.");
+        setGenerateWarning("You're out of credits. Redirecting to upgrade...");
         setIsGenerating(false);
         onLoadingPhaseChange?.(null);
+        setTimeout(() => { window.location.href = "/upgrade"; }, 1500);
         return;
       }
       if (!res.ok) {
@@ -1942,9 +1959,12 @@ function StudioSession({ prompt, voice, duration, sound, soundOptions: initialSo
                 style={{ transform: "rotate(-90deg)", transformOrigin: "center" }}
               />
             </svg>
-            <span className="text-[13px] text-[#18181b]" style={{ fontFamily: "var(--font-body)", fontWeight: 400 }}>
+            <span className={`text-[13px] ${(profile?.credits_remaining ?? 0) === 0 ? "text-red-500 font-medium" : "text-[#18181b]"}`} style={{ fontFamily: "var(--font-body)", fontWeight: (profile?.credits_remaining ?? 0) === 0 ? 500 : 400 }}>
               {profile?.credits_remaining ?? 0} credits remaining
             </span>
+            <a href="/upgrade" className="text-[11px] px-2.5 py-1 rounded-md bg-[var(--color-sand-100)] text-[var(--color-sand-700)] hover:bg-[var(--color-sand-200)] transition-colors cursor-pointer" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>
+              Get Credits
+            </a>
           </div>
           <div className="flex items-center gap-4">
             {generateWarning && (
@@ -2077,31 +2097,56 @@ function StudioSession({ prompt, voice, duration, sound, soundOptions: initialSo
                 style={{ transform: "rotate(-90deg)", transformOrigin: "center" }}
               />
             </svg>
-            <span className="text-[11px] text-[#a1a1aa]" style={{ fontFamily: "var(--font-body)" }}>
+            <span className={`text-[11px] ${(profile?.credits_remaining ?? 0) === 0 ? "text-red-500 font-medium" : "text-[#a1a1aa]"}`} style={{ fontFamily: "var(--font-body)" }}>
               {profile?.credits_remaining ?? 0} credits remaining
             </span>
+            <a href="/upgrade" className="text-[10px] px-2 py-0.5 rounded-md bg-[var(--color-sand-100)] text-[var(--color-sand-600)] hover:bg-[var(--color-sand-200)] transition-colors cursor-pointer" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>
+              Get Credits
+            </a>
           </div>
         </div>
 
         {/* Inline Studio Player */}
-        <AnimatePresence>
-          {showStudioPlayer && (
-            <PlayerBar
-              session={studioSession}
-              isPlaying={studioPlaying}
-              onTogglePlay={() => setStudioPlaying(prev => !prev)}
-              onClose={() => { setShowStudioPlayer(false); setStudioPlaying(false); }}
-              inline
-              sound={sessionSound}
-              volume={soundVolume}
-              onSoundChange={(s) => { setSessionSound(s); markEdited(); }}
-              onVolumeChange={setSoundVolume}
-              audioUrl={studioAudioUrl}
-              isRendering={renderingAudio}
-              soundOptions={sessionSoundOptions}
-            />
-          )}
-        </AnimatePresence>
+        {showStudioPlayer && (
+          <PlayerBar
+            session={studioSession}
+            isPlaying={studioPlaying}
+            onTogglePlay={() => setStudioPlaying(prev => !prev)}
+            onClose={() => { setShowStudioPlayer(false); setStudioPlaying(false); }}
+            inline
+            sound={sessionSound}
+            volume={soundVolume}
+            onSoundChange={(s) => { setSessionSound(s); markEdited(); }}
+            onVolumeChange={setSoundVolume}
+            audioUrl={studioAudioUrl}
+            isRendering={renderingAudio}
+            soundOptions={sessionSoundOptions}
+            onDownload={async () => {
+              if (!studioAudioUrl) return;
+              setStudioDownloading(true);
+              try {
+                // Resolve bg sound URL for mixing
+                const bgUrl = (() => {
+                  if (!sessionSound) return null;
+                  const idUrl = soundIdToUrl(sessionSound);
+                  if (idUrl) return idUrl;
+                  const found = audioCatalog.find(s => s.label === sessionSound);
+                  return found?.src || null;
+                })();
+                await downloadMixedAudio(studioAudioUrl, `meditation-${sessionName || "session"}.mp3`, bgUrl, soundVolume);
+              } catch (err) {
+                console.error("[download] Studio session download failed:", err);
+                const a = document.createElement("a");
+                a.href = studioAudioUrl;
+                a.download = `meditation-${sessionName || "session"}.mp3`;
+                a.click();
+              } finally {
+                setStudioDownloading(false);
+              }
+            }}
+            isDownloading={studioDownloading}
+          />
+        )}
       </div>
 
       {/* ─── Right Panel (Settings / History) — desktop only ─── */}
@@ -2404,8 +2449,31 @@ function StudioSession({ prompt, voice, duration, sound, soundOptions: initialSo
                               <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-0.5 rounded bg-[#18181b] text-white text-[9px] whitespace-nowrap opacity-0 group-hover/tip:opacity-100 transition-opacity pointer-events-none z-10" style={{ fontFamily: "var(--font-body)" }}>{gen.audioUrl ? "Play" : "No audio"}</span>
                             </div>
                             <div className="relative group/tip">
-                              <button className="h-7 px-2 rounded-md hover:bg-[#f0f0f3] flex items-center justify-center text-[#a1a1aa] hover:text-[#18181b] transition-colors cursor-pointer">
-                                <Download className="w-3 h-3" />
+                              <button
+                                onClick={async () => {
+                                  if (!gen.audioUrl) return;
+                                  setStudioDownloading(true);
+                                  try {
+                                    const bgUrl = (() => {
+                                      if (!sessionSound) return null;
+                                      const idUrl = soundIdToUrl(sessionSound);
+                                      if (idUrl) return idUrl;
+                                      const found = audioCatalog.find(s => s.label === sessionSound);
+                                      return found?.src || null;
+                                    })();
+                                    console.log("[download] Downloading generation:", gen.id, { bgUrl, soundVolume });
+                                    await downloadMixedAudio(gen.audioUrl, `meditation-${gen.prompt?.slice(0, 30) || "session"}.mp3`, bgUrl, soundVolume);
+                                  } catch (err) {
+                                    console.error("[download] Generation download failed:", err);
+                                    const a = document.createElement("a"); a.href = gen.audioUrl!; a.download = "meditation.mp3"; a.click();
+                                  } finally {
+                                    setStudioDownloading(false);
+                                  }
+                                }}
+                                disabled={!gen.audioUrl || studioDownloading}
+                                className={`h-7 px-2 rounded-md hover:bg-[#f0f0f3] flex items-center justify-center text-[#a1a1aa] hover:text-[#18181b] transition-colors cursor-pointer ${!gen.audioUrl || studioDownloading ? "opacity-30 pointer-events-none" : ""}`}
+                              >
+                                {studioDownloading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Download className="w-3 h-3" />}
                               </button>
                               <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-0.5 rounded bg-[#18181b] text-white text-[9px] whitespace-nowrap opacity-0 group-hover/tip:opacity-100 transition-opacity pointer-events-none z-10" style={{ fontFamily: "var(--font-body)" }}>Download</span>
                             </div>
@@ -2661,8 +2729,31 @@ function StudioSession({ prompt, voice, duration, sound, soundOptions: initialSo
                                     >
                                       <Play className="w-3 h-3" />
                                     </button>
-                                    <button className="h-7 px-2 rounded-md hover:bg-[#f0f0f3] flex items-center justify-center text-[#a1a1aa] hover:text-[#18181b] transition-colors cursor-pointer">
-                                      <Download className="w-3 h-3" />
+                                    <button
+                                      onClick={async () => {
+                                        if (!gen.audioUrl) return;
+                                        setStudioDownloading(true);
+                                        try {
+                                          const bgUrl = (() => {
+                                            if (!sessionSound) return null;
+                                            const idUrl = soundIdToUrl(sessionSound);
+                                            if (idUrl) return idUrl;
+                                            const found = audioCatalog.find(s => s.label === sessionSound);
+                                            return found?.src || null;
+                                          })();
+                                          console.log("[download] Downloading generation (mobile):", gen.id, { bgUrl, soundVolume });
+                                          await downloadMixedAudio(gen.audioUrl, `meditation-${gen.prompt?.slice(0, 30) || "session"}.mp3`, bgUrl, soundVolume);
+                                        } catch (err) {
+                                          console.error("[download] Mobile generation download failed:", err);
+                                          const a = document.createElement("a"); a.href = gen.audioUrl!; a.download = "meditation.mp3"; a.click();
+                                        } finally {
+                                          setStudioDownloading(false);
+                                        }
+                                      }}
+                                      disabled={!gen.audioUrl || studioDownloading}
+                                      className={`h-7 px-2 rounded-md hover:bg-[#f0f0f3] flex items-center justify-center text-[#a1a1aa] hover:text-[#18181b] transition-colors cursor-pointer ${!gen.audioUrl || studioDownloading ? "opacity-30 pointer-events-none" : ""}`}
+                                    >
+                                      {studioDownloading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Download className="w-3 h-3" />}
                                     </button>
                                   </div>
                                 )}
@@ -2707,6 +2798,9 @@ function StudioPageContent() {
   const searchParams = useSearchParams();
   const [activeNav, setActiveNav] = useState<NavId>("sessions");
   const [searchQuery, setSearchQuery] = useState("");
+  const [sessionSort, setSessionSort] = useState<"recent" | "newest" | "oldest" | "name-az" | "name-za">("recent");
+  const [sortDropdownOpen, setSortDropdownOpen] = useState(false);
+  const sortDropdownRef = useRef<HTMLDivElement>(null);
   const [generatePrompt, setGeneratePrompt] = useState("");
   const [sessions, setSessions] = useState<SessionItem[]>([]);
   const [generations, setGenerations] = useState<GenerationItem[]>([]);
@@ -2721,6 +2815,63 @@ function StudioPageContent() {
     }
   }, [profileLoading, profile]);
   const [voicePlaying, setVoicePlaying] = useState<string | null>(null);
+  const [isDownloading, setIsDownloading] = useState(false);
+
+  const resolveBgSoundUrl = useCallback((session: SessionItem | null): string | null => {
+    if (!session) return null;
+    const soundKey = session.soundId || session.sound;
+    if (!soundKey) return null;
+    const idUrl = soundIdToUrl(soundKey);
+    if (idUrl) return idUrl;
+    const found = audioCatalog.find(s => s.label === soundKey);
+    return found?.src || null;
+  }, []);
+
+  const handleDownloadAudio = useCallback(async (audioUrl: string | null, sessionTitle?: string, bgSoundUrl?: string | null, bgVolume?: number) => {
+    if (!audioUrl) {
+      console.log("[download] No audio URL available");
+      return;
+    }
+    const filename = `meditation-${sessionTitle || "session"}.mp3`;
+    console.log("[download] Starting studio download:", { audioUrl, filename, bgSoundUrl, bgVolume });
+    setIsDownloading(true);
+    try {
+      await downloadMixedAudio(audioUrl, filename, bgSoundUrl, bgVolume);
+    } catch (err) {
+      console.error("[download] Studio download failed:", err);
+      const a = document.createElement("a");
+      a.href = audioUrl;
+      a.download = filename;
+      a.click();
+    } finally {
+      setIsDownloading(false);
+    }
+  }, []);
+
+  const handleDownloadSession = useCallback(async (sessionId: string, sessionTitle?: string) => {
+    console.log("[download] Fetching audio for session:", sessionId);
+    setIsDownloading(true);
+    try {
+      const session = sessions.find(s => s.id === sessionId) || null;
+      const bgUrl = resolveBgSoundUrl(session);
+      const bgVol = session?.soundVolume ?? 70;
+      console.log("[download] Session sound:", { sound: session?.sound, soundId: session?.soundId, bgUrl, bgVol });
+
+      const res = await fetch(`/api/generations?session_id=${sessionId}&limit=1`);
+      if (!res.ok) throw new Error(`Failed to fetch generations: ${res.status}`);
+      const gens = await res.json();
+      console.log("[download] Generations found:", gens.length);
+      if (gens.length > 0 && gens[0].audio_url) {
+        await downloadMixedAudio(gens[0].audio_url, `meditation-${sessionTitle || sessionId}.mp3`, bgUrl, bgVol);
+      } else {
+        console.log("[download] No audio URL found for session");
+      }
+    } catch (err) {
+      console.error("[download] Session download failed:", err);
+    } finally {
+      setIsDownloading(false);
+    }
+  }, [sessions, resolveBgSoundUrl]);
 
   // Bottom player state
   const [nowPlayingId, setNowPlayingId] = useState<string | null>(null);
@@ -3013,6 +3164,10 @@ function StudioPageContent() {
   const [autoRenderedAudioUrl, setAutoRenderedAudioUrl] = useState<string | null>(null);
   // User can dismiss the loading overlay — audio keeps generating in background
   const [loadingDismissed, setLoadingDismissed] = useState(false);
+  // Track which session is currently being generated (for session card status)
+  const [generatingSessionId, setGeneratingSessionId] = useState<string | null>(null);
+  // Session info to display on loading screen during TTS phase
+  const [loadingSessionInfo, setLoadingSessionInfo] = useState<{ title: string; duration: number; voice: string; protocol: string | null } | null>(null);
   const [genConfig, setGenConfig] = useState({ prompt: "", voice: "Graham", duration: 5, sound: "Rain", soundOptions: null as { recommended: string[]; other: string[] } | null, sessionId: null as string | null, script: null as ScriptBlock[] | null, title: null as string | null, soundVolume: 70, supportChoice: "auto_detect", mode: "still", preferredApproach: "auto" });
   const [showGenAdvanced, setShowGenAdvanced] = useState(false);
   const genGenerateRef = useRef<HTMLDivElement>(null);
@@ -3066,6 +3221,10 @@ function StudioPageContent() {
       return;
     }
     if (isQuickGenerating) return;
+    // Ensure duration is valid — fallback to 5 if somehow unset
+    if (!sharedDurations.includes(genConfig.duration)) {
+      setGenConfig(prev => ({ ...prev, duration: 5 }));
+    }
     setGenPromptError(false);
     setQuickGenError(null);
     setIsQuickGenerating(true);
@@ -3089,6 +3248,14 @@ function StudioPageContent() {
           preferred_approach: genConfig.preferredApproach,
         }),
       });
+      if (res.status === 402) {
+        console.error("[quick-gen] Insufficient credits");
+        setQuickGenError("You're out of credits. Redirecting to upgrade...");
+        setLoadingPhase(null);
+        setIsQuickGenerating(false);
+        setTimeout(() => router.push("/upgrade"), 1500);
+        return;
+      }
       if (!res.ok) {
         console.error("[quick-gen] Script generation failed:", res.status);
         setQuickGenError("Generation failed. Please try again.");
@@ -3097,7 +3264,17 @@ function StudioPageContent() {
       }
       const data = await res.json();
       console.log("[quick-gen] Script done. Session:", data.session?.id, "Generation:", data.generation?.id);
+      if (data.session?.id) setGeneratingSessionId(data.session.id);
       refetchProfile();
+      fetchSessions(); // Refresh session list so the new session appears
+
+      // Capture session info for loading screen display
+      setLoadingSessionInfo({
+        title: data.session?.title || genConfig.prompt,
+        duration: genConfig.duration,
+        voice: voices.find(v => v.id === genConfig.voice)?.name || genConfig.voice,
+        protocol: data.session?.protocol || null,
+      });
 
       // Phase 2: TTS audio rendering
       setLoadingPhase("audio");
@@ -3124,17 +3301,22 @@ function StudioPageContent() {
         }
       }
 
-      // Done — navigate to session in studio with audio ready
-      setLoadingPhase(null);
+      // Done — navigate to session, keep overlay up until session loads
       if (audioUrl) {
         setAutoRenderedAudioUrl(audioUrl);
       }
-      loadedSessionRef.current = null; // Allow session load effect to run
+      loadedSessionRef.current = null;
       router.push(`/studio?session=${data.session.id}`);
+      // Delay clearing overlay so session renders underneath before reveal
+      setTimeout(() => {
+        setLoadingPhase(null);
+        setGeneratingSessionId(null);
+      }, 800);
     } catch (err) {
       console.error("[quick-gen] Error:", err);
       setQuickGenError("Something went wrong. Please try again.");
       setLoadingPhase(null);
+      setGeneratingSessionId(null);
     } finally {
       setIsQuickGenerating(false);
     }
@@ -3190,7 +3372,16 @@ function StudioPageContent() {
     }
   }, []);
 
-  const filteredSessions = sessions;
+  const filteredSessions = [...sessions].sort((a, b) => {
+    switch (sessionSort) {
+      case "newest": return new Date(b.createdAtRaw).getTime() - new Date(a.createdAtRaw).getTime();
+      case "oldest": return new Date(a.createdAtRaw).getTime() - new Date(b.createdAtRaw).getTime();
+      case "name-az": return a.title.localeCompare(b.title);
+      case "name-za": return b.title.localeCompare(a.title);
+      case "recent":
+      default: return 0; // API already returns by updated_at desc
+    }
+  });
 
   // Show loading state while profile is loading or user isn't authorized
   if (profileLoading || !profile || profile.is_anonymous) {
@@ -3287,11 +3478,9 @@ function StudioPageContent() {
                   <p className="text-xs text-[var(--color-sand-900)]" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>{profile?.display_name || "User"}</p>
                   <p className="text-[10px] text-[var(--color-sand-500)]" style={{ fontFamily: "var(--font-body)" }}>{planDisplayName(profile?.plan)} plan</p>
                 </div>
-                {profile?.plan === "free" && (
-                <a href="/upgrade" className="text-[11px] px-3.5 py-1.5 rounded-lg text-white bg-clip-padding bg-[length:300%_300%] animate-[border-glow_4s_ease_infinite] hover:opacity-90 transition-opacity cursor-pointer shadow-sm shrink-0" style={{ fontFamily: "var(--font-body)", fontWeight: 600, backgroundImage: "linear-gradient(135deg, var(--color-sage), var(--color-ocean), var(--color-dusk), var(--color-ember), var(--color-sage))", backgroundSize: "300% 300%" }}>
-                  Upgrade
+                <a href="/upgrade" className={`text-[11px] px-3.5 py-1.5 rounded-lg text-white bg-clip-padding bg-[length:300%_300%] animate-[border-glow_4s_ease_infinite] hover:opacity-90 transition-opacity cursor-pointer shadow-sm shrink-0 ${profile?.plan === "free" ? "" : "!bg-none !bg-[var(--color-sand-800)]"}`} style={{ fontFamily: "var(--font-body)", fontWeight: 600, ...(profile?.plan === "free" ? { backgroundImage: "linear-gradient(135deg, var(--color-sage), var(--color-ocean), var(--color-dusk), var(--color-ember), var(--color-sage))", backgroundSize: "300% 300%" } : {}) }}>
+                  {profile?.plan === "free" ? "Upgrade" : "Get Credits"}
                 </a>
-                )}
               </div>
               <div className="px-2 mb-2 space-y-1">
                 <div className="flex items-center justify-between">
@@ -3300,7 +3489,7 @@ function StudioPageContent() {
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-[11px] text-[var(--color-sand-500)]" style={{ fontFamily: "var(--font-body)" }}>Remaining</span>
-                  <span className="text-[11px] text-[var(--color-sand-900)] tabular-nums" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>{profile?.credits_remaining ?? 0}</span>
+                  <span className={`text-[11px] tabular-nums ${(profile?.credits_remaining ?? 0) === 0 ? "text-red-500 font-medium" : "text-[var(--color-sand-900)]"}`} style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>{profile?.credits_remaining ?? 0}</span>
                 </div>
               </div>
               <button onClick={async () => { await fetch("/api/auth/signout", { method: "POST" }); const { createClient: cc } = await import("@/lib/supabase/client"); await cc().auth.signOut(); window.location.href = "/"; }} className="flex items-center gap-1.5 px-2 py-1 rounded-md text-red-600 hover:text-red-700 transition-all text-[11px] cursor-pointer" style={{ fontFamily: "var(--font-body)" }}>
@@ -3453,11 +3642,9 @@ function StudioPageContent() {
                 <p className="text-xs text-[var(--color-sand-900)]" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>{profile?.display_name || "User"}</p>
                 <p className="text-[10px] text-[var(--color-sand-500)]" style={{ fontFamily: "var(--font-body)" }}>{planDisplayName(profile?.plan)} plan</p>
               </div>
-              {profile?.plan === "free" && (
-              <a href="/upgrade" className="text-[11px] px-3.5 py-1.5 rounded-lg text-white bg-clip-padding bg-[length:300%_300%] animate-[border-glow_4s_ease_infinite] hover:opacity-90 transition-opacity cursor-pointer shadow-sm shrink-0" style={{ fontFamily: "var(--font-body)", fontWeight: 600, backgroundImage: "linear-gradient(135deg, var(--color-sage), var(--color-ocean), var(--color-dusk), var(--color-ember), var(--color-sage))", backgroundSize: "300% 300%" }}>
-                Upgrade
+              <a href="/upgrade" className={`text-[11px] px-3.5 py-1.5 rounded-lg text-white bg-clip-padding bg-[length:300%_300%] animate-[border-glow_4s_ease_infinite] hover:opacity-90 transition-opacity cursor-pointer shadow-sm shrink-0 ${profile?.plan === "free" ? "" : "!bg-none !bg-[var(--color-sand-800)]"}`} style={{ fontFamily: "var(--font-body)", fontWeight: 600, ...(profile?.plan === "free" ? { backgroundImage: "linear-gradient(135deg, var(--color-sage), var(--color-ocean), var(--color-dusk), var(--color-ember), var(--color-sage))", backgroundSize: "300% 300%" } : {}) }}>
+                {profile?.plan === "free" ? "Upgrade" : "Get Credits"}
               </a>
-              )}
             </div>
             <div className="px-2 mb-2 space-y-1">
               <div className="flex items-center justify-between">
@@ -3466,7 +3653,7 @@ function StudioPageContent() {
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-[11px] text-[var(--color-sand-500)]" style={{ fontFamily: "var(--font-body)" }}>Remaining</span>
-                <span className="text-[11px] text-[var(--color-sand-800)] tabular-nums" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>{profile?.credits_remaining ?? 0}</span>
+                <span className={`text-[11px] tabular-nums ${(profile?.credits_remaining ?? 0) === 0 ? "text-red-500 font-medium" : "text-[var(--color-sand-800)]"}`} style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>{profile?.credits_remaining ?? 0}</span>
               </div>
             </div>
             <button onClick={async () => { await fetch("/api/auth/signout", { method: "POST" }); const { createClient: cc } = await import("@/lib/supabase/client"); await cc().auth.signOut(); window.location.href = "/"; }} className="flex items-center gap-1.5 px-2 py-1 rounded-md text-red-600 hover:text-red-700 transition-all text-[11px] cursor-pointer" style={{ fontFamily: "var(--font-body)" }}>
@@ -3499,11 +3686,57 @@ function StudioPageContent() {
                 </span>
               )}
             </div>
-            <div className={`relative transition-all ${activeNav === "sessions" ? "opacity-100" : "opacity-0 pointer-events-none"}`}>
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#a1a1aa]" />
-              <input type="text" placeholder="Search sessions..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-40 sm:w-56 pl-9 pr-3 py-2 rounded-lg bg-white border border-[#e4e4e7] text-[13px] text-[#18181b] placeholder:text-[#a1a1aa] focus:outline-none focus:border-[#a1a1aa] focus:shadow-[0_0_0_3px_rgba(0,0,0,0.04)] transition-all"
-                style={{ fontFamily: "var(--font-body)" }} />
+            <div className={`flex items-center gap-2 transition-all ${activeNav === "sessions" ? "opacity-100" : "opacity-0 pointer-events-none"}`}>
+              {/* Sort dropdown */}
+              <div className="relative" ref={sortDropdownRef}>
+                <button
+                  onClick={() => setSortDropdownOpen(!sortDropdownOpen)}
+                  className={`flex items-center gap-1.5 px-2.5 py-2 rounded-lg border text-[12px] transition-all cursor-pointer ${sortDropdownOpen ? "bg-white border-[#a1a1aa] shadow-[0_0_0_3px_rgba(0,0,0,0.04)]" : "bg-white border-[#e4e4e7] hover:border-[#c0c0c8]"}`}
+                  style={{ fontFamily: "var(--font-body)", fontWeight: 450 }}
+                >
+                  <ArrowUpDown className="w-3.5 h-3.5 text-[#a1a1aa]" />
+                  <span className="text-[#52525b] hidden sm:inline">{{ recent: "Recent", newest: "Newest", oldest: "Oldest", "name-az": "A–Z", "name-za": "Z–A" }[sessionSort]}</span>
+                </button>
+                <AnimatePresence>
+                  {sortDropdownOpen && (
+                    <>
+                      <div className="fixed inset-0 z-[200]" onClick={() => setSortDropdownOpen(false)} />
+                      <motion.div
+                        initial={{ opacity: 0, scale: 0.95, y: 4 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.95, y: 4 }}
+                        transition={{ duration: 0.15 }}
+                        className="absolute right-0 top-full mt-1 w-40 bg-white rounded-lg border border-[#e4e4e7] shadow-lg z-[210] overflow-hidden"
+                      >
+                        {([
+                          { value: "recent" as const, label: "Recent" },
+                          { value: "newest" as const, label: "Newest" },
+                          { value: "oldest" as const, label: "Oldest" },
+                          { value: "name-az" as const, label: "Name A–Z" },
+                          { value: "name-za" as const, label: "Name Z–A" },
+                        ]).map((opt, i) => (
+                          <button
+                            key={opt.value}
+                            onClick={() => { setSessionSort(opt.value); setSortDropdownOpen(false); }}
+                            className={`w-full flex items-center justify-between px-3 py-2.5 text-[12px] hover:bg-[#f4f4f5] transition-colors cursor-pointer ${i > 0 ? "border-t border-[#f0f0f3]" : ""}`}
+                            style={{ fontFamily: "var(--font-body)", fontWeight: sessionSort === opt.value ? 500 : 400 }}
+                          >
+                            <span className={sessionSort === opt.value ? "text-[#18181b]" : "text-[#52525b]"}>{opt.label}</span>
+                            {sessionSort === opt.value && <Check className="w-3.5 h-3.5 text-[#6b9a70]" />}
+                          </button>
+                        ))}
+                      </motion.div>
+                    </>
+                  )}
+                </AnimatePresence>
+              </div>
+              {/* Search */}
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#a1a1aa]" />
+                <input type="text" placeholder="Search sessions..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-40 sm:w-56 pl-9 pr-3 py-2 rounded-lg bg-white border border-[#e4e4e7] text-[13px] text-[#18181b] placeholder:text-[#a1a1aa] focus:outline-none focus:border-[#a1a1aa] focus:shadow-[0_0_0_3px_rgba(0,0,0,0.04)] transition-all"
+                  style={{ fontFamily: "var(--font-body)" }} />
+              </div>
             </div>
           </div>
         </motion.header>
@@ -3566,6 +3799,7 @@ function StudioPageContent() {
                         session={session}
                         delay={0.04 + i * 0.03}
                         isNowPlaying={nowPlayingId === session.id && playerPlaying}
+                        isGeneratingAudio={generatingSessionId === session.id}
                         onPlay={() => handlePlaySession(session.id)}
                         onOpenStudio={async () => {
                           setLoadingSession(true);
@@ -3577,7 +3811,7 @@ function StudioPageContent() {
                               setGenConfig({
                                 prompt: full.prompt || session.title,
                                 voice: full.voice || session.voice || "Graham",
-                                duration: full.duration || parseInt(session.duration),
+                                duration: full.duration || parseInt(session.duration) || 5,
                                 sound: (full.soundscape ? soundIdToLabel(full.soundscape) || full.soundscape : null) || session.sound,
                                 soundOptions: full.sound_options || null,
                                 sessionId: session.id,
@@ -3589,10 +3823,10 @@ function StudioPageContent() {
                                 preferredApproach: full.preferred_approach || "auto",
                               });
                             } else {
-                              setGenConfig({ prompt: session.title, voice: session.voice || "Graham", duration: parseInt(session.duration), sound: session.sound, soundOptions: null, sessionId: session.id, script: null, title: session.title, soundVolume: 70, supportChoice: detectSupportChoice(session.title || ""), mode: "still", preferredApproach: "auto" });
+                              setGenConfig({ prompt: session.title, voice: session.voice || "Graham", duration: parseInt(session.duration) || 5, sound: session.sound, soundOptions: null, sessionId: session.id, script: null, title: session.title, soundVolume: 70, supportChoice: detectSupportChoice(session.title || ""), mode: "still", preferredApproach: "auto" });
                             }
                           } catch {
-                            setGenConfig({ prompt: session.title, voice: session.voice || "Graham", duration: parseInt(session.duration), sound: session.sound, soundOptions: null, sessionId: session.id, script: null, title: session.title, soundVolume: 70, supportChoice: detectSupportChoice(session.title || ""), mode: "still", preferredApproach: "auto" });
+                            setGenConfig({ prompt: session.title, voice: session.voice || "Graham", duration: parseInt(session.duration) || 5, sound: session.sound, soundOptions: null, sessionId: session.id, script: null, title: session.title, soundVolume: 70, supportChoice: detectSupportChoice(session.title || ""), mode: "still", preferredApproach: "auto" });
                           }
                           setActiveNav("generate" as NavId);
                           setGenStep("studio");
@@ -3602,6 +3836,7 @@ function StudioPageContent() {
                         onRegen={() => setConfirmDialog({ type: "regenerate", sessionId: session.id, sessionTitle: session.title })}
                         onGenerate={() => setConfirmDialog({ type: "generate", sessionId: session.id, sessionTitle: session.title })}
                         onDelete={() => setConfirmDialog({ type: "delete", sessionId: session.id, sessionTitle: session.title })}
+                        onDownload={() => handleDownloadSession(session.id, session.title)}
                       />
                     ))}
                   </div>
@@ -3736,11 +3971,11 @@ function StudioPageContent() {
                             </div>
                             <div className="relative group/tip">
                               <button
-                                onClick={(e) => { e.stopPropagation(); }}
-                                disabled={(gen.status as string) === "failed"}
+                                onClick={(e) => { e.stopPropagation(); handleDownloadAudio(gen.audioUrl, gen.prompt?.slice(0, 30), resolveBgSoundUrl(genSession ?? null), genSession?.soundVolume ?? 70); }}
+                                disabled={(gen.status as string) === "failed" || !gen.audioUrl || isDownloading}
                                 className="w-8 h-8 rounded-lg hover:bg-[#e7e5e4] flex items-center justify-center text-[#3f3f46] hover:text-[#18181b] transition-colors disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
                               >
-                                <Download className="w-4 h-4" />
+                                {isDownloading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
                               </button>
                               <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 px-2 py-1 rounded-md bg-[#18181b] text-white text-[10px] whitespace-nowrap opacity-0 group-hover/tip:opacity-100 transition-opacity pointer-events-none z-10" style={{ fontFamily: "var(--font-body)" }}>Download</span>
                             </div>
@@ -3816,12 +4051,12 @@ function StudioPageContent() {
                                 const res = await fetch(`/api/sessions/${session.id}`);
                                 if (res.ok) {
                                   const full = await res.json();
-                                  setGenConfig({ prompt: full.prompt || session.title, voice: full.voice || session.voice || "Graham", duration: full.duration || parseInt(session.duration), sound: (full.soundscape ? soundIdToLabel(full.soundscape) || full.soundscape : null) || session.sound, soundOptions: full.sound_options || null, sessionId: session.id, script: normalizeScript(full.script), title: full.title || session.title, soundVolume: full.sound_volume ?? 70, supportChoice: full.support_choice || detectSupportChoice(full.prompt || session.title || ""), mode: full.mode || "still", preferredApproach: full.preferred_approach || "auto" });
+                                  setGenConfig({ prompt: full.prompt || session.title, voice: full.voice || session.voice || "Graham", duration: full.duration || parseInt(session.duration) || 5, sound: (full.soundscape ? soundIdToLabel(full.soundscape) || full.soundscape : null) || session.sound, soundOptions: full.sound_options || null, sessionId: session.id, script: normalizeScript(full.script), title: full.title || session.title, soundVolume: full.sound_volume ?? 70, supportChoice: full.support_choice || detectSupportChoice(full.prompt || session.title || ""), mode: full.mode || "still", preferredApproach: full.preferred_approach || "auto" });
                                 } else {
-                                  setGenConfig({ prompt: session.title, voice: session.voice || "Graham", duration: parseInt(session.duration), sound: session.sound, soundOptions: null, sessionId: session.id, script: null, title: session.title, soundVolume: 70, supportChoice: detectSupportChoice(session.title || ""), mode: "still", preferredApproach: "auto" });
+                                  setGenConfig({ prompt: session.title, voice: session.voice || "Graham", duration: parseInt(session.duration) || 5, sound: session.sound, soundOptions: null, sessionId: session.id, script: null, title: session.title, soundVolume: 70, supportChoice: detectSupportChoice(session.title || ""), mode: "still", preferredApproach: "auto" });
                                 }
                               } catch {
-                                setGenConfig({ prompt: session.title, voice: session.voice || "Graham", duration: parseInt(session.duration), sound: session.sound, soundOptions: null, sessionId: session.id, script: null, title: session.title, soundVolume: 70, supportChoice: detectSupportChoice(session.title || ""), mode: "still", preferredApproach: "auto" });
+                                setGenConfig({ prompt: session.title, voice: session.voice || "Graham", duration: parseInt(session.duration) || 5, sound: session.sound, soundOptions: null, sessionId: session.id, script: null, title: session.title, soundVolume: 70, supportChoice: detectSupportChoice(session.title || ""), mode: "still", preferredApproach: "auto" });
                               }
                               setActiveNav("generate" as NavId);
                               setGenStep("studio");
@@ -3844,7 +4079,7 @@ function StudioPageContent() {
                             <div className="flex items-center justify-end gap-1">
                               <div className="relative group/tip">
                                 <button
-                                  onClick={async (e) => { e.stopPropagation(); setLoadingSession(true); try { const res = await fetch(`/api/sessions/${session.id}`); if (res.ok) { const full = await res.json(); setGenConfig({ prompt: full.prompt || session.title, voice: full.voice || session.voice || "Graham", duration: full.duration || parseInt(session.duration), sound: (full.soundscape ? soundIdToLabel(full.soundscape) || full.soundscape : null) || session.sound, soundOptions: full.sound_options || null, sessionId: session.id, script: normalizeScript(full.script), title: full.title || session.title, soundVolume: full.sound_volume ?? 70, supportChoice: full.support_choice || detectSupportChoice(full.prompt || session.title || ""), mode: full.mode || "still", preferredApproach: full.preferred_approach || "auto" }); } else { setGenConfig({ prompt: session.title, voice: session.voice || "Graham", duration: parseInt(session.duration), sound: session.sound, soundOptions: null, sessionId: session.id, script: null, title: session.title, soundVolume: 70, supportChoice: detectSupportChoice(session.title || ""), mode: "still", preferredApproach: "auto" }); } } catch { setGenConfig({ prompt: session.title, voice: session.voice || "Graham", duration: parseInt(session.duration), sound: session.sound, soundOptions: null, sessionId: session.id, script: null, title: session.title, soundVolume: 70, supportChoice: detectSupportChoice(session.title || ""), mode: "still", preferredApproach: "auto" }); } setActiveNav("generate" as NavId); setGenStep("studio"); setLoadingSession(false); updateSessionUrl(session.id); }}
+                                  onClick={async (e) => { e.stopPropagation(); setLoadingSession(true); try { const res = await fetch(`/api/sessions/${session.id}`); if (res.ok) { const full = await res.json(); setGenConfig({ prompt: full.prompt || session.title, voice: full.voice || session.voice || "Graham", duration: full.duration || parseInt(session.duration) || 5, sound: (full.soundscape ? soundIdToLabel(full.soundscape) || full.soundscape : null) || session.sound, soundOptions: full.sound_options || null, sessionId: session.id, script: normalizeScript(full.script), title: full.title || session.title, soundVolume: full.sound_volume ?? 70, supportChoice: full.support_choice || detectSupportChoice(full.prompt || session.title || ""), mode: full.mode || "still", preferredApproach: full.preferred_approach || "auto" }); } else { setGenConfig({ prompt: session.title, voice: session.voice || "Graham", duration: parseInt(session.duration) || 5, sound: session.sound, soundOptions: null, sessionId: session.id, script: null, title: session.title, soundVolume: 70, supportChoice: detectSupportChoice(session.title || ""), mode: "still", preferredApproach: "auto" }); } } catch { setGenConfig({ prompt: session.title, voice: session.voice || "Graham", duration: parseInt(session.duration) || 5, sound: session.sound, soundOptions: null, sessionId: session.id, script: null, title: session.title, soundVolume: 70, supportChoice: detectSupportChoice(session.title || ""), mode: "still", preferredApproach: "auto" }); } setActiveNav("generate" as NavId); setGenStep("studio"); setLoadingSession(false); updateSessionUrl(session.id); }}
                                   className="w-8 h-8 rounded-lg hover:bg-[#ededfc] flex items-center justify-center text-[#3f3f46] hover:text-[#18181b] transition-colors cursor-pointer"
                                 >
                                   <PenLine className="w-4 h-4" />
@@ -4038,11 +4273,11 @@ function StudioPageContent() {
                 <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.06 }} className="mb-5">
                   <p className="text-[11px] uppercase tracking-widest text-[var(--color-sand-400)] mb-2" style={{ fontFamily: "var(--font-body)" }}>Duration</p>
                   <div className="relative">
-                    {genConfig.duration !== 5 && <span className="absolute -top-4 left-1/2 -translate-x-1/2 text-[9px] uppercase tracking-wide text-[var(--color-sand-400)] z-10" style={{ fontFamily: "var(--font-body)" }}>Popular</span>}
+                    {Number(genConfig.duration) !== 5 && <span className="absolute -top-4 left-1/2 -translate-x-1/2 text-[9px] uppercase tracking-wide text-[var(--color-sand-400)] z-10" style={{ fontFamily: "var(--font-body)" }}>Popular</span>}
                     <div className="flex items-center rounded-xl overflow-visible border border-[var(--color-sand-200)]">
                       {sharedDurations.map((d, i) => (
                         <button key={d} onClick={() => setGenConfig(prev => ({ ...prev, duration: d }))}
-                          className={`flex-1 py-2 text-[13px] relative cursor-pointer ${genConfig.duration === d ? "bg-[var(--color-sand-900)] text-[var(--color-sand-50)]" : "bg-white text-[var(--color-sand-600)] hover:bg-[var(--color-sand-100)]"} ${i > 0 ? "border-l border-[var(--color-sand-200)]" : ""} ${i === 0 ? "rounded-l-xl" : ""} ${i === sharedDurations.length - 1 ? "rounded-r-xl" : ""}`}
+                          className={`flex-1 py-2 text-[13px] relative cursor-pointer ${Number(genConfig.duration) === d ? "bg-[var(--color-sand-900)] text-[var(--color-sand-50)]" : "bg-white text-[var(--color-sand-600)] hover:bg-[var(--color-sand-100)]"} ${i > 0 ? "border-l border-[var(--color-sand-200)]" : ""} ${i === 0 ? "rounded-l-xl" : ""} ${i === sharedDurations.length - 1 ? "rounded-r-xl" : ""}`}
                           style={{ fontFamily: "var(--font-body)" }}
                         >
                           {d}m
@@ -4282,7 +4517,7 @@ function StudioPageContent() {
                             <p className="text-[13px] text-[var(--color-sand-900)] truncate" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>{profile?.email || "user@example.com"}</p>
                             <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                               <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] bg-[var(--color-sand-100)] text-[var(--color-sand-600)] border border-[var(--color-sand-200)]" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>{planDisplayName(profile?.plan)}</span>
-                              <span className="text-[11px] text-[var(--color-sand-400)]" style={{ fontFamily: "var(--font-body)" }}>{profile?.credits_remaining ?? 0} credits remaining</span>
+                              <span className={`text-[11px] ${(profile?.credits_remaining ?? 0) === 0 ? "text-red-500 font-medium" : "text-[var(--color-sand-400)]"}`} style={{ fontFamily: "var(--font-body)" }}>{profile?.credits_remaining ?? 0} credits remaining</span>
                             </div>
                           </div>
                         </div>
@@ -4298,7 +4533,7 @@ function StudioPageContent() {
                           onClick={() => router.push("/upgrade")}
                           className="px-4 py-2 rounded-full text-[12px] text-[var(--color-sand-600)] border border-[var(--color-sand-200)] hover:bg-[var(--color-sand-50)] cursor-pointer transition-all shrink-0 self-start sm:self-center"
                           style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>
-                          Manage Plan
+                          See Plans
                         </button>
                         )}
                       </div>
@@ -4307,14 +4542,34 @@ function StudioPageContent() {
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                           <div>
                             <span className="text-[12px] text-[var(--color-sand-700)] block" style={{ fontFamily: "var(--font-body)", fontWeight: 450 }}>Subscription</span>
-                            <span className="text-[11px] text-[var(--color-sand-400)]" style={{ fontFamily: "var(--font-body)" }}>Manage billing, invoices, and plan changes</span>
+                            <span className="text-[11px] text-[var(--color-sand-400)]" style={{ fontFamily: "var(--font-body)" }}>
+                              {profile?.plan === "free" ? "Upgrade to get more credits" : "Manage billing, invoices, and plan changes"}
+                            </span>
                           </div>
+                          {profile?.plan === "free" ? (
                           <button
                             onClick={() => router.push("/upgrade")}
                             className="px-4 py-2 rounded-full border border-[var(--color-sand-200)] text-[12px] text-[var(--color-sand-600)] hover:bg-[var(--color-sand-50)] hover:border-[var(--color-sand-300)] transition-all cursor-pointer shrink-0 self-start sm:self-center"
                             style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>
+                            See Plans
+                          </button>
+                          ) : (
+                          <button
+                            onClick={async () => {
+                              try {
+                                const res = await fetch("/api/billing-portal", { method: "POST" });
+                                if (!res.ok) throw new Error("Failed");
+                                const data = await res.json();
+                                if (data.url) window.location.href = data.url;
+                              } catch {
+                                router.push("/upgrade");
+                              }
+                            }}
+                            className="px-4 py-2 rounded-full border border-[var(--color-sand-200)] text-[12px] text-[var(--color-sand-600)] hover:bg-[var(--color-sand-50)] hover:border-[var(--color-sand-300)] transition-all cursor-pointer shrink-0 self-start sm:self-center"
+                            style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>
                             Manage
                           </button>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -4410,19 +4665,20 @@ function StudioPageContent() {
       </main>
 
       {/* Bottom Player */}
-      <AnimatePresence>
-        {nowPlayingSession && (
-          <PlayerBar
-            session={nowPlayingSession}
-            isPlaying={playerPlaying}
-            onTogglePlay={() => setPlayerPlaying(prev => !prev)}
-            onClose={handleClosePlayer}
-            audioUrl={playerAudioUrl}
-            sound={nowPlayingSession.soundId || nowPlayingSession.sound}
-            soundOptions={nowPlayingSession.soundOptions}
-          />
-        )}
-      </AnimatePresence>
+      {nowPlayingSession && (
+        <PlayerBar
+          key={nowPlayingSession.id}
+          session={nowPlayingSession}
+          isPlaying={playerPlaying}
+          onTogglePlay={() => setPlayerPlaying(prev => !prev)}
+          onClose={handleClosePlayer}
+          audioUrl={playerAudioUrl}
+          sound={nowPlayingSession.soundId || nowPlayingSession.sound}
+          soundOptions={nowPlayingSession.soundOptions}
+          onDownload={() => handleDownloadAudio(playerAudioUrl, nowPlayingSession.title, resolveBgSoundUrl(nowPlayingSession), nowPlayingSession.soundVolume)}
+          isDownloading={isDownloading}
+        />
+      )}
 
       {/* Confirmation Dialog */}
       <AnimatePresence>
@@ -4492,7 +4748,7 @@ function StudioPageContent() {
                           body: JSON.stringify({
                             prompt: session.title,
                             voice: session.voice,
-                            duration: parseInt(session.duration),
+                            duration: parseInt(session.duration) || 5,
                             soundscape: session.sound,
                             sessionId: session.id,
                           }),
@@ -4540,7 +4796,6 @@ function StudioPageContent() {
       </AnimatePresence>
 
       {/* ─── Fullscreen Loading Overlay ─── */}
-      {(() => { if (loadingPhase) console.log("[studio] Overlay check: loadingPhase=", loadingPhase, "dismissed=", loadingDismissed); return null; })()}
       <AnimatePresence>
         {loadingPhase && !loadingDismissed && (
           <motion.div
@@ -4551,10 +4806,9 @@ function StudioPageContent() {
             className="fixed inset-0 z-[60] flex flex-col items-center justify-center"
             style={{ background: "var(--color-sand-50)" }}
           >
-            {/* Grain texture */}
             <div className="grain-overlay absolute inset-0 pointer-events-none" />
 
-            {/* X button — dismiss overlay, audio keeps generating in background */}
+            {/* X button */}
             <button
               onClick={() => setLoadingDismissed(true)}
               className="absolute top-6 right-6 w-9 h-9 rounded-full flex items-center justify-center text-[var(--color-sand-400)] hover:text-[var(--color-sand-700)] hover:bg-[var(--color-sand-100)] transition-all cursor-pointer z-10"
@@ -4601,27 +4855,61 @@ function StudioPageContent() {
               </motion.div>
             </div>
 
+            {/* Session title — appears on transition from script → audio */}
+            <AnimatePresence>
+              {loadingPhase === "audio" && loadingSessionInfo?.title && (
+                <motion.p
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.6 }}
+                  className="text-lg sm:text-xl text-[var(--color-sand-900)] mb-2 text-center px-4"
+                  style={{ fontFamily: "var(--font-display)" }}
+                >
+                  {loadingSessionInfo.title}
+                </motion.p>
+              )}
+            </AnimatePresence>
+
             {/* Phase message */}
-            <div className="h-16 flex flex-col items-center justify-center">
+            <div className="h-12 flex flex-col items-center justify-center">
               <AnimatePresence mode="wait">
-                <motion.div
+                <motion.p
                   key={`${loadingPhase}-${loadingPhaseStep}`}
                   initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -8 }}
                   transition={{ duration: 0.4 }}
-                  className="text-center"
+                  className="text-sm text-[var(--color-sand-600)] text-center"
+                  style={{ fontFamily: "var(--font-body)" }}
                 >
-                  <p className="text-sm text-[var(--color-sand-600)]" style={{ fontFamily: "var(--font-body)" }}>
-                    {loadingPhase === "script" && loadingPhaseStep === 0 && "Writing your meditation..."}
-                    {loadingPhase === "script" && loadingPhaseStep === 1 && "Choosing the right approach..."}
-                    {loadingPhase === "audio" && loadingPhaseStep === 0 && "Script is ready — generating voice..."}
-                    {loadingPhase === "audio" && loadingPhaseStep === 1 && "Shaping the soundscape..."}
-                    {loadingPhase === "audio" && loadingPhaseStep === 2 && "Almost there..."}
-                  </p>
-                </motion.div>
+                  {loadingPhase === "script" && loadingPhaseStep === 0 && "Writing your meditation..."}
+                  {loadingPhase === "script" && loadingPhaseStep === 1 && "Choosing the right approach..."}
+                  {loadingPhase === "audio" && loadingPhaseStep === 0 && "Script is ready — generating voice..."}
+                  {loadingPhase === "audio" && loadingPhaseStep === 1 && "Shaping the soundscape..."}
+                  {loadingPhase === "audio" && loadingPhaseStep === 2 && "Almost there..."}
+                </motion.p>
               </AnimatePresence>
             </div>
+
+            {/* Metadata pills — appear during audio phase */}
+            <AnimatePresence>
+              {loadingPhase === "audio" && loadingSessionInfo && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.3, duration: 0.5 }}
+                  className="flex items-center justify-center gap-2 flex-wrap mt-2"
+                >
+                  <span className="px-2.5 py-1 rounded-full bg-[var(--color-sand-100)] text-[var(--color-sand-700)] text-xs" style={{ fontFamily: "var(--font-body)" }}>{loadingSessionInfo.duration} min</span>
+                  <span className="px-2.5 py-1 rounded-full bg-[var(--color-sand-100)] text-[var(--color-sand-700)] text-xs" style={{ fontFamily: "var(--font-body)" }}>{loadingSessionInfo.voice}</span>
+                  {loadingSessionInfo.protocol && (
+                    <span className="px-2.5 py-1 rounded-full bg-[var(--color-sand-100)] text-[var(--color-sand-700)] text-xs" style={{ fontFamily: "var(--font-body)" }}>
+                      {protocolLabel(loadingSessionInfo.protocol)}
+                    </span>
+                  )}
+                </motion.div>
+              )}
+            </AnimatePresence>
 
             {/* Reassurance */}
             <motion.p

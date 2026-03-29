@@ -32,6 +32,7 @@ import {
   soundIdToUrl,
   soundIdToLabel,
   protocolLabel,
+  downloadMixedAudio,
 } from "@/lib/shared";
 import { createClient } from "@/lib/supabase/client";
 
@@ -284,125 +285,22 @@ function SessionContent() {
     return preset?.src || null;
   })();
 
-  const handleDownloadMixed = async () => {
+  const handleDownload = async () => {
     if (!audioUrl) return;
-    const hasBg = bgSoundUrl && bgVolume > 0;
-
-    if (!hasBg) {
-      const a = document.createElement("a");
-      a.href = audioUrl;
-      a.download = `meditation-${sessionId || "session"}.mp3`;
-      a.click();
-      return;
-    }
-
+    const filename = `meditation-${sessionId || "session"}.mp3`;
     try {
-      setDownloadProgress("Preparing audio...");
-      const audioCtx = new AudioContext();
-
-      setDownloadProgress("Fetching audio files...");
-      const [voiceResponse, bgResponse] = await Promise.all([
-        fetch(audioUrl),
-        fetch(bgSoundUrl!),
-      ]);
-      const [voiceArrayBuf, bgArrayBuf] = await Promise.all([
-        voiceResponse.arrayBuffer(),
-        bgResponse.arrayBuffer(),
-      ]);
-
-      setDownloadProgress("Decoding audio...");
-      const [voiceBuf, bgBuf] = await Promise.all([
-        audioCtx.decodeAudioData(voiceArrayBuf),
-        audioCtx.decodeAudioData(bgArrayBuf),
-      ]);
-
-      const sampleRate = voiceBuf.sampleRate;
-      const channels = Math.max(voiceBuf.numberOfChannels, 2);
-      const length = voiceBuf.length;
-      const offline = new OfflineAudioContext(channels, length, sampleRate);
-
-      const voiceSource = offline.createBufferSource();
-      voiceSource.buffer = voiceBuf;
-      voiceSource.connect(offline.destination);
-
-      const bgGain = offline.createGain();
-      bgGain.gain.value = bgVolume / 100;
-      bgGain.connect(offline.destination);
-
-      const bgSource = offline.createBufferSource();
-      bgSource.buffer = bgBuf;
-      bgSource.loop = true;
-      bgSource.connect(bgGain);
-
-      voiceSource.start(0);
-      bgSource.start(0);
-
-      setDownloadProgress("Mixing audio...");
-      const renderedBuffer = await offline.startRendering();
-
-      setDownloadProgress("Encoding MP3...");
-      const mp3Blob = await encodeMp3(renderedBuffer);
-      const url = URL.createObjectURL(mp3Blob);
-
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `meditation-${sessionId || "session"}.mp3`;
-      a.click();
-      URL.revokeObjectURL(url);
-
-      audioCtx.close();
+      setDownloadProgress("Preparing...");
+      await downloadMixedAudio(audioUrl, filename, bgSoundUrl, bgVolume);
     } catch (err) {
-      console.error("Download mix failed:", err);
+      console.error("[download] Failed, falling back to voice-only:", err);
       const a = document.createElement("a");
       a.href = audioUrl;
-      a.download = `meditation-${sessionId || "session"}.mp3`;
+      a.download = filename;
       a.click();
     } finally {
       setDownloadProgress(null);
     }
   };
-
-  async function encodeMp3(buffer: AudioBuffer): Promise<Blob> {
-    // Load lamejs dynamically
-    if (!(window as any).lamejs) {
-      await new Promise<void>((resolve, reject) => {
-        const script = document.createElement("script");
-        script.src = "/lamejs.min.js";
-        script.onload = () => resolve();
-        script.onerror = () => reject(new Error("Failed to load MP3 encoder"));
-        document.head.appendChild(script);
-      });
-    }
-    const { Mp3Encoder } = (window as any).lamejs;
-
-    const numChannels = buffer.numberOfChannels;
-    const sampleRate = buffer.sampleRate;
-    const kbps = 192;
-    const encoder = new Mp3Encoder(numChannels, sampleRate, kbps);
-
-    const left = buffer.getChannelData(0);
-    const right = numChannels > 1 ? buffer.getChannelData(1) : left;
-
-    const blockSize = 1152;
-    const mp3Data: Int8Array[] = [];
-
-    for (let i = 0; i < left.length; i += blockSize) {
-      const end = Math.min(i + blockSize, left.length);
-      const leftChunk = new Int16Array(end - i);
-      const rightChunk = new Int16Array(end - i);
-      for (let j = 0; j < end - i; j++) {
-        leftChunk[j] = Math.max(-32768, Math.min(32767, Math.round(left[i + j] * 32767)));
-        rightChunk[j] = Math.max(-32768, Math.min(32767, Math.round(right[i + j] * 32767)));
-      }
-      const mp3buf = encoder.encodeBuffer(leftChunk, rightChunk);
-      if (mp3buf.length > 0) mp3Data.push(mp3buf);
-    }
-
-    const end = encoder.flush();
-    if (end.length > 0) mp3Data.push(end);
-
-    return new Blob(mp3Data, { type: "audio/mp3" });
-  }
 
   const [bgSoundLoading, setBgSoundLoading] = useState(false);
 
@@ -788,7 +686,7 @@ function SessionContent() {
                       </button>
                       <div className="flex items-center gap-1">
                         <button
-                          onClick={handleDownloadMixed}
+                          onClick={handleDownload}
                           className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-2 rounded-lg text-[var(--color-sand-600)] hover:bg-[var(--color-sand-100)] transition-colors text-xs cursor-pointer ${!audioUrl || downloadProgress ? "opacity-40 pointer-events-none" : ""}`}
                           style={{ fontFamily: "var(--font-body)" }}
                         >

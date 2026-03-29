@@ -557,7 +557,7 @@ export default function UpgradePage() {
           Every session is yours to keep, share, and use commercially.
         </motion.p>
 
-        {/* Billing toggle */}
+        {/* Billing toggle + credits */}
         <motion.div
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
@@ -566,8 +566,9 @@ export default function UpgradePage() {
             duration: 0.4,
             ease: [0.22, 1, 0.36, 1],
           }}
-          className="inline-flex items-center gap-0.5 p-[3px] rounded-full bg-[#f0eeeb] border border-[#e2dfd9]"
+          className="flex items-center justify-center gap-3"
         >
+          <div className="inline-flex items-center gap-0.5 p-[3px] rounded-full bg-[#f0eeeb] border border-[#e2dfd9]">
           {(["monthly", "yearly"] as const).map((period) => (
             <button
               key={period}
@@ -607,6 +608,25 @@ export default function UpgradePage() {
               </span>
             </button>
           ))}
+          </div>
+          {!profileLoading && profile && (
+            <div
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-[11.5px] ${creditsRemaining === 0 ? "border-red-200 bg-red-50" : "border-[#e2dfd9] bg-[#f0eeeb]"}`}
+              style={{ fontFamily: "var(--font-body)" }}
+            >
+              <svg width="14" height="14" viewBox="0 0 18 18" fill="none" className="shrink-0">
+                <circle cx="9" cy="9" r="7" stroke={creditsRemaining === 0 ? "#fca5a5" : "#e4e4e7"} strokeWidth="2" />
+                <circle cx="9" cy="9" r="7" stroke={creditsRemaining === 0 ? "#ef4444" : "#18181b"} strokeWidth="2" strokeLinecap="round"
+                  strokeDasharray={`${2 * Math.PI * 7}`}
+                  strokeDashoffset={`${2 * Math.PI * 7 * (1 - creditsRemaining / Math.max(1, creditsTotal))}`}
+                  style={{ transform: "rotate(-90deg)", transformOrigin: "center" }}
+                />
+              </svg>
+              <span className={creditsRemaining === 0 ? "text-red-500 font-medium" : "text-[#6b6560]"} style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>
+                {creditsRemaining} credit{creditsRemaining !== 1 ? "s" : ""} left
+              </span>
+            </div>
+          )}
         </motion.div>
       </div>
 

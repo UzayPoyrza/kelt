@@ -216,6 +216,115 @@ export function soundIdToLabel(id: string): string {
   return found?.label || base.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
 };
 
+export async function downloadMixedAudio(
+  audioUrl: string,
+  filename: string,
+  bgSoundUrl?: string | null,
+  bgVolume?: number,
+): Promise<void> {
+  const hasBg = bgSoundUrl && (bgVolume ?? 0) > 0;
+  console.log("[download] Starting download", { audioUrl, bgSoundUrl, bgVolume: bgVolume ?? 0, hasBg });
+
+  if (!hasBg) {
+    console.log("[download] No background sound — downloading voice only");
+    const a = document.createElement("a");
+    a.href = audioUrl;
+    a.download = filename;
+    a.click();
+    return;
+  }
+
+  console.log("[download] Fetching audio files...");
+  const [voiceResponse, bgResponse] = await Promise.all([
+    fetch(audioUrl),
+    fetch(bgSoundUrl!),
+  ]);
+  console.log("[download] Voice response:", voiceResponse.status, "BG response:", bgResponse.status);
+  if (!voiceResponse.ok) throw new Error(`Voice fetch failed: ${voiceResponse.status}`);
+  if (!bgResponse.ok) throw new Error(`BG fetch failed: ${bgResponse.status}`);
+
+  const [voiceArrayBuf, bgArrayBuf] = await Promise.all([
+    voiceResponse.arrayBuffer(),
+    bgResponse.arrayBuffer(),
+  ]);
+  console.log("[download] Voice buffer:", voiceArrayBuf.byteLength, "BG buffer:", bgArrayBuf.byteLength);
+
+  const audioCtx = new AudioContext();
+  console.log("[download] Decoding audio...");
+  const [voiceBuf, bgBuf] = await Promise.all([
+    audioCtx.decodeAudioData(voiceArrayBuf),
+    audioCtx.decodeAudioData(bgArrayBuf),
+  ]);
+  console.log("[download] Voice decoded:", voiceBuf.duration.toFixed(1) + "s", voiceBuf.numberOfChannels + "ch", voiceBuf.sampleRate + "Hz");
+  console.log("[download] BG decoded:", bgBuf.duration.toFixed(1) + "s", bgBuf.numberOfChannels + "ch", bgBuf.sampleRate + "Hz");
+
+  const sampleRate = voiceBuf.sampleRate;
+  const channels = Math.max(voiceBuf.numberOfChannels, 2);
+  const length = voiceBuf.length;
+  const offline = new OfflineAudioContext(channels, length, sampleRate);
+
+  const voiceSource = offline.createBufferSource();
+  voiceSource.buffer = voiceBuf;
+  voiceSource.connect(offline.destination);
+
+  const bgGain = offline.createGain();
+  bgGain.gain.value = (bgVolume ?? 50) / 100;
+  bgGain.connect(offline.destination);
+
+  const bgSource = offline.createBufferSource();
+  bgSource.buffer = bgBuf;
+  bgSource.loop = true;
+  bgSource.connect(bgGain);
+
+  voiceSource.start(0);
+  bgSource.start(0);
+
+  console.log("[download] Mixing audio...");
+  const renderedBuffer = await offline.startRendering();
+  console.log("[download] Mix complete, encoding MP3...");
+
+  // Load lamejs on demand
+  if (!(window as any).lamejs) {
+    await new Promise<void>((resolve, reject) => {
+      const script = document.createElement("script");
+      script.src = "/lamejs.min.js";
+      script.onload = () => resolve();
+      script.onerror = () => reject(new Error("Failed to load MP3 encoder"));
+      document.head.appendChild(script);
+    });
+  }
+  const { Mp3Encoder } = (window as any).lamejs;
+  const encoder = new Mp3Encoder(channels, sampleRate, 192);
+  const left = renderedBuffer.getChannelData(0);
+  const right = channels > 1 ? renderedBuffer.getChannelData(1) : left;
+  const blockSize = 1152;
+  const mp3Data: Int8Array[] = [];
+  for (let i = 0; i < left.length; i += blockSize) {
+    const end = Math.min(i + blockSize, left.length);
+    const leftChunk = new Int16Array(end - i);
+    const rightChunk = new Int16Array(end - i);
+    for (let j = 0; j < end - i; j++) {
+      leftChunk[j] = Math.max(-32768, Math.min(32767, Math.round(left[i + j] * 32767)));
+      rightChunk[j] = Math.max(-32768, Math.min(32767, Math.round(right[i + j] * 32767)));
+    }
+    const mp3buf = encoder.encodeBuffer(leftChunk, rightChunk);
+    if (mp3buf.length > 0) mp3Data.push(mp3buf);
+  }
+  const flushBuf = encoder.flush();
+  if (flushBuf.length > 0) mp3Data.push(flushBuf);
+
+  const blob = new Blob(mp3Data, { type: "audio/mp3" });
+  console.log("[download] MP3 encoded:", (blob.size / 1024 / 1024).toFixed(1) + "MB");
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename.replace(/\.mp3$/, "") + ".mp3";
+  a.click();
+  URL.revokeObjectURL(url);
+  audioCtx.close();
+  console.log("[download] Done!");
+}
+
 export const ambients = [
   { id: "none", label: "Silence", icon: Volume2, src: null },
   { id: "rain", label: "Rain", icon: CloudRain, src: `${AUDIO_BASE}/rain.mp3` },
