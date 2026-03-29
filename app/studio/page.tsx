@@ -184,7 +184,7 @@ function buildSoundSections(
 
 type HistoryFilter = "all" | "sessions" | "generations";
 type ScriptEntry = { type: string; text?: string; content?: string; pauseDuration?: number; label?: string };
-type SessionItem = { id: string; title: string; duration: string; voice: string; protocol: string; sound: string; createdAt: string; createdAtRaw: string; createdAtShort: string; accessedAt: string; category: string; icon: typeof Moon; hasGeneration: boolean; script: ScriptEntry[] | null };
+type SessionItem = { id: string; title: string; duration: string; voice: string; protocol: string; sound: string; soundId: string | null; soundOptions: { recommended: string[]; other: string[] } | null; soundVolume: number; createdAt: string; createdAtRaw: string; createdAtShort: string; accessedAt: string; category: string; icon: typeof Moon; hasGeneration: boolean; script: ScriptEntry[] | null };
 type GenerationItem = { id: string; prompt: string; voice: string; duration: string; protocol: string; status: "completed" | "failed" | "pending" | "processing"; timestamp: string; creditUsed: number; sessionId: string | null; audioUrl: string | null };
 
 const navItems = [
@@ -478,7 +478,7 @@ function PlayerBar({ session, isPlaying, onTogglePlay, onClose, inline, sound, v
   const [duration, setDuration] = useState(0);
   const [showBgSound, setShowBgSound] = useState(false);
   const [_bgSound, _setBgSound] = useState(session.sound);
-  const [_bgVol, _setBgVol] = useState(70);
+  const [_bgVol, _setBgVol] = useState(volume ?? 70);
   const bgSound = sound ?? _bgSound;
   const setBgSound = onSoundChange ?? _setBgSound;
   const bgVol = volume ?? _bgVol;
@@ -574,12 +574,21 @@ function PlayerBar({ session, isPlaying, onTogglePlay, onClose, inline, sound, v
         audio.src = bgSoundUrl;
         audio.load();
       }
+      audio.loop = true;
       audio.volume = bgVol / 100;
       audio.play().catch(() => {});
     } else {
       audio.pause();
     }
   }, [bgSoundUrl, isPlaying, bgVol]);
+
+  // Reset background audio to start when main audio URL changes (new session)
+  useEffect(() => {
+    const audio = bgAudioRef.current;
+    if (audio) {
+      audio.currentTime = 0;
+    }
+  }, [audioUrl]);
 
   // Sync background sound volume
   useEffect(() => {
@@ -722,7 +731,7 @@ function PlayerBar({ session, isPlaying, onTogglePlay, onClose, inline, sound, v
               style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}
             >
               <Music className={`w-3.5 h-3.5 shrink-0 ${showBgSound ? "text-white/70" : "text-[#71717a]"}`} />
-              <span className="truncate max-w-[60px] sm:max-w-[80px] md:max-w-none">{bgSound}</span>
+              <span className="truncate max-w-[60px] sm:max-w-[80px] md:max-w-none">{soundIdToLabel(bgSound)}</span>
               <ChevronDown className={`w-4 h-4 shrink-0 transition-transform ${showBgSound ? "rotate-180 text-white/70" : "text-[#71717a]"}`} />
             </button>
 
@@ -753,10 +762,10 @@ function PlayerBar({ session, isPlaying, onTogglePlay, onClose, inline, sound, v
                         </span>
                       </div>
                       {section.items.map((item, i) => (
-                        <button key={item.id} onClick={() => { setBgSound(item.label); setShowBgSound(false); }}
+                        <button key={item.id} onClick={() => { setBgSound(item.id); setShowBgSound(false); }}
                           className={`w-full flex items-center justify-between px-3 py-2 hover:bg-[#f4f4f5] transition-colors cursor-pointer text-left ${i > 0 ? "border-t border-[#f0f0f3]" : ""}`}>
                           <span className="text-[12px] text-[#18181b]" style={{ fontFamily: "var(--font-body)" }}>{item.label}</span>
-                          {item.label === bgSound && <Check className="w-3 h-3 text-[#6b9a70]" />}
+                          {(item.id === bgSound || item.label === bgSound) && <Check className="w-3 h-3 text-[#6b9a70]" />}
                         </button>
                       ))}
                     </div>
@@ -798,8 +807,8 @@ function EmptyState({ label }: { label: string }) {
 
 /* ─── Studio Session View ─── */
 
-function StudioSession({ prompt, voice, duration, sound, soundOptions: initialSoundOptions, sessionId, savedScript, savedTitle, savedVolume, onBack, onToggleSidebar, onGenerated, onSessionCreated, onLoadingPhaseChange, onStopOtherPlayers }: {
-  prompt: string; voice: string; duration: number; sound: string; soundOptions?: { recommended: string[]; other: string[] } | null; sessionId: string | null; savedScript?: ScriptBlock[] | null; savedTitle?: string | null; savedVolume?: number; onBack: () => void; onToggleSidebar?: () => void; onGenerated?: () => void; onSessionCreated?: (id: string) => void; onLoadingPhaseChange?: (phase: "script" | "audio" | null) => void; onStopOtherPlayers?: () => void;
+function StudioSession({ prompt, voice, duration, sound, soundOptions: initialSoundOptions, sessionId, savedScript, savedTitle, savedVolume, onBack, onToggleSidebar, onGenerated, onSessionCreated, onLoadingPhaseChange, onStopOtherPlayers, initialAudioUrl }: {
+  prompt: string; voice: string; duration: number; sound: string; soundOptions?: { recommended: string[]; other: string[] } | null; sessionId: string | null; savedScript?: ScriptBlock[] | null; savedTitle?: string | null; savedVolume?: number; onBack: () => void; onToggleSidebar?: () => void; onGenerated?: () => void; onSessionCreated?: (id: string) => void; onLoadingPhaseChange?: (phase: "script" | "audio" | null) => void; onStopOtherPlayers?: () => void; initialAudioUrl?: string | null;
 }) {
   const { profile } = useProfile();
   const [script, setScript] = useState<ScriptBlock[]>(() => savedScript && savedScript.length > 0 ? savedScript : generateScript(prompt));
@@ -826,9 +835,18 @@ function StudioSession({ prompt, voice, duration, sound, soundOptions: initialSo
   const [mobilePanel, setMobilePanel] = useState<"settings" | "history" | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [renderingAudio, setRenderingAudio] = useState(false);
-  const [studioAudioUrl, setStudioAudioUrl] = useState<string | null>(null);
+  const [studioAudioUrl, setStudioAudioUrl] = useState<string | null>(initialAudioUrl || null);
   const [studioPlaying, setStudioPlaying] = useState(false);
-  const [showStudioPlayer, setShowStudioPlayer] = useState(false);
+  const [showStudioPlayer, setShowStudioPlayer] = useState(!!initialAudioUrl);
+
+  // Pick up auto-rendered audio URL when it arrives
+  useEffect(() => {
+    if (initialAudioUrl && !studioAudioUrl) {
+      setStudioAudioUrl(initialAudioUrl);
+      setShowStudioPlayer(true);
+      setHasGenerated(true);
+    }
+  }, [initialAudioUrl]);
   const [hasGenerated, setHasGenerated] = useState(!!(savedScript && savedScript.length > 0));
   const [sessionName, setSessionName] = useState(() => savedTitle || deriveSessionName(prompt));
   const [sessionIdState, setSessionIdState] = useState<string | null>(sessionId);
@@ -860,6 +878,48 @@ function StudioSession({ prompt, voice, duration, sound, soundOptions: initialSo
     } catch { /* ignore */ }
   }, [sessionIdState]);
   useEffect(() => { fetchSessionGenerations(); }, [fetchSessionGenerations]);
+
+  // On mount: if session has a generation with audio, pre-load the player
+  useEffect(() => {
+    if (!sessionIdState || studioAudioUrl) return;
+    (async () => {
+      try {
+        const res = await fetch(`/api/generations?session_id=${sessionIdState}&limit=1`);
+        if (!res.ok) return;
+        const gens = await res.json();
+        if (gens.length > 0 && gens[0].audio_url) {
+          console.log("[studio-session] Found existing audio:", gens[0].audio_url);
+          setStudioAudioUrl(gens[0].audio_url);
+          setShowStudioPlayer(true);
+          setHasGenerated(true);
+        } else if (gens.length > 0 && !gens[0].audio_url) {
+          // Generation exists but no audio — show player in rendering state
+          console.log("[studio-session] Generation exists but no audio, showing render state");
+          setRenderingAudio(true);
+          setShowStudioPlayer(true);
+          setHasGenerated(true);
+          // Try to render it
+          try {
+            const renderRes = await fetch("/api/render", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ session_id: sessionIdState, generation_id: gens[0].id }),
+            });
+            if (renderRes.ok) {
+              const renderData = await renderRes.json();
+              if (renderData.audio_url) {
+                console.log("[studio-session] Auto-render complete:", renderData.audio_url);
+                setStudioAudioUrl(renderData.audio_url);
+                setStudioPlaying(true);
+              }
+            }
+          } catch { /* ignore */ }
+          setRenderingAudio(false);
+        }
+      } catch { /* ignore */ }
+    })();
+  }, [sessionIdState]);
+
   const renameInputRef = useRef<HTMLInputElement>(null);
 
   // ─── Undo / Redo history ───
@@ -1071,6 +1131,7 @@ function StudioSession({ prompt, voice, duration, sound, soundOptions: initialSo
     setErrorPauseIds(new Set());
     setIsGenerating(true);
     onLoadingPhaseChange?.("script");
+    console.log("[studio-gen] Starting generate. sessionId:", sessionIdState, "prompt:", prompt.slice(0, 40));
     try {
       const res = await fetch("/api/generate", {
         method: "POST",
@@ -1084,17 +1145,23 @@ function StudioSession({ prompt, voice, duration, sound, soundOptions: initialSo
           script: serializeScript(script),
         }),
       });
+      console.log("[studio-gen] /api/generate response:", res.status);
       if (res.status === 402) {
         setGenerateWarning("Insufficient credits. Please upgrade your plan.");
         setIsGenerating(false);
+        onLoadingPhaseChange?.(null);
         return;
       }
       if (!res.ok) {
+        const errText = await res.text();
+        console.error("[studio-gen] Generate failed:", res.status, errText);
         setGenerateWarning("Generation failed. Please try again.");
         setIsGenerating(false);
+        onLoadingPhaseChange?.(null);
         return;
       }
       const data = await res.json();
+      console.log("[studio-gen] Generate success. Session:", data.session?.id, "Generation:", data.generation?.id);
       if (data.session) {
         setSessionIdState(data.session.id);
         if (data.session.title) setSessionName(data.session.title);
@@ -1118,50 +1185,55 @@ function StudioSession({ prompt, voice, duration, sound, soundOptions: initialSo
           audioUrl: g.audio_url || null,
         }, ...prev]);
       }
-      // Transition to audio phase BEFORE clearing isGenerating to avoid flash
+      // Script generation done — transition to audio rendering phase
       const renderSessionId = data.session?.id || sessionIdState;
-      if (renderSessionId) {
-        onLoadingPhaseChange?.("audio");
-        setRenderingAudio(true);
-      }
       setIsGenerating(false);
       setHasGenerated(true);
       onGenerated?.();
 
       if (renderSessionId) {
+        onLoadingPhaseChange?.("audio");
+        setRenderingAudio(true);
+        console.log("[studio-gen] Calling render. sessionId:", renderSessionId, "generationId:", data.generation?.id);
         try {
           const renderRes = await fetch('/api/render', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ session_id: renderSessionId, generation_id: data.generation?.id }),
           });
+          console.log("[studio-gen] Render response:", renderRes.status);
           if (renderRes.ok) {
             const renderData = await renderRes.json();
-            setStudioAudioUrl(renderData.audio_url);
-            // Update the latest generation's audioUrl in history
+            console.log("[studio-gen] Render complete. audio_url:", renderData.audio_url);
             if (renderData.audio_url) {
+              setStudioAudioUrl(renderData.audio_url);
               setSessionGenerations(prev => {
                 if (prev.length === 0) return prev;
                 const updated = [...prev];
                 updated[0] = { ...updated[0], audioUrl: renderData.audio_url };
                 return updated;
               });
+              // Audio ready — show player and auto-play
+              onStopOtherPlayers?.();
+              setShowStudioPlayer(true);
+              setStudioPlaying(true);
             }
+          } else {
+            console.error("[studio-gen] Render failed:", renderRes.status);
           }
-        } catch { /* render failed silently */ }
+        } catch (err) {
+          console.error("[studio-gen] Render error:", err);
+        }
         setRenderingAudio(false);
         onLoadingPhaseChange?.(null);
       }
-
-      onStopOtherPlayers?.();
-      setShowStudioPlayer(true);
-      setStudioPlaying(true);
-    } catch {
+    } catch (err) {
+      console.error("[studio-gen] Generate error:", err);
       setGenerateWarning("Generation failed. Please try again.");
       setIsGenerating(false);
       onLoadingPhaseChange?.(null);
     }
-  }, [script, prompt, sessionVoice, estimated.minutes, sessionSound, sessionIdState, onGenerated, selectedBlock, onLoadingPhaseChange]);
+  }, [script, prompt, sessionVoice, estimated.minutes, sessionSound, sessionIdState, onGenerated, selectedBlock, onLoadingPhaseChange, onStopOtherPlayers]);
 
   const handlePreviewScript = useCallback(() => {
     const serialized = serializeScript(script);
@@ -1179,6 +1251,9 @@ function StudioSession({ prompt, voice, duration, sound, soundOptions: initialSo
     voice: voices.find(v => v.id === sessionVoice)?.name || "Aria",
     protocol: "Custom",
     sound: sessionSound,
+    soundId: null,
+    soundOptions: sessionSoundOptions,
+    soundVolume: soundVolume,
     createdAt: "Just now",
     createdAtRaw: new Date().toISOString(),
     createdAtShort: "Just now",
@@ -2700,6 +2775,9 @@ function StudioPageContent() {
         voice: voiceDisplayName(s.voice as string),
         protocol: (s.protocol as string) || "Custom",
         sound: s.soundscape ? soundIdToLabel(s.soundscape as string) || (s.soundscape as string) : "Rain",
+        soundId: (s.soundscape as string) || null,
+        soundOptions: (s.sound_options as { recommended: string[]; other: string[] }) || null,
+        soundVolume: (s.sound_volume as number) ?? 70,
         createdAt: new Intl.DateTimeFormat("en-US", { dateStyle: "medium", timeStyle: "short" }).format(new Date(s.created_at as string)),
         createdAtRaw: s.created_at as string,
         createdAtShort: getRelativeTime(s.created_at as string),
@@ -2787,15 +2865,22 @@ function StudioPageContent() {
   }, [searchParams, refetchProfile]);
 
   // Open a specific session from URL param (e.g. from /session "Open in Studio", or ?session= deep link)
+  const loadedSessionRef = useRef<string | null>(null);
   useEffect(() => {
     const urlSessionId = searchParams.get("sessionId") || searchParams.get("session");
     if (!urlSessionId) return;
+    // Don't reload the same session (prevents navigation being overridden)
+    if (loadedSessionRef.current === urlSessionId) return;
+    loadedSessionRef.current = urlSessionId;
+    console.log("[studio] Loading session from URL:", urlSessionId);
     setLoadingSession(true);
     (async () => {
       try {
         const res = await fetch(`/api/sessions/${urlSessionId}`);
+        console.log("[studio] Session fetch:", res.status);
         if (!res.ok) { setLoadingSession(false); return; }
         const full = await res.json();
+        console.log("[studio] Session loaded:", full.id, full.title);
         setGenConfig({
           prompt: full.prompt || full.title || "",
           voice: full.voice || "Graham",
@@ -2814,11 +2899,47 @@ function StudioPageContent() {
         setGenStep("studio");
         // Replace current history entry with studio nav state
         window.history.replaceState({ studioNav: "generate", studioStep: "studio" }, "", `/studio?session=${full.id}`);
-      } catch { /* ignore */ }
+
+        // Auto-render audio if session has no audio yet
+        const genRes = await fetch(`/api/generations?session_id=${full.id}&limit=1`);
+        if (genRes.ok) {
+          const gens = await genRes.json();
+          if (gens.length > 0 && !gens[0].audio_url) {
+            console.log("[studio] No audio found, auto-rendering. Generation:", gens[0].id);
+            setLoadingPhase("audio");
+            setLoadingPhaseStep(0);
+            try {
+              const renderRes = await fetch("/api/render", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ session_id: full.id, generation_id: gens[0].id }),
+              });
+              if (renderRes.ok) {
+                const renderData = await renderRes.json();
+                if (renderData.audio_url) {
+                  console.log("[studio] Auto-render complete:", renderData.audio_url);
+                  setAutoRenderedAudioUrl(renderData.audio_url);
+                } else {
+                  console.warn("[studio] Render succeeded but no audio_url returned");
+                }
+              }
+            } catch (err) {
+              console.error("[studio] Auto-render failed:", err);
+            }
+            setLoadingPhase(null);
+          } else if (gens.length > 0 && gens[0].audio_url) {
+            console.log("[studio] Audio already exists:", gens[0].audio_url);
+            setAutoRenderedAudioUrl(gens[0].audio_url);
+          } else {
+            console.log("[studio] No generations found for session");
+          }
+        }
+      } catch (err) {
+        console.error("[studio] Session load error:", err);
+      }
       setLoadingSession(false);
     })();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [searchParams]);
 
   // Hydrate from ?prompt= URL param (e.g. shared link or bookmark)
   useEffect(() => {
@@ -2888,7 +3009,11 @@ function StudioPageContent() {
   // Loading screen phase for studio generate flows
   const [loadingPhase, setLoadingPhase] = useState<"script" | "audio" | null>(null);
   const [loadingPhaseStep, setLoadingPhaseStep] = useState(0);
-  const [genConfig, setGenConfig] = useState({ prompt: "", voice: "Graham", duration: 7, sound: "Rain", soundOptions: null as { recommended: string[]; other: string[] } | null, sessionId: null as string | null, script: null as ScriptBlock[] | null, title: null as string | null, soundVolume: 70, supportChoice: "auto_detect", mode: "still", preferredApproach: "auto" });
+  // Audio URL from auto-render (when session loaded via ?session=X with no audio)
+  const [autoRenderedAudioUrl, setAutoRenderedAudioUrl] = useState<string | null>(null);
+  // User can dismiss the loading overlay — audio keeps generating in background
+  const [loadingDismissed, setLoadingDismissed] = useState(false);
+  const [genConfig, setGenConfig] = useState({ prompt: "", voice: "Graham", duration: 5, sound: "Rain", soundOptions: null as { recommended: string[]; other: string[] } | null, sessionId: null as string | null, script: null as ScriptBlock[] | null, title: null as string | null, soundVolume: 70, supportChoice: "auto_detect", mode: "still", preferredApproach: "auto" });
   const [showGenAdvanced, setShowGenAdvanced] = useState(false);
   const genGenerateRef = useRef<HTMLDivElement>(null);
   const [genPromptError, setGenPromptError] = useState(false);
@@ -2944,10 +3069,13 @@ function StudioPageContent() {
     setGenPromptError(false);
     setQuickGenError(null);
     setIsQuickGenerating(true);
+    setLoadingDismissed(false);
     setLoadingPhase("script");
     setLoadingPhaseStep(0);
-    router.replace(`/studio?prompt=${encodeURIComponent(genConfig.prompt.trim())}`, { scroll: false });
+
     try {
+      // Phase 1: Script generation
+      console.log("[quick-gen] Starting script generation...");
       const res = await fetch("/api/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -2962,16 +3090,49 @@ function StudioPageContent() {
         }),
       });
       if (!res.ok) {
+        console.error("[quick-gen] Script generation failed:", res.status);
         setQuickGenError("Generation failed. Please try again.");
         setLoadingPhase(null);
         return;
       }
       const data = await res.json();
+      console.log("[quick-gen] Script done. Session:", data.session?.id, "Generation:", data.generation?.id);
       refetchProfile();
-      // Redirect to session page — it has its own rendering loading screen
+
+      // Phase 2: TTS audio rendering
+      setLoadingPhase("audio");
+      setLoadingPhaseStep(0);
+
+      let audioUrl: string | null = null;
+      if (data.session?.id && data.generation?.id) {
+        console.log("[quick-gen] Starting TTS render...");
+        try {
+          const renderRes = await fetch("/api/render", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ session_id: data.session.id, generation_id: data.generation.id }),
+          });
+          if (renderRes.ok) {
+            const renderData = await renderRes.json();
+            audioUrl = renderData.audio_url || null;
+            console.log("[quick-gen] TTS complete. audio_url:", audioUrl);
+          } else {
+            console.error("[quick-gen] TTS render failed:", renderRes.status);
+          }
+        } catch (err) {
+          console.error("[quick-gen] TTS render error:", err);
+        }
+      }
+
+      // Done — navigate to session in studio with audio ready
       setLoadingPhase(null);
-      router.push(`/session?id=${data.session.id}`);
-    } catch {
+      if (audioUrl) {
+        setAutoRenderedAudioUrl(audioUrl);
+      }
+      loadedSessionRef.current = null; // Allow session load effect to run
+      router.push(`/studio?session=${data.session.id}`);
+    } catch (err) {
+      console.error("[quick-gen] Error:", err);
       setQuickGenError("Something went wrong. Please try again.");
       setLoadingPhase(null);
     } finally {
@@ -3168,8 +3329,9 @@ function StudioPageContent() {
             onToggleSidebar={() => setSidebarOpen(true)}
             onGenerated={() => { fetchGenerations(); fetchSessions(); refetchProfile(); }}
             onSessionCreated={(id) => updateSessionUrl(id)}
-            onLoadingPhaseChange={(phase) => { setLoadingPhase(phase); setLoadingPhaseStep(0); }}
+            onLoadingPhaseChange={(phase) => { console.log("[studio] loadingPhase changed to:", phase); setLoadingPhase(phase); setLoadingPhaseStep(0); if (phase === "script") setLoadingDismissed(false); }}
             onStopOtherPlayers={() => { setPlayerPlaying(false); setNowPlayingId(null); }}
+            initialAudioUrl={autoRenderedAudioUrl}
           />
         </div>
       </div>
@@ -3876,7 +4038,7 @@ function StudioPageContent() {
                 <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.06 }} className="mb-5">
                   <p className="text-[11px] uppercase tracking-widest text-[var(--color-sand-400)] mb-2" style={{ fontFamily: "var(--font-body)" }}>Duration</p>
                   <div className="relative">
-                    {genConfig.duration !== 7 && <span className="absolute -top-4 left-1/2 -translate-x-1/2 text-[9px] uppercase tracking-wide text-[var(--color-sand-400)] z-10" style={{ fontFamily: "var(--font-body)" }}>Popular</span>}
+                    {genConfig.duration !== 5 && <span className="absolute -top-4 left-1/2 -translate-x-1/2 text-[9px] uppercase tracking-wide text-[var(--color-sand-400)] z-10" style={{ fontFamily: "var(--font-body)" }}>Popular</span>}
                     <div className="flex items-center rounded-xl overflow-visible border border-[var(--color-sand-200)]">
                       {sharedDurations.map((d, i) => (
                         <button key={d} onClick={() => setGenConfig(prev => ({ ...prev, duration: d }))}
@@ -4256,6 +4418,8 @@ function StudioPageContent() {
             onTogglePlay={() => setPlayerPlaying(prev => !prev)}
             onClose={handleClosePlayer}
             audioUrl={playerAudioUrl}
+            sound={nowPlayingSession.soundId || nowPlayingSession.sound}
+            soundOptions={nowPlayingSession.soundOptions}
           />
         )}
       </AnimatePresence>
@@ -4376,8 +4540,9 @@ function StudioPageContent() {
       </AnimatePresence>
 
       {/* ─── Fullscreen Loading Overlay ─── */}
+      {(() => { if (loadingPhase) console.log("[studio] Overlay check: loadingPhase=", loadingPhase, "dismissed=", loadingDismissed); return null; })()}
       <AnimatePresence>
-        {loadingPhase && (
+        {loadingPhase && !loadingDismissed && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -4389,30 +4554,34 @@ function StudioPageContent() {
             {/* Grain texture */}
             <div className="grain-overlay absolute inset-0 pointer-events-none" />
 
+            {/* X button — dismiss overlay, audio keeps generating in background */}
+            <button
+              onClick={() => setLoadingDismissed(true)}
+              className="absolute top-6 right-6 w-9 h-9 rounded-full flex items-center justify-center text-[var(--color-sand-400)] hover:text-[var(--color-sand-700)] hover:bg-[var(--color-sand-100)] transition-all cursor-pointer z-10"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
             {/* Breathing orb */}
             <div className="relative w-32 h-32 sm:w-40 sm:h-40 flex items-center justify-center mb-10">
-              {/* Outer ring */}
               <motion.div
                 className="absolute inset-0 rounded-full"
                 style={{ border: "1px solid var(--color-sand-200)" }}
                 animate={{ rotate: 360, scale: [1, 1.04, 1] }}
                 transition={{ rotate: { duration: 20, repeat: Infinity, ease: "linear" }, scale: { duration: 4, repeat: Infinity, ease: "easeInOut" } }}
               />
-              {/* Mid ring */}
               <motion.div
                 className="absolute inset-4 rounded-full"
                 style={{ border: "1px solid var(--color-sand-200)" }}
                 animate={{ rotate: -360, scale: [1, 1.06, 1] }}
                 transition={{ rotate: { duration: 15, repeat: Infinity, ease: "linear" }, scale: { duration: 5, repeat: Infinity, ease: "easeInOut", delay: 0.5 } }}
               />
-              {/* Inner ring */}
               <motion.div
                 className="absolute inset-8 rounded-full"
                 style={{ border: "1px solid var(--color-sand-300)" }}
                 animate={{ scale: [1, 1.08, 1] }}
                 transition={{ duration: 3.5, repeat: Infinity, ease: "easeInOut", delay: 1 }}
               />
-              {/* Center orb */}
               <motion.div
                 className="w-14 h-14 sm:w-16 sm:h-16 rounded-full flex items-center justify-center"
                 style={{ background: "linear-gradient(135deg, var(--color-sand-800), var(--color-sand-900))" }}
@@ -4454,7 +4623,7 @@ function StudioPageContent() {
               </AnimatePresence>
             </div>
 
-            {/* Reassurance — user can leave */}
+            {/* Reassurance */}
             <motion.p
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}

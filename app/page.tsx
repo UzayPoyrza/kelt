@@ -1059,7 +1059,7 @@ export default function HomePage() {
         <div className="max-w-5xl mx-auto">
           <FadeIn className="text-center">
             <h2 className="text-[1.5rem] sm:text-[2rem] md:text-[2.75rem] text-[var(--color-sand-50)] leading-tight mb-4">
-              Try it now. No sign up required.
+              Try it now. Completely free.
             </h2>
             <p className="text-base text-white/50 mb-8 max-w-lg mx-auto" style={{ fontFamily: "var(--font-body)" }}>
               Describe what you need, choose your preferences, and your meditation is ready in seconds.

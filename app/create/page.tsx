@@ -126,11 +126,14 @@ function CreateContent() {
     // Gate: anonymous users redirect to signup page
     if (isAnonymous) {
       const voiceLabel = voices.find(v => v.id === voice)?.label || voice;
+      const sc = supportChoice !== "auto_detect" ? supportChoice : (detectedSupportChoice || "mindfulness");
+      const scLabel = supportChoices.find(s => s.id === sc)?.label || sc;
       const signupParams = new URLSearchParams({
-        next: `/create?prompt=${encodeURIComponent(prompt)}`,
+        next: `/studio?prompt=${encodeURIComponent(prompt)}`,
         prompt,
         duration: String(duration),
         voice: voiceLabel,
+        protocol: scLabel,
       });
       router.push(`/signup?${signupParams.toString()}`);
       return;
@@ -151,21 +154,29 @@ function CreateContent() {
 
     // Helper: call /api/generate and redirect on success
     const callGenerateApi = async (): Promise<boolean> => {
+      console.log("[create] Calling /api/generate...");
       const res = await fetch("/api/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(generateBody),
       });
+      console.log("[create] /api/generate response:", res.status);
       if (res.status === 402) {
-        // Out of credits — redirect to login for upgrade
         router.push("/login?reason=credits");
+        return true;
+      }
+      if (res.status === 429) {
+        setGenerateError("Daily limit reached. Sign up to continue.");
         return true;
       }
       if (res.ok) {
         const data = await res.json();
-        router.push(`/session?id=${data.session.id}`);
+        console.log("[create] Generate success, redirecting to studio. Session:", data.session?.id);
+        router.push(`/studio?session=${data.session.id}`);
         return true;
       }
+      const errBody = await res.text();
+      console.error("[create] Generate failed:", res.status, errBody);
       return false;
     };
 

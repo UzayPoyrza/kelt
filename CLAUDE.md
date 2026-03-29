@@ -18,21 +18,25 @@ npm run lint         # Next.js linter
 ### Routes
 
 - `/` — Landing page with hero, samples, testimonials, CTA
-- `/create` — Public generate flow (prompt → configure → session)
-- `/session` — Playback page with soundscape picker, waveform visualization
-- `/studio` — Authenticated studio: sessions grid, history, settings, script editor, generation
-- `/login` — Auth page (Google/Apple OAuth, mock)
+- `/create` — Pre-signup flow: fully interactive config (all options unlocked), but clicking "Generate Meditation" shows signup modal. After OAuth, redirects to `/studio?prompt=X`
+- `/studio` — **Main app**. Authenticated only. Sessions grid, history, settings, script editor, generation. All generation happens here.
+- `/session` — Legacy playback page. Redirects to `/studio?session=X` if session ID present.
+- `/login` — Auth page (Google/Apple OAuth)
 - `/upgrade` — Pricing page with Personal/Creator credit-based plans
 
-### Two Generate Flows (must stay in sync)
+### Generation Flow (single flow, all in `/studio`)
 
-1. **Public flow** (`app/create/page.tsx`) — Simpler UX, "Generate Meditation" button, redirects to `/session`
-2. **Studio flow** (`app/studio/page.tsx`, "Generate" nav tab) — Adds "Open in Studio" (script editor) and "Quick Generate" options
+The primary and only generation flow:
 
-These flows are **duplicated, not shared**. When updating UI in one, update the other. Differences:
-- Studio has "Open in Studio" + "Quick Generate" vs single "Generate Meditation"
-- Studio uses `genConfig` state object; public uses individual state variables
-- Studio back button → "All Sessions"; public back → homepage
+1. User enters prompt on `/` → goes to `/create?prompt=X` → configures options → clicks Generate
+2. Signup modal appears (if not signed in) → OAuth → redirected to `/studio?prompt=X`
+3. `/studio` shows the generate config step → user picks duration/voice/category → clicks "Generate Meditation"
+4. This calls `handleQuickGenerate` → `/api/generate` (script) → redirect to `/studio?session=X` → auto-render TTS
+5. Session loads in studio editor with script, player, sound picker
+
+**The `/create` page is a teaser/funnel only.** It never calls `/api/generate`. The signup modal gates generation. All actual generation happens in `/studio`.
+
+There is also a secondary flow inside the studio session editor: "Generate Audio" / "Regenerate Audio" button (`handleGenerateAudio`) which regenerates from an edited script without leaving the editor.
 
 ### Key Files
 
