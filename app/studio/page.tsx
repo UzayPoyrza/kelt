@@ -4492,17 +4492,22 @@ function StudioPageContent() {
                           </button>
                           ) : (
                           <button
-                            onClick={async () => {
+                            onClick={async (e) => {
+                              const btn = e.currentTarget;
+                              btn.disabled = true;
+                              btn.textContent = "Loading…";
                               try {
                                 const res = await fetch("/api/billing-portal", { method: "POST" });
                                 if (!res.ok) throw new Error("Failed");
                                 const data = await res.json();
                                 if (data.url) window.location.href = data.url;
                               } catch {
+                                btn.disabled = false;
+                                btn.textContent = "Manage";
                                 router.push("/upgrade");
                               }
                             }}
-                            className="px-4 py-2 rounded-full border border-[var(--color-sand-200)] text-[12px] text-[var(--color-sand-600)] hover:bg-[var(--color-sand-50)] hover:border-[var(--color-sand-300)] transition-all cursor-pointer shrink-0 self-start sm:self-center"
+                            className="px-4 py-2 rounded-full border border-[var(--color-sand-200)] text-[12px] text-[var(--color-sand-600)] hover:bg-[var(--color-sand-50)] hover:border-[var(--color-sand-300)] transition-all cursor-pointer shrink-0 self-start sm:self-center disabled:opacity-50 disabled:cursor-wait"
                             style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>
                             Manage
                           </button>
@@ -4511,74 +4516,6 @@ function StudioPageContent() {
                       </div>
                     </div>
                   </div>
-
-                  {/* Defaults */}
-                  <div className="bg-white rounded-2xl border border-[#e7e5e4] shadow-sm relative">
-                    <div className="px-4 sm:px-6 py-4 border-b border-[#e7e5e4] bg-[#f5f3f0]">
-                      <h3 className="text-[11px] uppercase tracking-wide text-[var(--color-sand-900)]" style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}>Defaults</h3>
-                      <p className="text-[11px] text-[var(--color-sand-400)] mt-0.5" style={{ fontFamily: "var(--font-body)" }}>Set your preferred starting point for new sessions</p>
-                    </div>
-                    <div className="divide-y divide-[var(--color-sand-100)]">
-                      {/* Voice */}
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 px-4 sm:px-6 py-4 group hover:bg-[var(--color-sand-50)]/50 transition-colors">
-                        <div className="flex items-center gap-3">
-                          <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: voices.find(v => v.id === settingsVoice)?.color || "#a1a1aa" }} />
-                          <div>
-                            <span className="text-[13px] text-[var(--color-sand-900)] block leading-none" style={{ fontFamily: "var(--font-body)", fontWeight: 450 }}>Voice</span>
-                            <span className="text-[11px] text-[var(--color-sand-400)] block mt-0.5 leading-none" style={{ fontFamily: "var(--font-body)" }}>{voices.find(v => v.id === settingsVoice)?.desc || ""}</span>
-                          </div>
-                        </div>
-                        <div className="relative">
-                          <button
-                            onClick={(e) => { e.stopPropagation(); setSettingsOpenDropdown(settingsOpenDropdown === "voice" ? null : "voice"); }}
-                            className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[var(--color-sand-50)] border border-[var(--color-sand-200)] hover:border-[var(--color-sand-300)] hover:bg-white transition-all cursor-pointer"
-                          >
-                            <span className="text-[12px] text-[var(--color-sand-700)]" style={{ fontFamily: "var(--font-body)", fontWeight: 450 }}>{voices.find(v => v.id === settingsVoice)?.name || "Aria"}</span>
-                            <ChevronDown className={`w-3.5 h-3.5 text-[var(--color-sand-400)] transition-transform ${settingsOpenDropdown === "voice" ? "rotate-180" : ""}`} />
-                          </button>
-                          {settingsOpenDropdown === "voice" && (
-                            <>
-                              <div className="fixed inset-0 z-[200]" onClick={(e) => { e.stopPropagation(); setSettingsOpenDropdown(null); }} />
-                              <div className="absolute right-0 top-full mt-1 bg-white rounded-lg border border-[#e4e4e7] shadow-lg z-[210] w-52">
-                                {voices.map((v, i) => (
-                                  <button key={v.id} onClick={(e) => { e.stopPropagation(); setSettingsVoice(v.id); setSettingsOpenDropdown(null); }}
-                                    className={`w-full flex items-center gap-2.5 px-3 py-2.5 hover:bg-[#f4f4f5] transition-colors cursor-pointer text-left ${i > 0 ? "border-t border-[#f0f0f3]" : ""}`}>
-                                    <div className="w-6 h-6 rounded-full flex items-center justify-center shrink-0" style={{ background: v.color + "20" }}>
-                                      <div className="w-2 h-2 rounded-full" style={{ background: v.color }} />
-                                    </div>
-                                    <div className="flex-1">
-                                      <p className="text-sm text-[#18181b]" style={{ fontFamily: "var(--font-body)" }}>{v.name}</p>
-                                      <p className="text-[10px] text-[#71717a]" style={{ fontFamily: "var(--font-body)" }}>{v.desc}</p>
-                                    </div>
-                                    {settingsVoice === v.id && <Check className="w-3.5 h-3.5 text-[#6b9a70]" />}
-                                  </button>
-                                ))}
-                              </div>
-                            </>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Duration */}
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 px-4 sm:px-6 py-4 group hover:bg-[var(--color-sand-50)]/50 transition-colors">
-                        <div>
-                          <span className="text-[13px] text-[var(--color-sand-900)] block leading-none" style={{ fontFamily: "var(--font-body)", fontWeight: 450 }}>Duration</span>
-                          <span className="text-[11px] text-[var(--color-sand-400)]" style={{ fontFamily: "var(--font-body)" }}>Default session length</span>
-                        </div>
-                        <div className="flex items-center gap-1 bg-[var(--color-sand-50)] border border-[var(--color-sand-200)] rounded-lg p-0.5 flex-wrap">
-                          {[3, 5, 7, 10, 15].map((d) => (
-                            <button key={d} onClick={(e) => { e.stopPropagation(); setSettingsDuration(d); }}
-                              className={`px-3 py-1.5 rounded-md text-[12px] transition-all cursor-pointer ${settingsDuration === d ? "bg-[var(--color-sand-900)] text-white shadow-sm" : "text-[var(--color-sand-500)] hover:text-[var(--color-sand-900)]"}`}
-                              style={{ fontFamily: "var(--font-body)", fontWeight: settingsDuration === d ? 500 : 400 }}>
-                              {d}m
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-
-                    </div>
-                  </div>
-
 
                   {/* Support */}
                   <div className="bg-white rounded-2xl border border-[#e7e5e4] shadow-sm">
@@ -4613,7 +4550,7 @@ function StudioPageContent() {
           sound={nowPlayingSession.soundId || nowPlayingSession.sound}
           soundOptions={nowPlayingSession.soundOptions}
           onDownload={() => handleDownloadAudio(nowPlayingSession.id, playerAudioUrl, nowPlayingSession.title, resolveBgSoundUrl(nowPlayingSession), nowPlayingSession.soundVolume)}
-          isDownloading={downloadingId === nowPlayingSession.id}
+          isDownloading={downloadingIds.has(nowPlayingSession.id)}
         />
       )}
 
