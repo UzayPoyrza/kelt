@@ -2711,7 +2711,7 @@ function StudioPageContent() {
     }
   }, [profileLoading, profile]);
   const [voicePlaying, setVoicePlaying] = useState<string | null>(null);
-  const [isDownloading, setIsDownloading] = useState(false);
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
 
   const resolveBgSoundUrl = useCallback((session: SessionItem | null): string | null => {
     if (!session) return null;
@@ -2723,14 +2723,14 @@ function StudioPageContent() {
     return found?.src || null;
   }, []);
 
-  const handleDownloadAudio = useCallback(async (audioUrl: string | null, sessionTitle?: string, bgSoundUrl?: string | null, bgVolume?: number) => {
+  const handleDownloadAudio = useCallback(async (id: string, audioUrl: string | null, sessionTitle?: string, bgSoundUrl?: string | null, bgVolume?: number) => {
     if (!audioUrl) {
       console.log("[download] No audio URL available");
       return;
     }
     const filename = `meditation-${sessionTitle || "session"}.mp3`;
     console.log("[download] Starting studio download:", { audioUrl, filename, bgSoundUrl, bgVolume });
-    setIsDownloading(true);
+    setDownloadingId(id);
     try {
       await downloadMixedAudio(audioUrl, filename, bgSoundUrl, bgVolume);
     } catch (err) {
@@ -2740,13 +2740,13 @@ function StudioPageContent() {
       a.download = filename;
       a.click();
     } finally {
-      setIsDownloading(false);
+      setDownloadingId(null);
     }
   }, []);
 
   const handleDownloadSession = useCallback(async (sessionId: string, sessionTitle?: string) => {
     console.log("[download] Fetching audio for session:", sessionId);
-    setIsDownloading(true);
+    setDownloadingId(sessionId);
     try {
       const session = sessions.find(s => s.id === sessionId) || null;
       const bgUrl = resolveBgSoundUrl(session);
@@ -2765,7 +2765,7 @@ function StudioPageContent() {
     } catch (err) {
       console.error("[download] Session download failed:", err);
     } finally {
-      setIsDownloading(false);
+      setDownloadingId(null);
     }
   }, [sessions, resolveBgSoundUrl]);
 
@@ -3875,11 +3875,11 @@ function StudioPageContent() {
                             </div>
                             <div className="relative group/tip">
                               <button
-                                onClick={(e) => { e.stopPropagation(); handleDownloadAudio(gen.audioUrl, gen.prompt?.slice(0, 30), resolveBgSoundUrl(genSession ?? null), genSession?.soundVolume ?? 70); }}
-                                disabled={(gen.status as string) === "failed" || !gen.audioUrl || isDownloading}
+                                onClick={(e) => { e.stopPropagation(); handleDownloadAudio(gen.id, gen.audioUrl, gen.prompt?.slice(0, 30), resolveBgSoundUrl(genSession ?? null), genSession?.soundVolume ?? 70); }}
+                                disabled={(gen.status as string) === "failed" || !gen.audioUrl || downloadingId === gen.id}
                                 className="w-8 h-8 rounded-lg hover:bg-[#e7e5e4] flex items-center justify-center text-[#3f3f46] hover:text-[#18181b] transition-colors disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
                               >
-                                {isDownloading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+                                {downloadingId === gen.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
                               </button>
                               <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 px-2 py-1 rounded-md bg-[#18181b] text-white text-[10px] whitespace-nowrap opacity-0 group-hover/tip:opacity-100 transition-opacity pointer-events-none z-10" style={{ fontFamily: "var(--font-body)" }}>Download</span>
                             </div>
@@ -4579,8 +4579,8 @@ function StudioPageContent() {
           audioUrl={playerAudioUrl}
           sound={nowPlayingSession.soundId || nowPlayingSession.sound}
           soundOptions={nowPlayingSession.soundOptions}
-          onDownload={() => handleDownloadAudio(playerAudioUrl, nowPlayingSession.title, resolveBgSoundUrl(nowPlayingSession), nowPlayingSession.soundVolume)}
-          isDownloading={isDownloading}
+          onDownload={() => handleDownloadAudio(nowPlayingSession.id, playerAudioUrl, nowPlayingSession.title, resolveBgSoundUrl(nowPlayingSession), nowPlayingSession.soundVolume)}
+          isDownloading={downloadingId === nowPlayingSession.id}
         />
       )}
 
