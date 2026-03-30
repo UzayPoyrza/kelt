@@ -134,17 +134,23 @@ export async function POST(request: NextRequest) {
 
       const updates: Record<string, unknown> = { plan };
 
-      // If plan changed, add new plan's credits on top of existing balance
+      // On plan change: only grant the credit DIFFERENCE on upgrade, nothing on downgrade
       if (currentProfile && currentProfile.plan !== plan) {
-        const planCredits = CREDIT_AMOUNTS[plan] || 2;
-        const existing = currentProfile.credits_remaining || 0;
-        updates.credits_remaining = existing + planCredits;
+        const oldPlanCredits = CREDIT_AMOUNTS[currentProfile.plan] || 2;
+        const newPlanCredits = CREDIT_AMOUNTS[plan] || 2;
 
-        await supabase.from("credit_ledger").insert({
-          user_id: userId,
-          amount: planCredits,
-          reason: `plan_change_${currentProfile.plan}_to_${plan}`,
-        });
+        if (newPlanCredits > oldPlanCredits) {
+          // Upgrade: grant only the difference (e.g. Personal→Pro = +70, not +100)
+          const diff = newPlanCredits - oldPlanCredits;
+          updates.credits_remaining = (currentProfile.credits_remaining || 0) + diff;
+
+          await supabase.from("credit_ledger").insert({
+            user_id: userId,
+            amount: diff,
+            reason: `upgrade_${currentProfile.plan}_to_${plan}`,
+          });
+        }
+        // Downgrade: no extra credits, just change the plan
       }
 
       await supabase
