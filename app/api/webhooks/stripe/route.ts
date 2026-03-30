@@ -4,8 +4,8 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import Stripe from "stripe";
 
 const CREDIT_AMOUNTS: Record<string, number> = {
-  personal: 30,
-  creator: 100,
+  personal: 32,
+  creator: 102,
 };
 
 export async function POST(request: NextRequest) {

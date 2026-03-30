@@ -1979,7 +1979,7 @@ function StudioSession({ prompt, voice, duration, sound, soundOptions: initialSo
               <circle cx="9" cy="9" r="7" stroke="#e4e4e7" strokeWidth="2" />
               <circle cx="9" cy="9" r="7" stroke="#18181b" strokeWidth="2" strokeLinecap="round"
                 strokeDasharray={`${2 * Math.PI * 7}`}
-                strokeDashoffset={`${2 * Math.PI * 7 * (1 - (profile?.credits_remaining ?? 0) / Math.max(1, profile?.plan === "creator" ? 100 : profile?.plan === "personal" ? 30 : 2))}`}
+                strokeDashoffset={`${2 * Math.PI * 7 * (1 - (profile?.credits_remaining ?? 0) / Math.max(1, profile?.plan === "creator" ? 102 : profile?.plan === "personal" ? 32 : 2))}`}
                 style={{ transform: "rotate(-90deg)", transformOrigin: "center" }}
               />
             </svg>
@@ -2117,7 +2117,7 @@ function StudioSession({ prompt, voice, duration, sound, soundOptions: initialSo
               <circle cx="9" cy="9" r="7" stroke="#e4e4e7" strokeWidth="2" />
               <circle cx="9" cy="9" r="7" stroke="#18181b" strokeWidth="2" strokeLinecap="round"
                 strokeDasharray={`${2 * Math.PI * 7}`}
-                strokeDashoffset={`${2 * Math.PI * 7 * (1 - (profile?.credits_remaining ?? 0) / Math.max(1, profile?.plan === "creator" ? 100 : profile?.plan === "personal" ? 30 : 2))}`}
+                strokeDashoffset={`${2 * Math.PI * 7 * (1 - (profile?.credits_remaining ?? 0) / Math.max(1, profile?.plan === "creator" ? 102 : profile?.plan === "personal" ? 32 : 2))}`}
                 style={{ transform: "rotate(-90deg)", transformOrigin: "center" }}
               />
             </svg>
@@ -3457,7 +3457,7 @@ function StudioPageContent() {
               <div className="px-2 mb-2 space-y-1">
                 <div className="flex items-center justify-between">
                   <span className="text-[11px] text-[var(--color-sand-500)]" style={{ fontFamily: "var(--font-body)" }}>Total</span>
-                  <span className="text-[11px] text-[var(--color-sand-900)] tabular-nums" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>{profile?.plan === "creator" ? 100 : profile?.plan === "personal" ? 30 : 2} credits</span>
+                  <span className="text-[11px] text-[var(--color-sand-900)] tabular-nums" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>{profile?.plan === "creator" ? 102 : profile?.plan === "personal" ? 32 : 2} credits</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-[11px] text-[var(--color-sand-500)]" style={{ fontFamily: "var(--font-body)" }}>Remaining</span>
@@ -3624,7 +3624,7 @@ function StudioPageContent() {
             <div className="px-2 mb-2 space-y-1">
               <div className="flex items-center justify-between">
                 <span className="text-[11px] text-[var(--color-sand-500)]" style={{ fontFamily: "var(--font-body)" }}>Total</span>
-                <span className="text-[11px] text-[var(--color-sand-800)] tabular-nums" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>{profile?.plan === "creator" ? 100 : profile?.plan === "personal" ? 30 : 2} credits</span>
+                <span className="text-[11px] text-[var(--color-sand-800)] tabular-nums" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>{profile?.plan === "creator" ? 102 : profile?.plan === "personal" ? 32 : 2} credits</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-[11px] text-[var(--color-sand-500)]" style={{ fontFamily: "var(--font-body)" }}>Remaining</span>
