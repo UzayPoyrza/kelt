@@ -1082,6 +1082,8 @@ export default function HomePage() {
             <Link href="/create" className="text-[12px] text-white/50 hover:text-white/80 transition-colors">Create</Link>
             <Link href="/upgrade" className="text-[12px] text-white/50 hover:text-white/80 transition-colors">Pricing</Link>
             <Link href="/contact" className="text-[12px] text-white/50 hover:text-white/80 transition-colors">Contact</Link>
+            <Link href="/privacy" className="text-[12px] text-white/50 hover:text-white/80 transition-colors">Privacy</Link>
+            <Link href="/terms" className="text-[12px] text-white/50 hover:text-white/80 transition-colors">Terms</Link>
           </nav>
           <p className="text-xs text-white/40" style={{ fontFamily: "var(--font-body)" }}>
             &copy; 2026 Incraft. All rights reserved.
