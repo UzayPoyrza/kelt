@@ -3613,7 +3613,9 @@ function StudioPageContent() {
               )}
               <div className="flex-1 min-w-0">
                 <p className="text-xs text-[var(--color-sand-900)]" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>{profile?.display_name || "User"}</p>
-                <p className="text-[10px] text-[var(--color-sand-500)]" style={{ fontFamily: "var(--font-body)" }}>{planDisplayName(profile?.plan)} plan</p>
+                <p className={`text-[10px] ${profile?.subscription_status === "canceling" ? "text-amber-600" : "text-[var(--color-sand-500)]"}`} style={{ fontFamily: "var(--font-body)" }}>
+                  {planDisplayName(profile?.plan)} plan{profile?.subscription_status === "canceling" ? " — Expiring" : ""}
+                </p>
               </div>
               <a href="/upgrade" className={`text-[11px] px-3.5 py-1.5 rounded-lg text-white bg-clip-padding bg-[length:300%_300%] animate-[border-glow_4s_ease_infinite] hover:opacity-90 transition-opacity cursor-pointer shadow-sm shrink-0 ${profile?.plan === "free" ? "" : "!bg-none !bg-[var(--color-sand-800)]"}`} style={{ fontFamily: "var(--font-body)", fontWeight: 600, ...(profile?.plan === "free" ? { backgroundImage: "linear-gradient(135deg, var(--color-sage), var(--color-ocean), var(--color-dusk), var(--color-ember), var(--color-sage))", backgroundSize: "300% 300%" } : {}) }}>
                 {profile?.plan === "free" ? "Upgrade" : "Get Credits"}
@@ -4489,7 +4491,9 @@ function StudioPageContent() {
                           <div className="min-w-0">
                             <p className="text-[13px] text-[var(--color-sand-900)] truncate" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>{profile?.email || "user@example.com"}</p>
                             <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] bg-[var(--color-sand-100)] text-[var(--color-sand-600)] border border-[var(--color-sand-200)]" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>{planDisplayName(profile?.plan)}</span>
+                              <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] border ${profile?.subscription_status === "canceling" ? "bg-amber-50 text-amber-700 border-amber-200" : "bg-[var(--color-sand-100)] text-[var(--color-sand-600)] border-[var(--color-sand-200)]"}`} style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>
+                                {planDisplayName(profile?.plan)}{profile?.subscription_status === "canceling" ? " — Expiring" : ""}
+                              </span>
                               <span className={`text-[11px] ${(profile?.credits_remaining ?? 0) === 0 ? "text-red-500 font-medium" : "text-[var(--color-sand-400)]"}`} style={{ fontFamily: "var(--font-body)" }}>{profile?.credits_remaining ?? 0} credits remaining</span>
                             </div>
                           </div>
@@ -4535,7 +4539,9 @@ function StudioPageContent() {
                                 ? "Upgrade to get more credits"
                                 : profile?.subscription_status === "canceling"
                                   ? "Expiring — go to Manage to renew"
-                                  : "Manage billing, invoices, and plan changes"}
+                                  : profile?.subscription_period_end
+                                    ? `Renews ${new Date(profile.subscription_period_end).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}`
+                                    : "Manage billing, invoices, and plan changes"}
                             </span>
                           </div>
                           {profile?.plan === "free" ? (
