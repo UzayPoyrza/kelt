@@ -57,7 +57,7 @@ function CreateContent() {
   const detectedIntent = detectIntent(prompt);
 
   const [duration, setDuration] = useState<number>(7);
-  const [voice, setVoice] = useState<string>("Graham");
+  const [voice, setVoice] = useState<string>("Luna");
   const [voicePlaying, setVoicePlaying] = useState<string | null>(null);
   const voiceAudioRef = useRef<HTMLAudioElement | null>(null);
   const [showAdvanced, setShowAdvanced] = useState(false);
@@ -305,7 +305,7 @@ function CreateContent() {
             <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.06 }} className="mb-5">
               <p className="text-[11px] uppercase tracking-widest text-[var(--color-sand-400)] mb-2" style={{ fontFamily: "var(--font-body)" }}>Duration</p>
               <div className="relative">
-                {duration !== 7 && <span className="absolute -top-4 left-1/2 -translate-x-1/2 text-[9px] uppercase tracking-wide text-[var(--color-sand-400)] z-10" style={{ fontFamily: "var(--font-body)" }}>Popular</span>}
+                <span className="absolute -top-4 left-1/2 -translate-x-1/2 text-[9px] uppercase tracking-wide text-[var(--color-sand-400)] z-10" style={{ fontFamily: "var(--font-body)" }}>Popular</span>
                 <div className="flex items-center rounded-xl overflow-visible border border-[var(--color-sand-200)]">
                   {durations.map((d, i) => (
                     <button key={d} onClick={() => setDuration(d)}

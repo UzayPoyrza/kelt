@@ -3097,7 +3097,7 @@ function StudioPageContent() {
   const [generatingSession, setGeneratingSession] = useState<{ id: string; phase: "script" | "audio" } | null>(null);
   // Session info to display on loading screen during TTS phase
   const [loadingSessionInfo, setLoadingSessionInfo] = useState<{ title: string; duration: number; voice: string; protocol: string | null } | null>(null);
-  const [genConfig, setGenConfig] = useState({ prompt: "", voice: "Graham", duration: 5, sound: "Rain", soundOptions: null as { recommended: string[]; other: string[] } | null, sessionId: null as string | null, script: null as ScriptBlock[] | null, title: null as string | null, soundVolume: 70, supportChoice: "auto_detect", mode: "still", preferredApproach: "auto" });
+  const [genConfig, setGenConfig] = useState({ prompt: "", voice: "Luna", duration: 5, sound: "Rain", soundOptions: null as { recommended: string[]; other: string[] } | null, sessionId: null as string | null, script: null as ScriptBlock[] | null, title: null as string | null, soundVolume: 70, supportChoice: "auto_detect", mode: "still", preferredApproach: "auto" });
   const [showGenAdvanced, setShowGenAdvanced] = useState(false);
   const genGenerateRef = useRef<HTMLDivElement>(null);
   const [genPromptError, setGenPromptError] = useState(false);
@@ -4260,7 +4260,7 @@ function StudioPageContent() {
                 <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.06 }} className="mb-5">
                   <p className="text-[11px] uppercase tracking-widest text-[var(--color-sand-400)] mb-2" style={{ fontFamily: "var(--font-body)" }}>Duration</p>
                   <div className="relative">
-                    {Number(genConfig.duration) !== 5 && <span className="absolute -top-4 left-1/2 -translate-x-1/2 text-[9px] uppercase tracking-wide text-[var(--color-sand-400)] z-10" style={{ fontFamily: "var(--font-body)" }}>Popular</span>}
+                    <span className="absolute -top-4 left-1/2 -translate-x-1/2 text-[9px] uppercase tracking-wide text-[var(--color-sand-400)] z-10" style={{ fontFamily: "var(--font-body)" }}>Popular</span>
                     <div className="flex items-center rounded-xl overflow-visible border border-[var(--color-sand-200)]">
                       {sharedDurations.map((d, i) => (
                         <button key={d} onClick={() => setGenConfig(prev => ({ ...prev, duration: d }))}
@@ -4284,10 +4284,11 @@ function StudioPageContent() {
                       const accentColors = ["var(--color-sage)", "var(--color-ocean)", "var(--color-dusk)", "var(--color-ember)"];
                       const accent = accentColors[idx];
                       return (
+                        <div key={v.id} className="flex-1 relative">
+                          {v.popular && <span className="absolute -top-4 left-1/2 -translate-x-1/2 text-[9px] uppercase tracking-wide text-[var(--color-sand-400)] z-10" style={{ fontFamily: "var(--font-body)" }}>Popular</span>}
                         <button
-                          key={v.id}
                           onClick={(e) => { e.stopPropagation(); setGenConfig(prev => ({ ...prev, voice: v.id })); setVoicePlaying(voicePlaying === v.id ? null : v.id); }}
-                          className={`flex-1 relative overflow-hidden rounded-xl transition-all border cursor-pointer ${isActive ? "shadow-md border-transparent" : "hover:shadow-sm border-[var(--color-sand-200)] hover:border-[var(--color-sand-300)]"}`}
+                          className={`w-full relative overflow-hidden rounded-xl transition-all border cursor-pointer ${isActive ? "shadow-md border-transparent" : "hover:shadow-sm border-[var(--color-sand-200)] hover:border-[var(--color-sand-300)]"}`}
                           style={{
                             background: isActive
                               ? `linear-gradient(135deg, var(--color-sand-900), var(--color-sand-800))`
@@ -4333,6 +4334,7 @@ function StudioPageContent() {
                             </div>
                           </div>
                         </button>
+                        </div>
                       );
                     })}
                   </div>
