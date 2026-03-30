@@ -412,7 +412,6 @@ function CreateContent() {
             </motion.div>
 
             {/* Advanced options */}
-            {hasExplicitChoice && (
             <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.18 }} className="mb-6">
               <button
                 onClick={() => { setShowAdvanced(!showAdvanced); if (!showAdvanced) scrollToGenerate(300); }}
@@ -472,7 +471,6 @@ function CreateContent() {
                 </motion.div>
               )}
             </motion.div>
-            )}
 
             {/* Generate button */}
             <motion.div ref={generateRef} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }} className="flex flex-col items-center gap-3">
