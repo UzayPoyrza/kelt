@@ -4424,7 +4424,7 @@ function StudioPageContent() {
                     style={{ fontFamily: "var(--font-body)" }}
                   >
                     <FlaskConical className="w-3.5 h-3.5 text-[var(--color-sand-400)]" />
-                    <span className="text-[12px] text-[var(--color-sand-500)] group-hover:text-[var(--color-sand-700)] flex-1 text-left transition-colors">Advanced<span className="text-[var(--color-sand-400)] ml-1.5">· {genApproachOptions.length} protocols</span></span>
+                    <span className="text-[12px] text-[var(--color-sand-500)] group-hover:text-[var(--color-sand-700)] flex-1 text-left transition-colors">Advanced<span className="text-[10px] text-[var(--color-sand-400)] ml-1.5">— optional · {genApproachOptions.length} protocols</span></span>
                     <ChevronDown className={`w-4 h-4 text-[var(--color-sand-400)] transition-transform ${showGenAdvanced ? "rotate-180" : ""}`} />
                   </button>
 
@@ -4458,7 +4458,7 @@ function StudioPageContent() {
                       })()}
 
                       {/* Protocol */}
-                      <p className="text-[11px] uppercase tracking-widest text-[var(--color-sand-400)] mb-1" style={{ fontFamily: "var(--font-body)" }}>Protocol</p>
+                      <div className="flex items-center gap-2 mb-1"><p className="text-[11px] uppercase tracking-widest text-[var(--color-sand-400)]" style={{ fontFamily: "var(--font-body)" }}>Protocol</p><span className="text-[10px] text-[var(--color-sand-400)]" style={{ fontFamily: "var(--font-body)" }}>— optional</span></div>
                       <p className="text-[9px] text-[var(--color-sand-400)] mb-1.5" style={{ fontFamily: "var(--font-body)" }}>For therapists, instructors, and advanced users. Overrides the auto-selected approach.</p>
                       {genApproachOptions.length > 0 ? (
                         <div className="flex flex-wrap gap-1">
