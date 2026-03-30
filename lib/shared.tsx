@@ -15,7 +15,7 @@ import svgPaths from "@/lib/svg-paths";
 
 /* ─── Data ─── */
 
-export const durations = [3, 5, 7, 10, 12, 15];
+export const durations = [3, 5, 7, 10, 12];
 
 const SAMPLE_BASE = "https://audio.neurotypeapp.com/incraft_audio";
 export const voices = [

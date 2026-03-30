@@ -2286,7 +2286,7 @@ function StudioSession({ prompt, voice, duration, sound, soundOptions: initialSo
                 {showDurationInfo && (
                   <div className="absolute left-1/2 -translate-x-1/2 top-full mt-1.5 w-52 p-3 rounded-lg bg-[#18181b] text-white shadow-xl z-30">
                     <p className="text-[11px] leading-relaxed" style={{ fontFamily: "var(--font-body)" }}>
-                      Duration is calculated from script length, pause times, and breathing cues. Edit pauses or script text to adjust.
+                      Duration is estimated from script length, pause times, and breathing cues. Actual length may vary by ~25% depending on prompt and protocol. Edit pauses or script text to adjust.
                     </p>
                     <div className="w-2 h-2 bg-[#18181b] rotate-45 absolute -top-1 left-1/2 -translate-x-1/2" />
                   </div>
@@ -3134,7 +3134,7 @@ function StudioPageContent() {
   const [generatingSession, setGeneratingSession] = useState<{ id: string; phase: "script" | "audio" } | null>(null);
   // Session info to display on loading screen during TTS phase
   const [loadingSessionInfo, setLoadingSessionInfo] = useState<{ title: string; duration: number; voice: string; protocol: string | null } | null>(null);
-  const [genConfig, setGenConfig] = useState({ prompt: "", voice: "Luna", duration: 5, sound: "Rain", soundOptions: null as { recommended: string[]; other: string[] } | null, sessionId: null as string | null, script: null as ScriptBlock[] | null, title: null as string | null, soundVolume: 70, supportChoice: "auto_detect", mode: "still", preferredApproach: "auto" });
+  const [genConfig, setGenConfig] = useState({ prompt: "", voice: "Luna", duration: 5, sound: "Rain", soundOptions: null as { recommended: string[]; other: string[] } | null, sessionId: null as string | null, script: null as ScriptBlock[] | null, title: null as string | null, soundVolume: 70, supportChoice: "just_meditate", mode: "still", preferredApproach: "auto" });
   const [showGenAdvanced, setShowGenAdvanced] = useState(false);
   const genGenerateRef = useRef<HTMLDivElement>(null);
   const [genPromptError, setGenPromptError] = useState(false);
@@ -3332,7 +3332,7 @@ function StudioPageContent() {
     if (!text.trim()) return;
     const trimmed = text.trim();
     const sc = detectSupportChoice(trimmed);
-    setGenConfig(prev => ({ ...prev, prompt: trimmed, supportChoice: sc }));
+    setGenConfig(prev => ({ ...prev, prompt: trimmed, supportChoice: sc !== "auto_detect" ? sc : "just_meditate" }));
     setGeneratePrompt("");
     setGenStep("choose");
     window.history.replaceState({ studioNav: "generate", studioStep: "choose" }, "", `/studio?prompt=${encodeURIComponent(trimmed)}`);
@@ -4309,6 +4309,7 @@ function StudioPageContent() {
                       ))}
                     </div>
                   </div>
+                  <p className="text-[10px] text-[var(--color-sand-400)] mt-1.5" style={{ fontFamily: "var(--font-body)" }}>Actual length may vary by ~25% depending on prompt and protocol</p>
                 </motion.div>
 
                 {/* Voice — single row, compact with accent stripe */}
@@ -4385,38 +4386,38 @@ function StudioPageContent() {
                   </div>
                   {(() => {
                     const detectedSC = detectSupportChoice(genConfig.prompt);
-                    const hasExplicit = genConfig.supportChoice !== "auto_detect";
-                    return detectedSC !== "auto_detect" && !hasExplicit ? (
-                      <button onClick={() => {
-                        const allowedModes = modeRules[detectedSC] ? modes.filter(m => modeRules[detectedSC]!.includes(m.id)) : modes;
-                        const newMode = allowedModes.find(m => m.id === genConfig.mode) ? genConfig.mode : (allowedModes[0]?.id || "still");
-                        setGenConfig(prev => ({ ...prev, supportChoice: detectedSC, mode: newMode, preferredApproach: "auto" }));
-                      }} className="text-[10px] text-[var(--color-sage)] hover:underline mb-1.5 block cursor-pointer" style={{ fontFamily: "var(--font-body)" }}>
-                        Suggested: {supportChoices.find(s => s.id === detectedSC)?.label}
-                      </button>
-                    ) : null;
+                    return (<>
+                      <div className="flex flex-wrap gap-1">
+                        {supportChoices.filter(s => s.id !== "auto_detect").map((s) => {
+                          const isSuggested = detectedSC !== "auto_detect" && detectedSC !== "just_meditate" && s.id === detectedSC && genConfig.supportChoice !== s.id;
+                          return (
+                            <button key={s.id} onClick={() => {
+                              if (genConfig.supportChoice === s.id) {
+                                setGenConfig(prev => ({ ...prev, supportChoice: "just_meditate", mode: "still", preferredApproach: "auto" }));
+                                return;
+                              }
+                              const allowedModes = modeRules[s.id] ? modes.filter(m => modeRules[s.id]!.includes(m.id)) : modes;
+                              const newMode = allowedModes.find(m => m.id === genConfig.mode) ? genConfig.mode : (allowedModes[0]?.id || "still");
+                              setGenConfig(prev => ({ ...prev, supportChoice: s.id, mode: newMode, preferredApproach: "auto" }));
+                            }}
+                              className={`px-3 py-1.5 rounded-lg text-[11px] transition-all whitespace-nowrap border cursor-pointer ${genConfig.supportChoice === s.id ? "bg-[var(--color-sand-800)] text-[var(--color-sand-50)] border-transparent" : isSuggested ? "bg-[var(--color-sage-light)] text-[var(--color-sage)] border-[var(--color-sage)] border-dashed" : "bg-white text-[var(--color-sand-600)] hover:bg-[var(--color-sand-100)] border-[var(--color-sand-200)]"}`}
+                              style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>
+                              {s.label}{isSuggested ? " ✦" : ""}
+                            </button>
+                          );
+                        })}
+                      </div>
+                      {detectedSC !== "auto_detect" && detectedSC !== "just_meditate" && genConfig.supportChoice !== detectedSC && (
+                        <p className="text-[10px] text-[var(--color-sage)] mt-1.5" style={{ fontFamily: "var(--font-body)" }}>
+                          ✦ Suggested based on your prompt
+                        </p>
+                      )}
+                    </>);
                   })()}
-                  <div className="flex flex-wrap gap-1">
-                    {supportChoices.filter(s => s.id !== "auto_detect").map((s) => (
-                      <button key={s.id} onClick={() => {
-                        if (genConfig.supportChoice === s.id) {
-                          setGenConfig(prev => ({ ...prev, supportChoice: "auto_detect", mode: "still", preferredApproach: "auto" }));
-                          return;
-                        }
-                        const allowedModes = modeRules[s.id] ? modes.filter(m => modeRules[s.id]!.includes(m.id)) : modes;
-                        const newMode = allowedModes.find(m => m.id === genConfig.mode) ? genConfig.mode : (allowedModes[0]?.id || "still");
-                        setGenConfig(prev => ({ ...prev, supportChoice: s.id, mode: newMode, preferredApproach: "auto" }));
-                      }}
-                        className={`px-3 py-1.5 rounded-lg text-[11px] transition-all whitespace-nowrap border cursor-pointer ${genConfig.supportChoice === s.id ? "bg-[var(--color-sand-800)] text-[var(--color-sand-50)] border-transparent" : "bg-white text-[var(--color-sand-600)] hover:bg-[var(--color-sand-100)] border-[var(--color-sand-200)]"}`}
-                        style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>
-                        {s.label}
-                      </button>
-                    ))}
-                  </div>
                 </motion.div>
 
                 {/* Advanced options */}
-                {genConfig.supportChoice !== "auto_detect" && (
+                {genConfig.supportChoice !== "just_meditate" && genConfig.supportChoice !== "auto_detect" && (
                 <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.18 }} className="mb-6">
                   <button
                     onClick={() => { setShowGenAdvanced(!showGenAdvanced); setTimeout(() => genGenerateRef.current?.scrollIntoView({ behavior: "smooth", block: "end" }), 300); }}

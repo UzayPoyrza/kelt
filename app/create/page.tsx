@@ -64,13 +64,13 @@ function CreateContent() {
   const generateRef = useRef<HTMLDivElement>(null);
 
   // Support choice, mode, and approach state
-  const [supportChoice, setSupportChoice] = useState<string>("auto_detect");
+  const [supportChoice, setSupportChoice] = useState<string>("just_meditate");
   const [selectedMode, setSelectedMode] = useState<string>("still");
   const [preferredApproach, setPreferredApproach] = useState<string>("auto");
 
   // Auto-detect support choice suggestion when prompt changes
   const detectedSupportChoice = detectSupportChoice(prompt);
-  const hasExplicitChoice = supportChoice !== "auto_detect";
+  const hasExplicitChoice = supportChoice !== "just_meditate" && supportChoice !== "auto_detect";
 
   // Available modes based on support choice
   const availableModes = modeRules[supportChoice] ? modes.filter(m => modeRules[supportChoice]!.includes(m.id)) : modes;
@@ -148,7 +148,7 @@ function CreateContent() {
     // Gate: anonymous users redirect to signup page
     if (isAnonymous) {
       const voiceLabel = voices.find(v => v.id === voice)?.label || voice;
-      const sc = supportChoice !== "auto_detect" ? supportChoice : (detectedSupportChoice || "mindfulness");
+      const sc = supportChoice !== "auto_detect" && supportChoice !== "just_meditate" ? supportChoice : (detectedSupportChoice || "just_meditate");
       const scLabel = supportChoices.find(s => s.id === sc)?.label || sc;
       const signupParams = new URLSearchParams({
         next: `/studio?prompt=${encodeURIComponent(prompt)}`,
@@ -317,6 +317,7 @@ function CreateContent() {
                   ))}
                 </div>
               </div>
+              <p className="text-[10px] text-[var(--color-sand-400)] mt-1.5" style={{ fontFamily: "var(--font-body)" }}>Actual length may vary by ~25% depending on prompt and protocol</p>
             </motion.div>
 
             {/* Voice — single row, compact with accent stripe */}
@@ -391,20 +392,23 @@ function CreateContent() {
                 <p className="text-[11px] uppercase tracking-widest text-[var(--color-sand-400)]" style={{ fontFamily: "var(--font-body)" }}>Focus area</p>
                 <span className="text-[10px] text-[var(--color-sand-400)]" style={{ fontFamily: "var(--font-body)" }}>— optional</span>
               </div>
-              {detectedSupportChoice !== "auto_detect" && !hasExplicitChoice && (
-                <button onClick={() => { setSupportChoice(detectedSupportChoice); scrollToGenerate(150); }} className="text-[10px] text-[var(--color-sage)] hover:underline mb-1.5 block cursor-pointer" style={{ fontFamily: "var(--font-body)" }}>
-                  Suggested: {supportChoices.find(s => s.id === detectedSupportChoice)?.label}
-                </button>
-              )}
               <div className="flex flex-wrap gap-1">
-                {supportChoices.filter(s => s.id !== "auto_detect").map((s) => (
-                  <button key={s.id} onClick={() => { const next = supportChoice === s.id ? "auto_detect" : s.id; setSupportChoice(next); if (next !== "auto_detect") scrollToGenerate(150); }}
-                    className={`px-3 py-1.5 rounded-lg text-[11px] transition-all whitespace-nowrap border cursor-pointer ${supportChoice === s.id ? "bg-[var(--color-sand-800)] text-[var(--color-sand-50)] border-transparent" : "bg-white text-[var(--color-sand-600)] hover:bg-[var(--color-sand-100)] border-[var(--color-sand-200)]"}`}
-                    style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>
-                    {s.label}
-                  </button>
-                ))}
+                {supportChoices.filter(s => s.id !== "auto_detect").map((s) => {
+                  const isSuggested = detectedSupportChoice !== "auto_detect" && detectedSupportChoice !== "just_meditate" && s.id === detectedSupportChoice && supportChoice !== s.id;
+                  return (
+                    <button key={s.id} onClick={() => { const next = supportChoice === s.id ? "just_meditate" : s.id; setSupportChoice(next); if (next !== "just_meditate") scrollToGenerate(150); }}
+                      className={`px-3 py-1.5 rounded-lg text-[11px] transition-all whitespace-nowrap border cursor-pointer ${supportChoice === s.id ? "bg-[var(--color-sand-800)] text-[var(--color-sand-50)] border-transparent" : isSuggested ? "bg-[var(--color-sage-light)] text-[var(--color-sage)] border-[var(--color-sage)] border-dashed" : "bg-white text-[var(--color-sand-600)] hover:bg-[var(--color-sand-100)] border-[var(--color-sand-200)]"}`}
+                      style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>
+                      {s.label}{isSuggested ? " ✦" : ""}
+                    </button>
+                  );
+                })}
               </div>
+              {detectedSupportChoice !== "auto_detect" && detectedSupportChoice !== "just_meditate" && supportChoice !== detectedSupportChoice && (
+                <p className="text-[10px] text-[var(--color-sage)] mt-1.5" style={{ fontFamily: "var(--font-body)" }}>
+                  ✦ Suggested based on your prompt
+                </p>
+              )}
             </motion.div>
 
             {/* Advanced options */}
