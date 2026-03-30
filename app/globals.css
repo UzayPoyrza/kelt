@@ -239,19 +239,36 @@
   z-index: 1;
 }
 
+/* ─── Off-screen section deferral ─── */
+.section-deferred {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 800px;
+}
+
+/* ─── Waveform bars (CSS-driven, GPU-composited) ─── */
+@keyframes waveform {
+  0%, 100% { height: var(--bar-h-base); }
+  50% { height: var(--bar-h-peak); }
+}
+
+.waveform-bar {
+  animation: waveform 2.5s ease-in-out infinite;
+  will-change: height;
+}
+
 /* ─── Mobile performance optimizations ─── */
 @media (max-width: 640px) {
   .grain-overlay::before {
-    animation: none;
-    opacity: 0.5;
+    display: none;
   }
 
   .animate-breathe {
-    animation-duration: 12s;
+    animation: none;
   }
 
   .animate-pulse-ring {
     animation: none;
     opacity: 0.4;
   }
+
 }

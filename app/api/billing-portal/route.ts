@@ -23,10 +23,17 @@ export async function POST(request: NextRequest) {
   const origin = request.headers.get("origin") || "http://localhost:3000";
 
   const stripe = getStripe();
-  const session = await stripe.billingPortal.sessions.create({
-    customer: subscription.stripe_customer_id,
-    return_url: `${origin}/studio?nav=settings`,
-  });
-
-  return NextResponse.json({ url: session.url });
+  try {
+    const session = await stripe.billingPortal.sessions.create({
+      customer: subscription.stripe_customer_id,
+      return_url: `${origin}/studio?nav=settings`,
+    });
+    return NextResponse.json({ url: session.url });
+  } catch (err) {
+    console.error("Billing portal error:", err);
+    return NextResponse.json(
+      { error: "Unable to open billing portal. Your subscription may need to be re-created." },
+      { status: 400 }
+    );
+  }
 }

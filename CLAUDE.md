@@ -22,7 +22,7 @@ npm run lint         # Next.js linter
 - `/studio` — **Main app**. Authenticated only. Sessions grid, history, settings, script editor, generation. All generation happens here.
 - `/session` — Legacy playback page. Redirects to `/studio?session=X` if session ID present.
 - `/login` — Auth page (Google/Apple OAuth)
-- `/upgrade` — Pricing page with Personal/Creator credit-based plans
+- `/upgrade` — Pricing page with Personal/Pro subscription plans
 
 ### Generation Flow (single flow, all in `/studio`)
 
@@ -153,6 +153,17 @@ Generates a meditation script. Called from `/api/generate/route.ts`. Audio rende
 - `deduct_credit(user_id_input)` — Atomic decrement, returns boolean
 - `refund_credit(user_id_input)` — Atomic increment
 - `upgrade_anonymous_to_free(target_user_id)` — Converts anonymous profile to free plan with 2 credits
+
+## Stripe Products & Pricing
+
+Two subscription plans (no single-credit purchases):
+
+| Product | Monthly | Yearly | Credits |
+|---------|---------|--------|---------|
+| **Incraft Personal** | $8/mo | $72/yr ($6/mo) | 30/month |
+| **Incraft Pro** | $24/mo | $216/yr ($18/mo) | 100/month |
+
+Stripe account: `acct_1TEi9M1eQq0tmKNS` (Kelt). Currently in **test mode** — switch to live API keys (`sk_live_*` / `pk_live_*`) before launch.
 
 ## Patterns
 

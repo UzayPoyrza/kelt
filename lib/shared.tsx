@@ -490,7 +490,7 @@ export const samples = [
     src: "https://audio.neurotypeapp.com/meditation_voices/luna/U008_l.mp3",
     prompt: "Help me release tension in my shoulders and upper body",
     description: "A 9-min PMR session focused on the shoulders and neck. Progressive tension-release cues guide you through each muscle group.",
-    voice: "Aditya",
+    voice: "Luna",
     sounds: {
       recommended: { label: "Rain", src: `${AUDIO_BASE}/rain.mp3` },
       alternatives: [
@@ -583,15 +583,15 @@ export function AmbientBackground() {
     <div className="absolute inset-0 pointer-events-none overflow-hidden">
       <div className="grain-overlay absolute inset-0" />
       <div
-        className="absolute w-[400px] h-[400px] sm:w-[800px] sm:h-[800px] rounded-full blur-[100px] sm:blur-[180px] opacity-30"
+        className="absolute w-[200px] h-[200px] sm:w-[800px] sm:h-[800px] rounded-full blur-[40px] sm:blur-[180px] opacity-20 sm:opacity-30"
         style={{ top: "5%", right: "-15%", background: "#d4cfc6" }}
       />
       <div
-        className="absolute w-[300px] h-[300px] sm:w-[600px] sm:h-[600px] rounded-full blur-[80px] sm:blur-[160px] opacity-25"
+        className="absolute hidden sm:block w-[600px] h-[600px] rounded-full blur-[160px] opacity-25"
         style={{ bottom: "-5%", left: "-10%", background: "#e8e4de" }}
       />
       <div
-        className="animate-breathe absolute w-[200px] h-[200px] sm:w-[300px] sm:h-[300px] rounded-full blur-[60px] sm:blur-[120px] opacity-15"
+        className="animate-breathe absolute hidden sm:block w-[300px] h-[300px] rounded-full blur-[120px] opacity-15"
         style={{ top: "40%", left: "50%", transform: "translate(-50%, -50%)", background: "#c8d5ca" }}
       />
     </div>

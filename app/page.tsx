@@ -170,9 +170,9 @@ function CinematicTransition() {
         }}
       >
         <span className="text-xs uppercase tracking-[0.2em] text-white/60 font-medium" style={{ fontFamily: "var(--font-body)" }}>Explanation</span>
-        <motion.div animate={{ y: [0, 8, 0] }} transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}>
+        <div className="animate-[float_1.5s_ease-in-out_infinite]">
           <ChevronDown className="w-6 h-6 text-white/60" />
-        </motion.div>
+        </div>
       </motion.div>
     </div>
   );
@@ -503,16 +503,16 @@ export default function HomePage() {
               <span className="text-sm sm:text-base font-medium">Listen to examples</span>
             </span>
           </span>
-          <motion.div animate={{ y: [0, 5, 0] }} transition={{ duration: 1.5, repeat: Infinity }}>
+          <div className="animate-[float_1.5s_ease-in-out_infinite]">
             <ChevronDown className="w-6 h-6 text-[var(--color-sand-900)]" />
-          </motion.div>
+          </div>
         </motion.button>
       </section>
 
       {/* ════════════════════════════════════════════
           SECTION 0 — AUDIO SAMPLES
          ════════════════════════════════════════════ */}
-      <section ref={infoRef} className="relative pb-10 sm:pb-12 px-4 sm:px-6 scroll-mt-0" style={{ background: "var(--color-sand-900)" }}>
+      <section ref={infoRef} className="section-deferred relative pb-10 sm:pb-12 px-4 sm:px-6 scroll-mt-0" style={{ background: "var(--color-sand-900)" }}>
         <div className="max-w-6xl mx-auto w-full pt-10 sm:pt-16 md:pt-20">
           <FadeIn className="text-center mb-10">
             <h2 className="text-[1.75rem] sm:text-[2.5rem] md:text-[3.5rem] text-[var(--color-sand-50)] leading-tight mb-4">
@@ -644,7 +644,7 @@ export default function HomePage() {
       {/* ════════════════════════════════════════════
           SECTION 1 — PAUSE INTELLIGENCE
          ════════════════════════════════════════════ */}
-      <section ref={howRef} className="relative py-12 sm:py-16 md:py-20 px-4 sm:px-6 overflow-hidden" style={{ background: "var(--color-sand-50)" }}>
+      <section ref={howRef} className="section-deferred relative py-12 sm:py-16 md:py-20 px-4 sm:px-6 overflow-hidden" style={{ background: "var(--color-sand-50)" }}>
         <div className="max-w-4xl mx-auto">
           <FadeIn className="text-center mb-14">
             <p className="text-xs uppercase tracking-[0.2em] text-[var(--color-sand-500)] mb-4 font-medium" style={{ fontFamily: "var(--font-body)" }}>
@@ -725,10 +725,10 @@ export default function HomePage() {
       {/* ════════════════════════════════════════════
           SECTION 2 — STUDIO AUDIO
          ════════════════════════════════════════════ */}
-      <section className="relative py-14 sm:py-20 md:py-24 px-4 sm:px-6 overflow-hidden" style={{ background: "var(--color-sand-900)" }}>
-        <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute w-[250px] h-[250px] sm:w-[500px] sm:h-[500px] rounded-full blur-[100px] sm:blur-[200px] opacity-[0.07]" style={{ top: "10%", left: "15%", background: "var(--color-sage)" }} />
-          <div className="absolute w-[200px] h-[200px] sm:w-[400px] sm:h-[400px] rounded-full blur-[90px] sm:blur-[180px] opacity-[0.05]" style={{ bottom: "5%", right: "10%", background: "var(--color-dusk)" }} />
+      <section className="section-deferred relative py-14 sm:py-20 md:py-24 px-4 sm:px-6 overflow-hidden" style={{ background: "var(--color-sand-900)" }}>
+        <div className="absolute inset-0 pointer-events-none hidden sm:block">
+          <div className="absolute w-[500px] h-[500px] rounded-full blur-[200px] opacity-[0.07]" style={{ top: "10%", left: "15%", background: "var(--color-sage)" }} />
+          <div className="absolute w-[400px] h-[400px] rounded-full blur-[180px] opacity-[0.05]" style={{ bottom: "5%", right: "10%", background: "var(--color-dusk)" }} />
         </div>
 
         <div className="max-w-4xl mx-auto relative z-10">
@@ -753,25 +753,16 @@ export default function HomePage() {
                   const dist = Math.abs(i - center) / center;
                   const baseH = 20 + (1 - dist) * 55 + Math.sin(i * 0.6) * 15;
                   return (
-                    <motion.div
+                    <div
                       key={i}
-                      className="flex-1 max-w-[6px] rounded-full"
+                      className="flex-1 max-w-[6px] rounded-full waveform-bar"
                       style={{
                         background: `linear-gradient(to top, rgba(122,158,126,${0.15 + (1 - dist) * 0.35}), rgba(122,158,126,${0.05 + (1 - dist) * 0.15}))`,
-                      }}
-                      animate={{
-                        height: [
-                          `${baseH}%`,
-                          `${baseH + 10 + Math.random() * 20}%`,
-                          `${baseH - 5 + Math.random() * 10}%`,
-                          `${baseH}%`,
-                        ],
-                      }}
-                      transition={{
-                        duration: 2 + Math.random() * 2,
-                        repeat: Infinity,
-                        ease: "easeInOut",
-                        delay: i * 0.04,
+                        height: `${baseH}%`,
+                        ["--bar-h-base" as string]: `${baseH}%`,
+                        ["--bar-h-peak" as string]: `${baseH + 15}%`,
+                        animationDelay: `${i * 0.04}s`,
+                        animationDuration: `${2 + (i % 5) * 0.5}s`,
                       }}
                     />
                   );
@@ -823,7 +814,7 @@ export default function HomePage() {
       {/* ════════════════════════════════════════════
           SECTION 3 — SCIENTIFIC PROTOCOLS
          ════════════════════════════════════════════ */}
-      <section className="relative py-14 sm:py-20 md:py-24 px-4 sm:px-6" style={{ background: "var(--color-sand-50)" }}>
+      <section className="section-deferred relative py-14 sm:py-20 md:py-24 px-4 sm:px-6" style={{ background: "var(--color-sand-50)" }}>
         <div className="max-w-4xl mx-auto">
           <FadeIn className="text-center mb-10 sm:mb-16">
             <p className="text-xs uppercase tracking-[0.25em] text-[var(--color-sand-500)] mb-5" style={{ fontFamily: "var(--font-body)" }}>
@@ -940,7 +931,7 @@ export default function HomePage() {
       {/* ════════════════════════════════════════════
           SECTION 4 — SOUND AWARE
          ════════════════════════════════════════════ */}
-      <section className="relative py-14 sm:py-20 md:py-24 px-4 sm:px-6 overflow-hidden" style={{ background: "var(--color-sand-100)" }}>
+      <section className="section-deferred relative py-14 sm:py-20 md:py-24 px-4 sm:px-6 overflow-hidden" style={{ background: "var(--color-sand-100)" }}>
         <div className="max-w-4xl mx-auto relative z-10">
           <FadeIn className="text-center mb-10 sm:mb-14">
             <p className="text-xs uppercase tracking-[0.25em] text-[var(--color-sand-500)] mb-5" style={{ fontFamily: "var(--font-body)" }}>
@@ -1048,7 +1039,7 @@ export default function HomePage() {
       {/* ════════════════════════════════════════════
           CTA
          ════════════════════════════════════════════ */}
-      <section className="relative py-14 sm:py-20 md:py-24 px-4 sm:px-6" style={{ background: "var(--color-sand-900)" }}>
+      <section className="section-deferred relative py-14 sm:py-20 md:py-24 px-4 sm:px-6" style={{ background: "var(--color-sand-900)" }}>
         <div className="max-w-5xl mx-auto">
           <FadeIn className="text-center">
             <h2 className="text-[1.5rem] sm:text-[2rem] md:text-[2.75rem] text-[var(--color-sand-50)] leading-tight mb-4">
