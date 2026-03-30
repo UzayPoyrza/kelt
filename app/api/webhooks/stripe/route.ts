@@ -134,15 +134,15 @@ export async function POST(request: NextRequest) {
 
       const updates: Record<string, unknown> = { plan };
 
-      // If plan changed (upgrade/downgrade), set credits to the new plan amount
+      // If plan changed, add new plan's credits on top of existing balance
       if (currentProfile && currentProfile.plan !== plan) {
-        const newCredits = CREDIT_AMOUNTS[plan] || 2;
-        updates.credits_remaining = newCredits;
+        const planCredits = CREDIT_AMOUNTS[plan] || 2;
+        const existing = currentProfile.credits_remaining || 0;
+        updates.credits_remaining = existing + planCredits;
 
-        // Ledger entry for plan change credit adjustment
         await supabase.from("credit_ledger").insert({
           user_id: userId,
-          amount: newCredits - (currentProfile.credits_remaining || 0),
+          amount: planCredits,
           reason: `plan_change_${currentProfile.plan}_to_${plan}`,
         });
       }
