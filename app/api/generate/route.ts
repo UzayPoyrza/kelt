@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Prompt is required" }, { status: 400 });
   }
 
-  console.log("[generate] Starting:", { prompt: prompt.slice(0, 50), voice, duration, userId: user!.id.slice(0, 8), isAnon: user!.is_anonymous });
+  console.log("[generate] Starting:", { prompt: prompt.slice(0, 60), voice, duration, userId: user!.id.slice(0, 8), isAnon: user!.is_anonymous });
   const isAnonymous = !!user!.is_anonymous;
 
   // === Authorization: daily rate limit (anon) or credits (OAuth) ===

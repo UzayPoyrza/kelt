@@ -245,14 +245,14 @@ function CreateContent() {
                   contentEditable
                   suppressContentEditableWarning
                   onBlur={(e) => {
-                    const text = (e.currentTarget.textContent || "").slice(0, 50);
+                    const text = (e.currentTarget.textContent || "").slice(0, 60);
                     e.currentTarget.textContent = text;
                     setPrompt(text);
                   }}
                   onInput={(e) => {
                     let text = e.currentTarget.textContent || "";
-                    if (text.length > 50) {
-                      text = text.slice(0, 50);
+                    if (text.length > 60) {
+                      text = text.slice(0, 60);
                       e.currentTarget.textContent = text;
                       const range = document.createRange();
                       const sel = window.getSelection();
@@ -273,6 +273,11 @@ function CreateContent() {
               {promptError && (
                 <p className="text-xs text-[var(--color-ember)] mt-2 block" style={{ fontFamily: "var(--font-body)" }}>
                   Write something to describe your meditation
+                </p>
+              )}
+              {prompt.length >= 50 && (
+                <p className="text-[11px] text-[var(--color-ember)] mt-1.5" style={{ fontFamily: "var(--font-body)" }}>
+                  {60 - prompt.length} characters left
                 </p>
               )}
             </motion.div>

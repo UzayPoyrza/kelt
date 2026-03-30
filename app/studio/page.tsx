@@ -4149,11 +4149,16 @@ function StudioPageContent() {
                   <div className="absolute -inset-[2px] rounded-xl bg-[length:300%_300%] animate-[border-glow_4s_ease_infinite] opacity-80 group-focus-within:opacity-100 transition-opacity duration-300 blur-[0.5px]"
                     style={{ background: "linear-gradient(135deg, var(--color-sage), var(--color-ocean), var(--color-dusk), var(--color-ember), var(--color-sage))", backgroundSize: "300% 300%" }} />
                   <div className="relative bg-white rounded-xl p-3 flex items-center gap-3">
-                    <input type="text" value={generatePrompt} onChange={(e) => setGeneratePrompt(e.target.value.slice(0, 50))}
+                    <input type="text" value={generatePrompt} onChange={(e) => setGeneratePrompt(e.target.value.slice(0, 60))}
                       onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handlePromptSubmit(generatePrompt); } }}
-                      maxLength={50}
+                      maxLength={60}
                       placeholder="Create a guided meditation on..."
                       className="flex-1 outline-none text-sm text-[var(--color-sand-900)] placeholder:text-[var(--color-sand-400)] placeholder:opacity-50 bg-transparent" style={{ fontFamily: "var(--font-body)" }} />
+                    {generatePrompt.length >= 50 && (
+                      <span className="absolute right-12 top-1/2 -translate-y-1/2 text-[11px] text-[var(--color-ember)]" style={{ fontFamily: "var(--font-body)" }}>
+                        {60 - generatePrompt.length} left
+                      </span>
+                    )}
                     <button onClick={() => handlePromptSubmit(generatePrompt)} disabled={!generatePrompt.trim()}
                       className="shrink-0 w-9 h-9 flex items-center justify-center rounded-full transition-all cursor-pointer disabled:opacity-30"
                       style={{ background: generatePrompt.trim() ? "var(--color-sand-900)" : "transparent", color: generatePrompt.trim() ? "var(--color-sand-50)" : "var(--color-sand-400)" }}>
@@ -4198,14 +4203,14 @@ function StudioPageContent() {
                       contentEditable
                       suppressContentEditableWarning
                       onBlur={(e) => {
-                        const text = (e.currentTarget.textContent || "").slice(0, 50);
+                        const text = (e.currentTarget.textContent || "").slice(0, 60);
                         e.currentTarget.textContent = text;
                         setGenConfig(prev => ({ ...prev, prompt: text }));
                       }}
                       onInput={(e) => {
                         let text = e.currentTarget.textContent || "";
-                        if (text.length > 50) {
-                          text = text.slice(0, 50);
+                        if (text.length > 60) {
+                          text = text.slice(0, 60);
                           e.currentTarget.textContent = text;
                           const range = document.createRange();
                           const sel = window.getSelection();
@@ -4214,6 +4219,7 @@ function StudioPageContent() {
                           sel?.removeAllRanges();
                           sel?.addRange(range);
                         }
+                        setGenConfig(prev => ({ ...prev, prompt: text }));
                       }}
                       onKeyDown={(e) => { if (e.key === "Enter") e.preventDefault(); }}
                       onFocus={() => setGenPromptError(false)}
@@ -4225,6 +4231,11 @@ function StudioPageContent() {
                   {genPromptError && (
                     <p className="text-xs text-[var(--color-ember)] mt-2 block" style={{ fontFamily: "var(--font-body)" }}>
                       Write something to describe your meditation
+                    </p>
+                  )}
+                  {genConfig.prompt.length >= 50 && (
+                    <p className="text-[11px] text-[var(--color-ember)] mt-1.5" style={{ fontFamily: "var(--font-body)" }}>
+                      {60 - genConfig.prompt.length} characters left
                     </p>
                   )}
                 </motion.div>

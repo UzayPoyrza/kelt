@@ -414,18 +414,23 @@ export default function HomePage() {
                 <input
                   type="text"
                   value={prompt}
-                  onChange={(e) => setPrompt(e.target.value.slice(0, 50))}
+                  onChange={(e) => setPrompt(e.target.value.slice(0, 60))}
                   onKeyDown={(e) => {
                     if (e.key === "Enter" && !e.shiftKey) {
                       e.preventDefault();
                       handleSubmitPrompt(prompt);
                     }
                   }}
-                  maxLength={50}
+                  maxLength={60}
                   placeholder="Create a guided meditation on..."
                   className="flex-1 outline-none text-sm text-[var(--color-sand-900)] placeholder:text-[var(--color-sand-400)] placeholder:opacity-50 bg-transparent"
                   style={{ fontFamily: "var(--font-body)" }}
                 />
+                {prompt.length >= 50 && (
+                  <span className="absolute right-12 top-1/2 -translate-y-1/2 text-[11px] text-[var(--color-ember)]" style={{ fontFamily: "var(--font-body)" }}>
+                    {60 - prompt.length} left
+                  </span>
+                )}
                 <button
                   onClick={() => handleSubmitPrompt(prompt)}
                   disabled={!prompt.trim()}
