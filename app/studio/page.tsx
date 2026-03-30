@@ -661,7 +661,7 @@ function PlayerBar({ session, isPlaying, onTogglePlay, onClose, inline, sound, v
 
   return (
     <div
-      className={inline ? "border-t border-[#e4e4e7] bg-white/95 backdrop-blur-xl animate-[slide-up_0.3s_ease-out]" : "fixed bottom-0 left-0 lg:left-56 right-0 z-50 border-t border-[#e4e4e7] bg-white/95 backdrop-blur-xl animate-[slide-up_0.3s_ease-out]"}
+      className={`@container ${inline ? "border-t border-[#e4e4e7] bg-white/95 backdrop-blur-xl animate-[slide-up_0.3s_ease-out]" : "fixed bottom-0 left-0 lg:left-56 right-0 z-50 border-t border-[#e4e4e7] bg-white/95 backdrop-blur-xl animate-[slide-up_0.3s_ease-out]"}`}
     >
       {/* Hidden audio elements */}
       {hasRealAudio && <audio ref={audioRef} src={audioUrl!} preload="metadata" />}
@@ -679,10 +679,11 @@ function PlayerBar({ session, isPlaying, onTogglePlay, onClose, inline, sound, v
         />
       </div>
 
-      <div className="flex items-center gap-2 sm:gap-3 xl:gap-5 px-3 sm:px-4 xl:px-6 py-3 overflow-hidden">
-        {/* Session info — title at xl+ (at lg, right panel takes 288px leaving only ~512px) */}
-        <div className="hidden xl:flex items-center gap-3 min-w-0 max-w-[200px] 2xl:max-w-[300px]">
-          <div className="hidden 2xl:flex w-10 h-10 rounded-lg items-center justify-center shrink-0" style={{ background: colors.bg }}>
+      {/* Container-query responsive: @3xl=768px, @4xl=896px, @5xl=1024px */}
+      <div className="flex items-center gap-2 @xl:gap-3 @5xl:gap-5 px-3 @xl:px-4 @5xl:px-6 py-3 overflow-hidden">
+        {/* Session info — title at @3xl (768px container), icon at @4xl (896px) */}
+        <div className="hidden @3xl:flex items-center gap-3 min-w-0 max-w-[200px] @5xl:max-w-[300px]">
+          <div className="hidden @4xl:flex w-10 h-10 rounded-lg items-center justify-center shrink-0" style={{ background: colors.bg }}>
             <Icon className="w-5 h-5" style={{ color: colors.accent }} />
           </div>
           <div className="min-w-0">
@@ -692,17 +693,17 @@ function PlayerBar({ session, isPlaying, onTogglePlay, onClose, inline, sound, v
         </div>
 
         {/* Controls */}
-        <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+        <div className="flex items-center gap-1 @sm:gap-2 shrink-0">
           {renderError && !hasRealAudio ? (
             <>
-              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center bg-[var(--color-ember)]/10">
+              <div className="w-9 h-9 @sm:w-10 @sm:h-10 rounded-xl flex items-center justify-center bg-[var(--color-ember)]/10">
                 <AlertCircle className="w-4 h-4 text-[var(--color-ember)]" />
               </div>
               <span className="text-[12px] text-[var(--color-ember)] whitespace-nowrap" style={{ fontFamily: "var(--font-body)" }}>{renderError}</span>
             </>
           ) : isRendering && !hasRealAudio ? (
             <>
-              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center bg-[#18181b]">
+              <div className="w-9 h-9 @sm:w-10 @sm:h-10 rounded-xl flex items-center justify-center bg-[#18181b]">
                 <motion.div animate={{ rotate: 360 }} transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}>
                   <Loader2 className="w-4 h-4 text-white" />
                 </motion.div>
@@ -711,21 +712,21 @@ function PlayerBar({ session, isPlaying, onTogglePlay, onClose, inline, sound, v
             </>
           ) : (
             <>
-              <button onClick={handleSkipBack} className="relative w-8 h-8 sm:w-9 sm:h-9 rounded-lg hover:bg-[#f4f4f5] flex items-center justify-center text-[#71717a] hover:text-[#18181b] transition-colors cursor-pointer" title="Back 10s">
-                <RotateCcw className="w-4 h-4 sm:w-5 sm:h-5" />
-                <span className="absolute text-[6px] sm:text-[7px] font-bold" style={{ fontFamily: "var(--font-body)" }}>10</span>
+              <button onClick={handleSkipBack} className="relative w-8 h-8 @sm:w-9 @sm:h-9 rounded-lg hover:bg-[#f4f4f5] flex items-center justify-center text-[#71717a] hover:text-[#18181b] transition-colors cursor-pointer" title="Back 10s">
+                <RotateCcw className="w-4 h-4 @sm:w-5 @sm:h-5" />
+                <span className="absolute text-[6px] @sm:text-[7px] font-bold" style={{ fontFamily: "var(--font-body)" }}>10</span>
               </button>
               <button
                 onClick={onTogglePlay}
-                className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl relative transition-colors cursor-pointer shadow-sm"
+                className="w-9 h-9 @sm:w-10 @sm:h-10 rounded-xl relative transition-colors cursor-pointer shadow-sm"
                 style={{ background: isPlaying ? colors.accent : "#18181b", color: "#fff" }}
               >
                 <Pause className={`w-4 h-4 absolute inset-0 m-auto ${isPlaying ? "" : "invisible"}`} />
                 <Play className={`w-4 h-4 absolute inset-0 m-auto translate-x-[1px] ${isPlaying ? "invisible" : ""}`} />
               </button>
-              <button onClick={handleSkipForward} className="relative w-8 h-8 sm:w-9 sm:h-9 rounded-lg hover:bg-[#f4f4f5] flex items-center justify-center text-[#71717a] hover:text-[#18181b] transition-colors cursor-pointer" title="Skip 10s">
-                <RotateCw className="w-4 h-4 sm:w-5 sm:h-5" />
-                <span className="absolute text-[6px] sm:text-[7px] font-bold" style={{ fontFamily: "var(--font-body)" }}>10</span>
+              <button onClick={handleSkipForward} className="relative w-8 h-8 @sm:w-9 @sm:h-9 rounded-lg hover:bg-[#f4f4f5] flex items-center justify-center text-[#71717a] hover:text-[#18181b] transition-colors cursor-pointer" title="Skip 10s">
+                <RotateCw className="w-4 h-4 @sm:w-5 @sm:h-5" />
+                <span className="absolute text-[6px] @sm:text-[7px] font-bold" style={{ fontFamily: "var(--font-body)" }}>10</span>
               </button>
               {hasRealAudio && (
                 <span className={`text-[11px] text-[#a1a1aa] tabular-nums whitespace-nowrap ml-1 ${duration > 0 ? "" : "invisible"}`} style={{ fontFamily: "var(--font-body)", minWidth: "5.5em" }}>
@@ -737,7 +738,7 @@ function PlayerBar({ session, isPlaying, onTogglePlay, onClose, inline, sound, v
         </div>
 
         {/* Right side — background sound + actions. Entirely static except sound label truncation. */}
-        <div className="flex items-center gap-1.5 sm:gap-2 ml-auto shrink-0">
+        <div className="flex items-center gap-1.5 @sm:gap-2 ml-auto shrink-0">
           <div className="relative flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#f4f4f5] border border-[#e8e8ec] shrink-0">
             <button
               onClick={(e) => { e.stopPropagation(); setShowBgSound(!showBgSound); }}
@@ -745,7 +746,7 @@ function PlayerBar({ session, isPlaying, onTogglePlay, onClose, inline, sound, v
               style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}
             >
               <Music className={`w-3.5 h-3.5 shrink-0 ${showBgSound ? "text-white/70" : "text-[#71717a]"}`} />
-              <span className="truncate w-[7ch] sm:w-[10ch] lg:w-[7ch] xl:w-[14ch]">{soundIdToLabel(bgSound)}</span>
+              <span className="truncate w-[7ch] @xl:w-[10ch] @3xl:w-[14ch]">{soundIdToLabel(bgSound)}</span>
               <ChevronDown className={`w-3.5 h-3.5 shrink-0 transition-transform ${showBgSound ? "rotate-180 text-white/70" : "text-[#71717a]"}`} />
             </button>
 
