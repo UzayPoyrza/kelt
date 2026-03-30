@@ -10,6 +10,7 @@ export interface Profile {
   avatar_url: string | null;
   plan: Plan;
   credits_remaining: number;
+  credits_granted: number;
   preferences: {
     defaultVoice?: string;
     defaultDuration?: number;

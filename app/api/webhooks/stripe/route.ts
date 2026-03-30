@@ -81,7 +81,7 @@ export async function POST(request: NextRequest) {
         // Update profile
         await supabase
           .from("profiles")
-          .update({ plan, credits_remaining: credits })
+          .update({ plan, credits_remaining: credits, credits_granted: credits })
           .eq("id", userId);
 
         // Ledger entry
@@ -182,7 +182,7 @@ export async function POST(request: NextRequest) {
 
       await supabase
         .from("profiles")
-        .update({ credits_remaining: (profile?.credits_remaining || 0) + sub.credits_per_month })
+        .update({ credits_remaining: sub.credits_per_month, credits_granted: sub.credits_per_month })
         .eq("id", sub.user_id);
 
       await supabase.from("credit_ledger").insert({

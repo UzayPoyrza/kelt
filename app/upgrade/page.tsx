@@ -456,7 +456,7 @@ export default function UpgradePage() {
   }, [fetchProfile]);
 
   const currentPlan = profile?.plan === "personal" ? "Personal" : profile?.plan === "creator" ? "Pro" : "Free";
-  const creditsTotal = profile?.plan === "creator" ? 102 : profile?.plan === "personal" ? 32 : 2;
+  const creditsTotal = profile?.credits_granted ?? 2;
   const creditsRemaining = profile?.credits_remaining ?? 0;
 
   const openPlanCheckout = async (plan: (typeof plans)[number]) => {

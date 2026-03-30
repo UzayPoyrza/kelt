@@ -679,21 +679,15 @@ function PlayerBar({ session, isPlaying, onTogglePlay, onClose, inline, sound, v
         />
       </div>
 
-      <div className="flex items-center gap-2 sm:gap-3 md:gap-5 px-3 sm:px-4 md:px-6 py-3">
-        {/* Session info — hidden on very small, icon-only on small, full on md+ */}
-        <div className="hidden md:flex items-center gap-3 min-w-0 flex-1">
-          <div className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0" style={{ background: colors.bg }}>
+      <div className="flex items-center gap-2 sm:gap-3 lg:gap-5 px-3 sm:px-4 lg:px-6 py-3">
+        {/* Session info — title at lg+, icon at xl+ */}
+        <div className="hidden lg:flex items-center gap-3 min-w-0 max-w-[200px] xl:max-w-[300px]">
+          <div className="hidden xl:flex w-10 h-10 rounded-lg items-center justify-center shrink-0" style={{ background: colors.bg }}>
             <Icon className="w-5 h-5" style={{ color: colors.accent }} />
           </div>
           <div className="min-w-0">
             <p className="text-[13px] text-[#18181b] truncate" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>{session.title}</p>
             <p className="text-[11px] text-[#a1a1aa] truncate" style={{ fontFamily: "var(--font-body)" }}>{session.voice} · {session.duration} · {session.protocol}</p>
-          </div>
-        </div>
-        {/* Icon-only session info on small screens */}
-        <div className="flex md:hidden items-center shrink-0">
-          <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg flex items-center justify-center" style={{ background: colors.bg }}>
-            <Icon className="w-4 h-4 sm:w-5 sm:h-5" style={{ color: colors.accent }} />
           </div>
         </div>
 
@@ -734,7 +728,7 @@ function PlayerBar({ session, isPlaying, onTogglePlay, onClose, inline, sound, v
                 <span className="absolute text-[6px] sm:text-[7px] font-bold" style={{ fontFamily: "var(--font-body)" }}>10</span>
               </button>
               {hasRealAudio && (
-                <span className={`hidden sm:inline text-[11px] text-[#a1a1aa] tabular-nums whitespace-nowrap ml-1 ${duration > 0 ? "" : "invisible"}`} style={{ fontFamily: "var(--font-body)", minWidth: "5.5em", display: "inline-block" }}>
+                <span className={`text-[11px] text-[#a1a1aa] tabular-nums whitespace-nowrap ml-1 ${duration > 0 ? "" : "invisible"}`} style={{ fontFamily: "var(--font-body)", minWidth: "5.5em" }}>
                   {formatTime(currentTime)} / {formatTime(duration || 0)}
                 </span>
               )}
@@ -743,31 +737,29 @@ function PlayerBar({ session, isPlaying, onTogglePlay, onClose, inline, sound, v
         </div>
 
         {/* Right side — background sound + actions */}
-        <div className="flex items-center gap-1.5 sm:gap-2 md:gap-3 flex-1 justify-end min-w-0">
-          <div className="relative flex items-center gap-1.5 sm:gap-2.5 px-2 sm:px-3 py-1.5 rounded-full bg-[#f4f4f5] border border-[#e8e8ec] min-w-0">
+        <div className="flex items-center gap-1.5 sm:gap-2 lg:gap-3 ml-auto shrink-0">
+          <div className="relative flex items-center gap-1.5 sm:gap-2.5 px-2 sm:px-3 py-1.5 rounded-full bg-[#f4f4f5] border border-[#e8e8ec]">
             <button
               onClick={(e) => { e.stopPropagation(); setShowBgSound(!showBgSound); }}
               className={`flex items-center gap-1.5 sm:gap-2 px-2 sm:px-2.5 py-1 rounded-md text-[12px] transition-all cursor-pointer min-w-0 ${showBgSound ? "bg-[#18181b] text-white" : "text-[#3f3f46] hover:bg-[#e8e8ec]"}`}
               style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}
             >
               <Music className={`w-3.5 h-3.5 shrink-0 ${showBgSound ? "text-white/70" : "text-[#71717a]"}`} />
-              <span className="truncate max-w-[60px] sm:max-w-[80px] md:max-w-none">{soundIdToLabel(bgSound)}</span>
+              <span className="truncate max-w-[7ch] sm:max-w-[10ch] lg:max-w-[14ch]">{soundIdToLabel(bgSound)}</span>
               <ChevronDown className={`w-4 h-4 shrink-0 transition-transform ${showBgSound ? "rotate-180 text-white/70" : "text-[#71717a]"}`} />
             </button>
 
-            <div className="w-[1px] h-3.5 bg-[#d4d4d8] hidden sm:block" />
+            <div className="w-[1px] h-3.5 bg-[#d4d4d8] shrink-0" />
 
-            <div className="hidden sm:flex items-center gap-1">
-              <button onClick={() => setBgVol(bgVol > 0 ? 0 : 70)} className="text-[#71717a] hover:text-[#18181b] transition-colors cursor-pointer">
-                {bgVol === 0 ? <VolumeX className="w-3 h-3" /> : <Volume2 className="w-3 h-3" />}
-              </button>
-              <input
-                type="range" min={0} max={100} value={bgVol}
-                onChange={(e) => setBgVol(Number(e.target.value))}
-                className="w-16 md:w-24 h-[3px] rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-2.5 [&::-webkit-slider-thumb]:h-2.5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-[#3f3f46] [&::-webkit-slider-thumb]:cursor-pointer"
-                style={{ background: `linear-gradient(to right, #3f3f46 ${bgVol}%, #d4d4d8 ${bgVol}%)` }}
-              />
-            </div>
+            <button onClick={() => setBgVol(bgVol > 0 ? 0 : 70)} className="text-[#71717a] hover:text-[#18181b] transition-colors cursor-pointer shrink-0">
+              {bgVol === 0 ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5" />}
+            </button>
+            <input
+              type="range" min={0} max={100} value={bgVol}
+              onChange={(e) => setBgVol(Number(e.target.value))}
+              className="w-16 h-[3px] rounded-full appearance-none cursor-pointer shrink-0 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-2.5 [&::-webkit-slider-thumb]:h-2.5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-[#3f3f46] [&::-webkit-slider-thumb]:cursor-pointer"
+              style={{ background: `linear-gradient(to right, #3f3f46 ${bgVol}%, #d4d4d8 ${bgVol}%)` }}
+            />
 
             {/* Dropdown */}
             {showBgSound && (
@@ -798,7 +790,7 @@ function PlayerBar({ session, isPlaying, onTogglePlay, onClose, inline, sound, v
           <button
             onClick={onDownload}
             disabled={!audioUrl || isDownloading}
-            className={`hidden sm:flex w-8 h-8 rounded-lg hover:bg-[#f4f4f5] items-center justify-center text-[#71717a] hover:text-[#18181b] transition-colors cursor-pointer shrink-0 ${!audioUrl || isDownloading ? "opacity-30 pointer-events-none" : ""}`}
+            className={`flex w-8 h-8 rounded-lg hover:bg-[#f4f4f5] items-center justify-center text-[#71717a] hover:text-[#18181b] transition-colors cursor-pointer shrink-0 ${!audioUrl || isDownloading ? "opacity-30 pointer-events-none" : ""}`}
           >
             {isDownloading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
           </button>
@@ -1980,7 +1972,7 @@ function StudioSession({ prompt, voice, duration, sound, soundOptions: initialSo
               <circle cx="9" cy="9" r="7" stroke="#e4e4e7" strokeWidth="2" />
               <circle cx="9" cy="9" r="7" stroke="#18181b" strokeWidth="2" strokeLinecap="round"
                 strokeDasharray={`${2 * Math.PI * 7}`}
-                strokeDashoffset={`${2 * Math.PI * 7 * (1 - (profile?.credits_remaining ?? 0) / Math.max(1, profile?.plan === "creator" ? 102 : profile?.plan === "personal" ? 32 : 2))}`}
+                strokeDashoffset={`${2 * Math.PI * 7 * (1 - (profile?.credits_remaining ?? 0) / Math.max(1, profile?.credits_granted ?? 2))}`}
                 style={{ transform: "rotate(-90deg)", transformOrigin: "center" }}
               />
             </svg>
@@ -2118,7 +2110,7 @@ function StudioSession({ prompt, voice, duration, sound, soundOptions: initialSo
               <circle cx="9" cy="9" r="7" stroke="#e4e4e7" strokeWidth="2" />
               <circle cx="9" cy="9" r="7" stroke="#18181b" strokeWidth="2" strokeLinecap="round"
                 strokeDasharray={`${2 * Math.PI * 7}`}
-                strokeDashoffset={`${2 * Math.PI * 7 * (1 - (profile?.credits_remaining ?? 0) / Math.max(1, profile?.plan === "creator" ? 102 : profile?.plan === "personal" ? 32 : 2))}`}
+                strokeDashoffset={`${2 * Math.PI * 7 * (1 - (profile?.credits_remaining ?? 0) / Math.max(1, profile?.credits_granted ?? 2))}`}
                 style={{ transform: "rotate(-90deg)", transformOrigin: "center" }}
               />
             </svg>
@@ -3458,7 +3450,7 @@ function StudioPageContent() {
               <div className="px-2 mb-2 space-y-1">
                 <div className="flex items-center justify-between">
                   <span className="text-[11px] text-[var(--color-sand-500)]" style={{ fontFamily: "var(--font-body)" }}>Total</span>
-                  <span className="text-[11px] text-[var(--color-sand-900)] tabular-nums" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>{profile?.plan === "creator" ? 102 : profile?.plan === "personal" ? 32 : 2} credits</span>
+                  <span className="text-[11px] text-[var(--color-sand-900)] tabular-nums" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>{profile?.credits_granted ?? 2} credits</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-[11px] text-[var(--color-sand-500)]" style={{ fontFamily: "var(--font-body)" }}>Remaining</span>
@@ -3625,7 +3617,7 @@ function StudioPageContent() {
             <div className="px-2 mb-2 space-y-1">
               <div className="flex items-center justify-between">
                 <span className="text-[11px] text-[var(--color-sand-500)]" style={{ fontFamily: "var(--font-body)" }}>Total</span>
-                <span className="text-[11px] text-[var(--color-sand-800)] tabular-nums" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>{profile?.plan === "creator" ? 102 : profile?.plan === "personal" ? 32 : 2} credits</span>
+                <span className="text-[11px] text-[var(--color-sand-800)] tabular-nums" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>{profile?.credits_granted ?? 2} credits</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-[11px] text-[var(--color-sand-500)]" style={{ fontFamily: "var(--font-body)" }}>Remaining</span>
