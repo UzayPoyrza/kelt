@@ -46,6 +46,7 @@ import {
   getApproaches,
 } from "@/lib/shared";
 import { createClient } from "@/lib/supabase/client";
+import { BreadcrumbSchema } from "@/lib/schema";
 
 
 function CreateContent() {
@@ -58,6 +59,7 @@ function CreateContent() {
   const [duration, setDuration] = useState<number>(7);
   const [voice, setVoice] = useState<string>("Graham");
   const [voicePlaying, setVoicePlaying] = useState<string | null>(null);
+  const voiceAudioRef = useRef<HTMLAudioElement | null>(null);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const generateRef = useRef<HTMLDivElement>(null);
 
@@ -100,6 +102,23 @@ function CreateContent() {
       setIsAnonymous(!user || !!user.is_anonymous);
     });
   }, []);
+
+  // Play/stop voice sample preview
+  useEffect(() => {
+    if (!voicePlaying) {
+      if (voiceAudioRef.current) { voiceAudioRef.current.pause(); voiceAudioRef.current = null; }
+      return;
+    }
+    const v = voices.find(v => v.id === voicePlaying);
+    if (!v?.sample) return;
+    if (voiceAudioRef.current) { voiceAudioRef.current.pause(); voiceAudioRef.current = null; }
+    const audio = new Audio(v.sample);
+    audio.volume = 0.8;
+    audio.onended = () => setVoicePlaying(null);
+    voiceAudioRef.current = audio;
+    audio.play().catch(() => {});
+    return () => { audio.pause(); };
+  }, [voicePlaying]);
 
   // Scroll to top on mount
   useEffect(() => { window.scrollTo(0, 0); }, []);
@@ -310,10 +329,11 @@ function CreateContent() {
                   const accentColors = ["var(--color-sage)", "var(--color-ocean)", "var(--color-dusk)", "var(--color-ember)"];
                   const accent = accentColors[idx];
                   return (
+                    <div key={v.id} className="relative">
+                      {v.popular && <span className="absolute -top-4 left-1/2 -translate-x-1/2 text-[9px] uppercase tracking-wide text-[var(--color-sand-400)] z-10" style={{ fontFamily: "var(--font-body)" }}>Popular</span>}
                     <button
-                      key={v.id}
-                      onClick={(e) => { e.stopPropagation(); setVoice(v.id); setVoicePlaying(v.id); setTimeout(() => setVoicePlaying((cur) => cur === v.id ? null : cur), 3000); }}
-                      className={`relative overflow-hidden rounded-xl transition-all border cursor-pointer ${isActive ? "shadow-md border-transparent" : "hover:shadow-sm border-[var(--color-sand-200)] hover:border-[var(--color-sand-300)]"}`}
+                      onClick={(e) => { e.stopPropagation(); setVoice(v.id); setVoicePlaying(voicePlaying === v.id ? null : v.id); }}
+                      className={`w-full relative overflow-hidden rounded-xl transition-all border cursor-pointer ${isActive ? "shadow-md border-transparent" : "hover:shadow-sm border-[var(--color-sand-200)] hover:border-[var(--color-sand-300)]"}`}
                       style={{
                         background: isActive
                           ? `linear-gradient(135deg, var(--color-sand-900), var(--color-sand-800))`
@@ -336,7 +356,6 @@ function CreateContent() {
                               e.stopPropagation();
                               setVoice(v.id);
                               setVoicePlaying(isVoicePlaying ? null : v.id);
-                              if (!isVoicePlaying) setTimeout(() => setVoicePlaying((cur) => cur === v.id ? null : cur), 3000);
                             }}
                             className="w-6 h-6 rounded-full flex items-center justify-center shrink-0 transition-all"
                             style={{
@@ -360,6 +379,7 @@ function CreateContent() {
                         </div>
                       </div>
                     </button>
+                    </div>
                   );
                 })}
               </div>
@@ -489,8 +509,16 @@ function CreateContent() {
 
 export default function CreatePage() {
   return (
-    <Suspense fallback={<LoadingFallback />}>
-      <CreateContent />
-    </Suspense>
+    <>
+      <BreadcrumbSchema
+        items={[
+          { name: "Home", url: "https://incraft.io" },
+          { name: "Create", url: "https://incraft.io/create" },
+        ]}
+      />
+      <Suspense fallback={<LoadingFallback />}>
+        <CreateContent />
+      </Suspense>
+    </>
   );
 }

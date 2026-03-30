@@ -26,6 +26,7 @@ import type { Profile } from "@/lib/types/database";
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
 import svgPaths from "@/lib/svg-paths";
+import { PricingSchemas, BreadcrumbSchema } from "@/lib/schema";
 
 /* ─── Logo ─── */
 
@@ -477,6 +478,13 @@ export default function UpgradePage() {
       className="min-h-screen relative"
       style={{ background: "#faf9f7" }}
     >
+      <PricingSchemas />
+      <BreadcrumbSchema
+        items={[
+          { name: "Home", url: "https://incraft.io" },
+          { name: "Pricing", url: "https://incraft.io/upgrade" },
+        ]}
+      />
       {/* Grain overlay */}
       <div className="fixed inset-0 grain-overlay pointer-events-none opacity-50" />
 

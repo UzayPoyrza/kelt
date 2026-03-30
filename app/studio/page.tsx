@@ -565,10 +565,10 @@ function PlayerBar({ session, isPlaying, onTogglePlay, onClose, inline, sound, v
     };
   }, [hasRealAudio, onTogglePlay]);
 
-  // Sync voice audio volume (voice is always full volume, not controlled by bgVol)
+  // Sync voice audio volume (80% to avoid clipping when mixed with background)
   useEffect(() => {
     if (!audioRef.current || !hasRealAudio) return;
-    audioRef.current.volume = 1;
+    audioRef.current.volume = 0.8;
   }, [hasRealAudio]);
 
   // Resolve background sound label to audio URL
@@ -2715,6 +2715,22 @@ function StudioPageContent() {
     }
   }, [profileLoading, profile]);
   const [voicePlaying, setVoicePlaying] = useState<string | null>(null);
+  const voiceSampleRef = useRef<HTMLAudioElement | null>(null);
+  useEffect(() => {
+    if (!voicePlaying) {
+      if (voiceSampleRef.current) { voiceSampleRef.current.pause(); voiceSampleRef.current = null; }
+      return;
+    }
+    const v = sharedVoices.find(v => v.id === voicePlaying);
+    if (!v?.sample) return;
+    if (voiceSampleRef.current) { voiceSampleRef.current.pause(); voiceSampleRef.current = null; }
+    const audio = new Audio(v.sample);
+    audio.volume = 0.8;
+    audio.onended = () => setVoicePlaying(null);
+    voiceSampleRef.current = audio;
+    audio.play().catch(() => {});
+    return () => { audio.pause(); };
+  }, [voicePlaying]);
   const [downloadingIds, setDownloadingIds] = useState<Set<string>>(new Set());
 
   const resolveBgSoundUrl = useCallback((session: SessionItem | null): string | null => {
@@ -4270,7 +4286,7 @@ function StudioPageContent() {
                       return (
                         <button
                           key={v.id}
-                          onClick={(e) => { e.stopPropagation(); setGenConfig(prev => ({ ...prev, voice: v.id })); setVoicePlaying(v.id); setTimeout(() => setVoicePlaying((cur) => cur === v.id ? null : cur), 3000); }}
+                          onClick={(e) => { e.stopPropagation(); setGenConfig(prev => ({ ...prev, voice: v.id })); setVoicePlaying(voicePlaying === v.id ? null : v.id); }}
                           className={`flex-1 relative overflow-hidden rounded-xl transition-all border cursor-pointer ${isActive ? "shadow-md border-transparent" : "hover:shadow-sm border-[var(--color-sand-200)] hover:border-[var(--color-sand-300)]"}`}
                           style={{
                             background: isActive
@@ -4294,7 +4310,6 @@ function StudioPageContent() {
                                   e.stopPropagation();
                                   setGenConfig(prev => ({ ...prev, voice: v.id }));
                                   setVoicePlaying(isVoicePlaying ? null : v.id);
-                                  if (!isVoicePlaying) setTimeout(() => setVoicePlaying((cur) => cur === v.id ? null : cur), 3000);
                                 }}
                                 className="w-6 h-6 rounded-full flex items-center justify-center shrink-0 transition-all"
                                 style={{

@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { motion } from "motion/react";
 import { ArrowLeft, MessageCircle, Bug, Lightbulb, Mail } from "lucide-react";
 import svgPaths from "@/lib/svg-paths";
+import { BreadcrumbSchema } from "@/lib/schema";
 
 function Logo() {
   return (
@@ -47,6 +48,12 @@ export default function ContactPage() {
 
   return (
     <div className="min-h-screen relative" style={{ background: "#faf9f7" }}>
+      <BreadcrumbSchema
+        items={[
+          { name: "Home", url: "https://incraft.io" },
+          { name: "Contact", url: "https://incraft.io/contact" },
+        ]}
+      />
       <div className="fixed inset-0 grain-overlay pointer-events-none opacity-50" />
 
       {/* Navigation */}

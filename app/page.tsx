@@ -3,6 +3,7 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import { motion, AnimatePresence, useInView } from "motion/react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import {
   Volume2,
   Play,
@@ -32,6 +33,10 @@ import {
   protocols,
   samples,
 } from "@/lib/shared";
+import {
+  WebApplicationSchema,
+  TestimonialReviewSchemas,
+} from "@/lib/schema";
 
 /* ─── Sound Aware Section ─── */
 
@@ -143,10 +148,10 @@ function CinematicTransition() {
 
             <div className="w-6 h-[1px] mx-auto mb-3 bg-white/10" />
 
-            <p className="text-[11px] text-white/35 uppercase tracking-[0.15em]" style={{ fontFamily: "var(--font-body)" }}>
+            <p className="text-xs sm:text-[11px] text-white/35 uppercase tracking-[0.15em]" style={{ fontFamily: "var(--font-body)" }}>
               {t.name}
             </p>
-            <p className="text-[10px] text-white/20 mt-0.5" style={{ fontFamily: "var(--font-body)" }}>
+            <p className="text-[11px] sm:text-[10px] text-white/20 mt-0.5" style={{ fontFamily: "var(--font-body)" }}>
               {t.location}
             </p>
           </motion.div>
@@ -198,7 +203,7 @@ export default function HomePage() {
     Object.fromEntries(samples.map((s) => [s.id, s.sounds.recommended.label]))
   );
   const [bgVolume, setBgVolume] = useState<Record<string, number>>(
-    Object.fromEntries(samples.map((s) => [s.id, 0.3]))
+    Object.fromEntries(samples.map((s) => [s.id, s.defaultBgVolume ?? 0.3]))
   );
   const sampleIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const voiceAudioRef = useRef<HTMLAudioElement | null>(null);
@@ -239,7 +244,7 @@ export default function HomePage() {
 
     // Voice audio
     const voice = new Audio(sample.src);
-    voice.volume = 1;
+    voice.volume = sample.defaultVoiceVolume ?? 1;
     voiceAudioRef.current = voice;
 
     // Background sound
@@ -346,6 +351,8 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen" style={{ background: "var(--color-sand-50)" }}>
+      <WebApplicationSchema />
+      <TestimonialReviewSchemas />
 
       {/* ════════════════════════════════════════════
           HERO / INPUT
@@ -423,7 +430,7 @@ export default function HomePage() {
                   }}
                   maxLength={60}
                   placeholder="Create a guided meditation on..."
-                  className="flex-1 outline-none text-sm text-[var(--color-sand-900)] placeholder:text-[var(--color-sand-400)] placeholder:opacity-50 bg-transparent"
+                  className="flex-1 outline-none text-base sm:text-sm text-[var(--color-sand-900)] placeholder:text-[var(--color-sand-400)] placeholder:opacity-50 bg-transparent"
                   style={{ fontFamily: "var(--font-body)" }}
                 />
                 {prompt.length >= 50 && (
@@ -434,7 +441,7 @@ export default function HomePage() {
                 <button
                   onClick={() => handleSubmitPrompt(prompt)}
                   disabled={!prompt.trim()}
-                  className="shrink-0 w-9 h-9 flex items-center justify-center rounded-full transition-all cursor-pointer disabled:opacity-30"
+                  className="shrink-0 w-11 h-11 sm:w-9 sm:h-9 flex items-center justify-center rounded-full transition-all cursor-pointer disabled:opacity-30"
                   style={{ background: prompt.trim() ? "var(--color-sand-900)" : "transparent", color: prompt.trim() ? "var(--color-sand-50)" : "var(--color-sand-400)" }}
                 >
                   {prompt.trim() ? <ArrowRight className="w-4 h-4" /> : <MessageCircle className="w-5 h-5" />}
@@ -576,7 +583,7 @@ export default function HomePage() {
                             {/* Recommended (always 1) */}
                             <button
                               onClick={(e) => { e.stopPropagation(); setSampleSound((prev) => ({ ...prev, [s.id]: s.sounds.recommended.label })); }}
-                              className={`px-2 py-[3px] rounded-full text-[9px] transition-all cursor-pointer ${sampleSound[s.id] === s.sounds.recommended.label ? "bg-white/20 text-white/85" : "bg-white/[0.04] text-white/30 hover:bg-white/10 hover:text-white/55"}`}
+                              className={`px-2.5 py-1 sm:px-2 sm:py-[3px] rounded-full text-[10px] sm:text-[9px] transition-all cursor-pointer ${sampleSound[s.id] === s.sounds.recommended.label ? "bg-white/20 text-white/85" : "bg-white/[0.04] text-white/30 hover:bg-white/10 hover:text-white/55"}`}
                             >
                               {s.sounds.recommended.label}
                             </button>
@@ -588,7 +595,7 @@ export default function HomePage() {
                                   <button
                                     key={sound.label}
                                     onClick={(e) => { e.stopPropagation(); setSampleSound((prev) => ({ ...prev, [s.id]: sound.label })); }}
-                                    className={`px-2 py-[3px] rounded-full text-[9px] transition-all cursor-pointer ${sampleSound[s.id] === sound.label ? "bg-white/20 text-white/85" : "bg-white/[0.04] text-white/30 hover:bg-white/10 hover:text-white/55"}`}
+                                    className={`px-2.5 py-1 sm:px-2 sm:py-[3px] rounded-full text-[10px] sm:text-[9px] transition-all cursor-pointer ${sampleSound[s.id] === sound.label ? "bg-white/20 text-white/85" : "bg-white/[0.04] text-white/30 hover:bg-white/10 hover:text-white/55"}`}
                                   >
                                     {sound.label}
                                   </button>
@@ -603,7 +610,7 @@ export default function HomePage() {
                                   <button
                                     key={sound.label}
                                     onClick={(e) => { e.stopPropagation(); setSampleSound((prev) => ({ ...prev, [s.id]: sound.label })); }}
-                                    className={`px-2 py-[3px] rounded-full text-[9px] transition-all cursor-pointer ${sampleSound[s.id] === sound.label ? "bg-white/20 text-white/85" : "bg-white/[0.04] text-white/25 hover:bg-white/10 hover:text-white/45"}`}
+                                    className={`px-2.5 py-1 sm:px-2 sm:py-[3px] rounded-full text-[10px] sm:text-[9px] transition-all cursor-pointer ${sampleSound[s.id] === sound.label ? "bg-white/20 text-white/85" : "bg-white/[0.04] text-white/25 hover:bg-white/10 hover:text-white/45"}`}
                                   >
                                     {sound.label}
                                   </button>
@@ -1071,7 +1078,11 @@ export default function HomePage() {
             <Logo />
             <span className="text-sm" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>Incraft</span>
           </div>
-          <a href="/contact" className="text-[12px] text-white/50 hover:text-white/80 transition-colors" style={{ fontFamily: "var(--font-body)" }}>Contact</a>
+          <nav className="flex items-center gap-4 sm:gap-6" style={{ fontFamily: "var(--font-body)" }}>
+            <Link href="/create" className="text-[12px] text-white/50 hover:text-white/80 transition-colors">Create</Link>
+            <Link href="/upgrade" className="text-[12px] text-white/50 hover:text-white/80 transition-colors">Pricing</Link>
+            <Link href="/contact" className="text-[12px] text-white/50 hover:text-white/80 transition-colors">Contact</Link>
+          </nav>
           <p className="text-xs text-white/40" style={{ fontFamily: "var(--font-body)" }}>
             &copy; 2026 Incraft. All rights reserved.
           </p>

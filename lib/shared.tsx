@@ -17,11 +17,12 @@ import svgPaths from "@/lib/svg-paths";
 
 export const durations = [3, 5, 7, 10, 15];
 
+const SAMPLE_BASE = "https://audio.neurotypeapp.com/incraft_audio";
 export const voices = [
-  { id: "Graham", label: "Aria", description: "Calm, gentle female" },
-  { id: "Claire", label: "James", description: "Grounded, steady male" },
-  { id: "Luna", label: "Lin", description: "Soft, intimate tone" },
-  { id: "Silas", label: "Aditya", description: "Deep, spacious" },
+  { id: "Graham", label: "Aria", description: "Calm, gentle female", sample: `${SAMPLE_BASE}/breath_sample_graham_f2.mp3` },
+  { id: "Luna", label: "Lin", description: "Soft, intimate tone", sample: `${SAMPLE_BASE}/breath_sample_luna_v3.mp3`, popular: true },
+  { id: "Claire", label: "James", description: "Grounded, steady male", sample: `${SAMPLE_BASE}/breath_sample_claire.mp3` },
+  { id: "Silas", label: "Aditya", description: "Deep, spacious", sample: `${SAMPLE_BASE}/breath_sample_silas_f3.mp3` },
 ];
 
 /** Map old frontend voice IDs to new API voice IDs (for legacy sessions) */
@@ -282,10 +283,13 @@ export async function downloadMixedAudio(
   const length = voiceBuf.length;
   const offline = new OfflineAudioContext(channels, length, sampleRate);
 
-  // Voice at full volume
+  // Voice at 80% volume
+  const voiceGain = offline.createGain();
+  voiceGain.gain.value = 0.8;
+  voiceGain.connect(offline.destination);
   const voiceSource = offline.createBufferSource();
   voiceSource.buffer = voiceBuf;
-  voiceSource.connect(offline.destination);
+  voiceSource.connect(voiceGain);
 
   // Background sound at the user's knob volume
   const bgGain = offline.createGain();
@@ -482,8 +486,8 @@ export const samples = [
     },
   },
   {
-    id: "U008", label: "Shoulder Drop Scan", duration: "9:00", protocol: "Progressive Muscle Relaxation",
-    src: `${VOICE_BASE}/U008.mp3`,
+    id: "U008", label: "Shoulder Drop Scan", duration: "9:00", protocol: "Progressive Muscle Relaxation", defaultVoiceVolume: 0.75,
+    src: "https://audio.neurotypeapp.com/meditation_voices/luna/U008_l.mp3",
     prompt: "Help me release tension in my shoulders and upper body",
     description: "A 9-min PMR session focused on the shoulders and neck. Progressive tension-release cues guide you through each muscle group.",
     voice: "Aditya",
@@ -498,11 +502,11 @@ export const samples = [
     },
   },
   {
-    id: "U020", label: "Probability Rebalance", duration: "13:00", protocol: "CBT-style Cognitive Skill",
-    src: `${VOICE_BASE}/U020.mp3`,
+    id: "U020", label: "Probability Rebalance", duration: "13:00", protocol: "CBT-style Cognitive Skill", defaultBgVolume: 0.7, defaultVoiceVolume: 0.75,
+    src: "https://audio.neurotypeapp.com/meditation_voices/luna/U020_l.mp3",
     prompt: "Help me challenge catastrophic thinking and see things more clearly",
     description: "A 13-min CBT session that walks through probability estimation and cognitive reframing. Background layers shift as the session deepens.",
-    voice: "Aditya",
+    voice: "Luna",
     sounds: {
       recommended: { label: "Fireplace", src: `${AUDIO_BASE}/fireplace.mp3` },
       alternatives: [
@@ -699,7 +703,7 @@ export function Header({ showNavLinks = false, hideFloatingNav = false, onScroll
             className="fixed top-4 left-1/2 -translate-x-1/2 z-[100]"
           >
             <div className="flex items-center gap-2 sm:gap-3 px-2.5 sm:px-3 py-2 rounded-full bg-[var(--color-sand-900)]/95 backdrop-blur-md shadow-lg border border-white/[0.08]">
-              <a href="/" className="flex items-center gap-2 text-[var(--color-sand-50)] pl-1 cursor-pointer">
+              <a href="/" className="flex items-center gap-2 text-[var(--color-sand-50)] pl-1 cursor-pointer" aria-label="Incraft home">
                 <Logo />
                 <span className="text-sm tracking-tight hidden sm:inline" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>
                   Incraft
