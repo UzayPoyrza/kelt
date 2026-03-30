@@ -112,7 +112,6 @@ export async function POST(request: NextRequest) {
       // Detect canceling state: subscription is still active but set to cancel at period end
       const isCanceling = sub.status === "active" && sub.cancel_at_period_end === true;
       const resolvedStatus = isCanceling ? "canceling" : sub.status === "active" ? "active" : sub.status === "past_due" ? "past_due" : sub.status as string;
-
       await supabase
         .from("subscriptions")
         .update({
