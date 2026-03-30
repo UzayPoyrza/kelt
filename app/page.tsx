@@ -1081,6 +1081,7 @@ export default function HomePage() {
           <nav className="flex items-center gap-4 sm:gap-6" style={{ fontFamily: "var(--font-body)" }}>
             <Link href="/create" className="text-[12px] text-white/50 hover:text-white/80 transition-colors">Create</Link>
             <Link href="/upgrade" className="text-[12px] text-white/50 hover:text-white/80 transition-colors">Pricing</Link>
+            <Link href="/about" className="text-[12px] text-white/50 hover:text-white/80 transition-colors">About</Link>
             <Link href="/contact" className="text-[12px] text-white/50 hover:text-white/80 transition-colors">Contact</Link>
             <Link href="/privacy" className="text-[12px] text-white/50 hover:text-white/80 transition-colors">Privacy</Link>
             <Link href="/terms" className="text-[12px] text-white/50 hover:text-white/80 transition-colors">Terms</Link>

@@ -110,16 +110,9 @@ Added to `next.config.ts` via `headers()`: X-Frame-Options (DENY), X-Content-Typ
 - Move contact email to `@incraft.io` domain
 - Link testimonials to verifiable sources (LinkedIn, professional directories)
 
-### 15. Thin content on key pages
+### 15. ~~Thin content on key pages~~ NOT APPLICABLE
 
-| Page | Word Count | Minimum | Status |
-|------|-----------|---------|--------|
-| Homepage `/` | ~700 words | 500 | Pass (borderline) |
-| `/upgrade` | ~350 words | 800 (service page) | Fail |
-| `/create` | ~80 words | N/A (tool page) | N/A |
-| `/contact` | ~80 words | 300 | Fail |
-
-**Fix:** Expand `/upgrade` with use cases, detailed feature comparisons, testimonials. Expand `/contact` with support details.
+`/upgrade`, `/create`, and `/contact` are utility pages accessed from within the app, not SEO landing pages. Thin content on these does not affect site-wide rankings. No action needed.
 
 ### 16. ~~Small touch targets on mobile~~ PARTIALLY FIXED
 
