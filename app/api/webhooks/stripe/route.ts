@@ -132,26 +132,9 @@ export async function POST(request: NextRequest) {
         .eq("id", userId)
         .single();
 
+      // Plan switches never grant credits — credits only come from
+      // checkout.session.completed (initial) and invoice.paid (renewal)
       const updates: Record<string, unknown> = { plan };
-
-      // On plan change: only grant the credit DIFFERENCE on upgrade, nothing on downgrade
-      if (currentProfile && currentProfile.plan !== plan) {
-        const oldPlanCredits = CREDIT_AMOUNTS[currentProfile.plan] || 2;
-        const newPlanCredits = CREDIT_AMOUNTS[plan] || 2;
-
-        if (newPlanCredits > oldPlanCredits) {
-          // Upgrade: grant only the difference (e.g. Personal→Pro = +70, not +100)
-          const diff = newPlanCredits - oldPlanCredits;
-          updates.credits_remaining = (currentProfile.credits_remaining || 0) + diff;
-
-          await supabase.from("credit_ledger").insert({
-            user_id: userId,
-            amount: diff,
-            reason: `upgrade_${currentProfile.plan}_to_${plan}`,
-          });
-        }
-        // Downgrade: no extra credits, just change the plan
-      }
 
       await supabase
         .from("profiles")
