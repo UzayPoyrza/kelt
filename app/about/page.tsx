@@ -93,7 +93,7 @@ export default function AboutPage() {
               className="text-[14px] text-[#71717a] max-w-md mx-auto leading-relaxed"
               style={{ fontFamily: "var(--font-body)" }}
             >
-              Science-backed meditation, generated for you in seconds.
+              Generate studio-quality guided meditation in 1 prompt. Tailored scripts, natural voice narration, timed pauses — AI powered by science-based protocols. Free.
             </p>
           </div>
 

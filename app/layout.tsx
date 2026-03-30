@@ -26,16 +26,16 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   metadataBase: new URL("https://incraft.io"),
   title: {
-    default: "Incraft — AI Guided Meditation",
+    default: "[Free] Best AI Meditation Generator Online by Incraft",
     template: "%s | Incraft",
   },
   description:
-    "AI-generated meditations with natural pauses, studio-quality audio, and adaptive guidance that evolves with you.",
+    "Generate studio-quality guided meditation in 1 prompt. Natural voice narration, timed pauses, tailored scripts. AI built on scientific protocols. Free.",
   alternates: { canonical: "/" },
   openGraph: {
-    title: "Incraft — AI Guided Meditation",
+    title: "[Free] Best AI Meditation Generator Online by Incraft",
     description:
-      "Generate personalized AI meditations with studio-quality audio, natural pauses, and clinical protocols. Try it free.",
+      "Generate studio-quality guided meditation in 1 prompt. Natural voice narration, timed pauses, tailored scripts. AI built on scientific protocols. Free.",
     url: "https://incraft.io",
     siteName: "Incraft",
     type: "website",
@@ -43,9 +43,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Incraft — AI Guided Meditation",
+    title: "[Free] Best AI Meditation Generator Online by Incraft",
     description:
-      "Generate personalized AI meditations with studio-quality audio, natural pauses, and clinical protocols.",
+      "Generate studio-quality guided meditation in 1 prompt. Natural voice narration, timed pauses, tailored scripts. AI built on scientific protocols. Free.",
   },
 };
 
