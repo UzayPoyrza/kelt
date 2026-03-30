@@ -125,10 +125,31 @@ export async function POST(request: NextRequest) {
         })
         .eq("user_id", userId);
 
-      // Keep the plan active while canceling — only revert on actual deletion
+      // Update profile plan and adjust credits on plan change
+      const { data: currentProfile } = await supabase
+        .from("profiles")
+        .select("plan, credits_remaining")
+        .eq("id", userId)
+        .single();
+
+      const updates: Record<string, unknown> = { plan };
+
+      // If plan changed (upgrade/downgrade), set credits to the new plan amount
+      if (currentProfile && currentProfile.plan !== plan) {
+        const newCredits = CREDIT_AMOUNTS[plan] || 2;
+        updates.credits_remaining = newCredits;
+
+        // Ledger entry for plan change credit adjustment
+        await supabase.from("credit_ledger").insert({
+          user_id: userId,
+          amount: newCredits - (currentProfile.credits_remaining || 0),
+          reason: `plan_change_${currentProfile.plan}_to_${plan}`,
+        });
+      }
+
       await supabase
         .from("profiles")
-        .update({ plan })
+        .update(updates)
         .eq("id", userId);
       break;
     }
