@@ -80,7 +80,7 @@ export default function PrivacyPage() {
               <h2 className="text-[16px] font-semibold text-[#18181b] mb-3">1. Who We Are and Scope</h2>
               <div className="text-[14px] text-[#52525b] leading-relaxed space-y-3">
                 <p>
-                  This Privacy Policy explains how Incraft (&ldquo;Incraft,&rdquo; &ldquo;we,&rdquo; &ldquo;us,&rdquo; or &ldquo;our&rdquo;), operated by Uzay Poyraz, collects, uses, discloses, and protects personal information when you visit incraft.io, create AI-generated meditation sessions, sign in, purchase a subscription, or otherwise use our website and related services (collectively, the &ldquo;Service&rdquo;).
+                  This Privacy Policy explains how Incraft (&ldquo;Incraft,&rdquo; &ldquo;we,&rdquo; &ldquo;us,&rdquo; or &ldquo;our&rdquo;), operated by LaunchSpace LLC, collects, uses, discloses, and protects personal information when you visit incraft.io, create AI-generated meditation sessions, sign in, purchase a subscription, or otherwise use our website and related services (collectively, the &ldquo;Service&rdquo;).
                 </p>
                 <p>
                   This Policy applies to anonymous visitors, signed-in users, and paying subscribers. It does not apply to third-party websites, apps, or services that we do not control, even if they are linked from or used with the Service.
@@ -285,7 +285,7 @@ export default function PrivacyPage() {
             <section>
               <h2 className="text-[16px] font-semibold text-[#18181b] mb-3">14. Contact Us</h2>
               <p className="text-[14px] text-[#52525b] leading-relaxed">
-                Incraft is operated by Uzay Poyraz.
+                Incraft is operated by LaunchSpace LLC.
               </p>
               <p className="text-[14px] text-[#52525b] leading-relaxed mt-2">
                 If you have questions, requests, or concerns about this Privacy Policy or your personal information, you can contact us at:
