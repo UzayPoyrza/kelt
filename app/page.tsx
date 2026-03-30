@@ -360,7 +360,7 @@ export default function HomePage() {
         />
 
         {/* Generator */}
-        <div className="relative z-10 flex-1 flex items-center justify-center px-4 sm:px-6 pb-20">
+        <div className="relative z-10 flex-1 flex items-center justify-center px-4 sm:px-6 pb-28 sm:pb-20">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -377,7 +377,7 @@ export default function HomePage() {
               {rotatingPhrases[phraseIndex]}
             </span>
 
-            <h1 className="text-[1.5rem] sm:text-[2rem] md:text-[2.75rem] text-[var(--color-sand-900)] text-center mb-8 leading-[1.2] sm:whitespace-nowrap flex items-baseline justify-center flex-wrap sm:flex-nowrap">
+            <h1 className="text-[1.5rem] sm:text-[2rem] md:text-[2.75rem] text-[var(--color-sand-900)] text-center mb-6 sm:mb-8 leading-[1.2] sm:whitespace-nowrap flex items-baseline justify-center flex-wrap sm:flex-nowrap">
               <span>Generate&nbsp;</span>
               <motion.span
                 className="relative inline-block overflow-hidden pl-[0.05em]"
@@ -479,12 +479,12 @@ export default function HomePage() {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.8 }}
-          className="absolute bottom-8 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-2 cursor-pointer group"
+          className="absolute bottom-6 sm:bottom-8 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-1.5 sm:gap-2 cursor-pointer group"
         >
           <span className="relative rounded-full">
             <span className="absolute -inset-[2px] rounded-full bg-[length:300%_300%] animate-[border-glow_4s_ease_infinite] opacity-80 group-hover:opacity-100 transition-opacity duration-300 blur-[0.5px]" style={{ background: "linear-gradient(135deg, var(--color-sage), var(--color-ocean), var(--color-dusk), var(--color-ember), var(--color-sage))", backgroundSize: "300% 300%" }} />
             <span
-              className="relative flex items-center gap-2 sm:gap-3 px-6 py-3 sm:px-10 sm:py-5 rounded-full bg-[var(--color-sand-900)] text-[var(--color-sand-50)] shadow-lg group-hover:bg-[var(--color-sand-800)] group-hover:shadow-xl transition-all"
+              className="relative flex items-center gap-2 sm:gap-3 px-5 py-2.5 sm:px-10 sm:py-5 rounded-full bg-[var(--color-sand-900)] text-[var(--color-sand-50)] shadow-lg group-hover:bg-[var(--color-sand-800)] group-hover:shadow-xl transition-all"
               style={{ fontFamily: "var(--font-body)" }}
             >
               <Headphones className="w-5 h-5" />
@@ -532,8 +532,8 @@ export default function HomePage() {
                           {s.label}
                           {s.sampleStart ? <span className="text-[10px] text-white/50 font-normal ml-1.5" style={{ fontFamily: "var(--font-body)" }}>· from mid-session</span> : null}
                         </span>
-                        <div className={`shrink-0 w-8 h-8 rounded-full flex items-center justify-center transition-all ${isActive ? "bg-white text-[var(--color-sand-900)]" : "bg-white/10 text-white/50"}`}>
-                          {isActive ? <Pause className="w-3 h-3" /> : <Play className="w-3 h-3 ml-0.5" />}
+                        <div className={`shrink-0 w-10 h-10 sm:w-8 sm:h-8 rounded-full flex items-center justify-center transition-all ${isActive ? "bg-white text-[var(--color-sand-900)]" : "bg-white/10 text-white/50"}`}>
+                          {isActive ? <Pause className="w-3.5 h-3.5 sm:w-3 sm:h-3" /> : <Play className="w-3.5 h-3.5 sm:w-3 sm:h-3 ml-0.5" />}
                         </div>
                       </div>
 
@@ -552,7 +552,7 @@ export default function HomePage() {
                             <span className="text-[11px] text-white/45">{s.protocol}</span>
                           </div>
                         </div>
-                        <div className="flex items-center gap-2.5">
+                        <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5">
                           <span className="text-[9px] uppercase tracking-wider text-white/25 w-12 shrink-0">Sound</span>
                           <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
                             <Volume2 className="w-2.5 h-2.5 text-white/20 shrink-0" />
@@ -715,8 +715,8 @@ export default function HomePage() {
          ════════════════════════════════════════════ */}
       <section className="relative py-14 sm:py-20 md:py-24 px-4 sm:px-6 overflow-hidden" style={{ background: "var(--color-sand-900)" }}>
         <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute w-[500px] h-[500px] rounded-full blur-[200px] opacity-[0.07]" style={{ top: "10%", left: "15%", background: "var(--color-sage)" }} />
-          <div className="absolute w-[400px] h-[400px] rounded-full blur-[180px] opacity-[0.05]" style={{ bottom: "5%", right: "10%", background: "var(--color-dusk)" }} />
+          <div className="absolute w-[250px] h-[250px] sm:w-[500px] sm:h-[500px] rounded-full blur-[100px] sm:blur-[200px] opacity-[0.07]" style={{ top: "10%", left: "15%", background: "var(--color-sage)" }} />
+          <div className="absolute w-[200px] h-[200px] sm:w-[400px] sm:h-[400px] rounded-full blur-[90px] sm:blur-[180px] opacity-[0.05]" style={{ bottom: "5%", right: "10%", background: "var(--color-dusk)" }} />
         </div>
 
         <div className="max-w-4xl mx-auto relative z-10">

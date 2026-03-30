@@ -101,6 +101,9 @@ function CreateContent() {
     });
   }, []);
 
+  // Scroll to top on mount
+  useEffect(() => { window.scrollTo(0, 0); }, []);
+
   // Scroll generate button into view after layout changes (with extra padding)
   const scrollToGenerate = useCallback((delay = 100) => {
     setTimeout(() => {
@@ -295,7 +298,7 @@ function CreateContent() {
             {/* Voice — single row, compact with accent stripe */}
             <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="mb-5">
               <p className="text-[11px] uppercase tracking-widest text-[var(--color-sand-400)] mb-2" style={{ fontFamily: "var(--font-body)" }}>Voice</p>
-              <div className="flex gap-2">
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
                 {voices.map((v, idx) => {
                   const isActive = voice === v.id;
                   const isVoicePlaying = voicePlaying === v.id;
@@ -305,7 +308,7 @@ function CreateContent() {
                     <button
                       key={v.id}
                       onClick={(e) => { e.stopPropagation(); setVoice(v.id); setVoicePlaying(v.id); setTimeout(() => setVoicePlaying((cur) => cur === v.id ? null : cur), 3000); }}
-                      className={`flex-1 relative overflow-hidden rounded-xl transition-all border cursor-pointer ${isActive ? "shadow-md border-transparent" : "hover:shadow-sm border-[var(--color-sand-200)] hover:border-[var(--color-sand-300)]"}`}
+                      className={`relative overflow-hidden rounded-xl transition-all border cursor-pointer ${isActive ? "shadow-md border-transparent" : "hover:shadow-sm border-[var(--color-sand-200)] hover:border-[var(--color-sand-300)]"}`}
                       style={{
                         background: isActive
                           ? `linear-gradient(135deg, var(--color-sand-900), var(--color-sand-800))`

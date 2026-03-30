@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, Suspense } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "motion/react";
 import {
@@ -38,17 +38,13 @@ function FloatingOrbs() {
   return (
     <div className="fixed inset-0 pointer-events-none overflow-hidden">
       <div className="grain-overlay absolute inset-0" />
-      <motion.div
-        className="absolute w-[500px] h-[500px] rounded-full blur-[160px] opacity-[0.18]"
+      <div
+        className="absolute w-[250px] h-[250px] sm:w-[500px] sm:h-[500px] rounded-full blur-[80px] sm:blur-[160px] opacity-[0.18]"
         style={{ top: "-5%", right: "-8%", background: "var(--color-sage)" }}
-        animate={{ x: [0, 30, 0], y: [0, -20, 0] }}
-        transition={{ duration: 20, repeat: Infinity, ease: "easeInOut" }}
       />
-      <motion.div
-        className="absolute w-[400px] h-[400px] rounded-full blur-[140px] opacity-[0.12]"
+      <div
+        className="absolute w-[200px] h-[200px] sm:w-[400px] sm:h-[400px] rounded-full blur-[70px] sm:blur-[140px] opacity-[0.12]"
         style={{ bottom: "5%", left: "-5%", background: "var(--color-ocean)" }}
-        animate={{ x: [0, -20, 0], y: [0, 30, 0] }}
-        transition={{ duration: 25, repeat: Infinity, ease: "easeInOut" }}
       />
     </div>
   );
@@ -75,6 +71,9 @@ function SignupContent() {
 
   const [isGoogleHovered, setIsGoogleHovered] = useState(false);
   const [loadingProvider, setLoadingProvider] = useState<"google" | "apple" | null>(null);
+
+  // Scroll to top on mount
+  useEffect(() => { window.scrollTo(0, 0); }, []);
 
   const handleOAuthLogin = async (provider: "google" | "apple") => {
     setLoadingProvider(provider);
@@ -234,7 +233,7 @@ function SignupContent() {
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-            className="flex items-center justify-center gap-6 sm:gap-8 mb-8"
+            className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 sm:gap-8 mb-8"
           >
             {[
               { text: "Free forever", type: "check" as const },
@@ -335,7 +334,7 @@ function SignupContent() {
             >
               Full access on free plan
             </p>
-            <div className="flex flex-wrap justify-center gap-x-8 gap-y-3">
+            <div className="grid grid-cols-2 gap-x-6 gap-y-3 sm:flex sm:flex-wrap sm:justify-center sm:gap-x-8 sm:gap-y-3 max-w-sm sm:max-w-none mx-auto">
               {[
                 { icon: Mic, text: "All 4 AI voices" },
                 { icon: Music, text: "34 soundscapes" },
@@ -347,7 +346,7 @@ function SignupContent() {
                   initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.35 + i * 0.05, duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-                  className="flex items-center gap-2 w-[160px]"
+                  className="flex items-center gap-2 sm:w-[160px]"
                 >
                   <div
                     className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"

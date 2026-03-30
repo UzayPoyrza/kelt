@@ -262,3 +262,20 @@
   pointer-events: none;
   z-index: 1;
 }
+
+/* ─── Mobile performance optimizations ─── */
+@media (max-width: 640px) {
+  .grain-overlay::before {
+    animation: none;
+    opacity: 0.5;
+  }
+
+  .animate-breathe {
+    animation-duration: 12s;
+  }
+
+  .animate-pulse-ring {
+    animation: none;
+    opacity: 0.4;
+  }
+}

@@ -249,6 +249,9 @@ function LoginContent() {
   const [isHovered, setIsHovered] = useState(false);
   const [loadingProvider, setLoadingProvider] = useState<"google" | "apple" | null>(null);
 
+  // Scroll to top on mount
+  useEffect(() => { window.scrollTo(0, 0); }, []);
+
   // After OAuth sign-in, the auth callback redirects to /studio directly.
   // No auto-redirect needed here — the login page is always for signing in.
 
@@ -269,11 +272,11 @@ function LoginContent() {
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
         <div className="grain-overlay absolute inset-0" />
         <div
-          className="absolute w-[600px] h-[600px] rounded-full blur-[180px] opacity-25"
+          className="absolute w-[300px] h-[300px] sm:w-[600px] sm:h-[600px] rounded-full blur-[100px] sm:blur-[180px] opacity-25"
           style={{ top: "10%", right: "-10%", background: "#c8d5ca" }}
         />
         <div
-          className="absolute w-[400px] h-[400px] rounded-full blur-[140px] opacity-20"
+          className="absolute w-[200px] h-[200px] sm:w-[400px] sm:h-[400px] rounded-full blur-[80px] sm:blur-[140px] opacity-20"
           style={{ bottom: "10%", right: "20%", background: "#e8e4de" }}
         />
       </div>

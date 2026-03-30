@@ -433,6 +433,9 @@ export default function UpgradePage() {
   const [showCheckout, setShowCheckout] = useState(false);
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
 
+  // Scroll to top on mount
+  useEffect(() => { window.scrollTo(0, 0); }, []);
+
   // Real user profile data
   const [profile, setProfile] = useState<Profile | null>(null);
   const [profileLoading, setProfileLoading] = useState(true);
@@ -480,14 +483,14 @@ export default function UpgradePage() {
       {/* Subtle gradient blobs */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
         <div
-          className="absolute -top-32 -right-32 w-[500px] h-[500px] rounded-full opacity-[0.07] animate-breathe"
+          className="absolute -top-32 -right-32 w-[250px] h-[250px] sm:w-[500px] sm:h-[500px] rounded-full opacity-[0.07] animate-breathe"
           style={{
             background:
               "radial-gradient(circle, var(--color-sage) 0%, transparent 70%)",
           }}
         />
         <div
-          className="absolute -bottom-48 -left-48 w-[600px] h-[600px] rounded-full opacity-[0.06] animate-breathe"
+          className="absolute -bottom-48 -left-48 w-[300px] h-[300px] sm:w-[600px] sm:h-[600px] rounded-full opacity-[0.06] animate-breathe"
           style={{
             background:
               "radial-gradient(circle, var(--color-dusk) 0%, transparent 70%)",
@@ -566,7 +569,7 @@ export default function UpgradePage() {
             duration: 0.4,
             ease: [0.22, 1, 0.36, 1],
           }}
-          className="flex items-center justify-center gap-3"
+          className="flex flex-wrap items-center justify-center gap-3"
         >
           <div className="inline-flex items-center gap-0.5 p-[3px] rounded-full bg-[#f0eeeb] border border-[#e2dfd9]">
           {(["monthly", "yearly"] as const).map((period) => (
@@ -897,9 +900,9 @@ export default function UpgradePage() {
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-5 shrink-0 pl-0 md:pl-0">
-              <div className="flex items-center gap-2">
-                <Download className="w-4 h-4 text-[#b5aea3]" />
+            <div className="flex items-center gap-4 sm:gap-5 shrink-0">
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <Download className="w-4 h-4 text-[#b5aea3] shrink-0" />
                 <span
                   className="text-[11px] text-[#8a8480]"
                   style={{
@@ -910,8 +913,8 @@ export default function UpgradePage() {
                   Full ownership
                 </span>
               </div>
-              <div className="flex items-center gap-2">
-                <Users className="w-4 h-4 text-[#b5aea3]" />
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <Users className="w-4 h-4 text-[#b5aea3] shrink-0" />
                 <span
                   className="text-[11px] text-[#8a8480]"
                   style={{
