@@ -4417,7 +4417,6 @@ function StudioPageContent() {
                 </motion.div>
 
                 {/* Advanced options */}
-                {genConfig.supportChoice !== "just_meditate" && genConfig.supportChoice !== "auto_detect" && (
                 <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.18 }} className="mb-6">
                   <button
                     onClick={() => { setShowGenAdvanced(!showGenAdvanced); setTimeout(() => genGenerateRef.current?.scrollIntoView({ behavior: "smooth", block: "end" }), 300); }}
@@ -4425,7 +4424,7 @@ function StudioPageContent() {
                     style={{ fontFamily: "var(--font-body)" }}
                   >
                     <FlaskConical className="w-3.5 h-3.5 text-[var(--color-sand-400)]" />
-                    <span className="text-[12px] text-[var(--color-sand-500)] group-hover:text-[var(--color-sand-700)] flex-1 text-left transition-colors">Advanced</span>
+                    <span className="text-[12px] text-[var(--color-sand-500)] group-hover:text-[var(--color-sand-700)] flex-1 text-left transition-colors">Advanced<span className="text-[var(--color-sand-400)] ml-1.5">· {genApproachOptions.length} protocols</span></span>
                     <ChevronDown className={`w-4 h-4 text-[var(--color-sand-400)] transition-transform ${showGenAdvanced ? "rotate-180" : ""}`} />
                   </button>
 
@@ -4480,7 +4479,6 @@ function StudioPageContent() {
                     </motion.div>
                   )}
                 </motion.div>
-                )}
 
                 {/* Generate button */}
                 <motion.div ref={genGenerateRef} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }} className="flex flex-col items-center gap-3">

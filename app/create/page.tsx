@@ -419,7 +419,7 @@ function CreateContent() {
                 style={{ fontFamily: "var(--font-body)" }}
               >
                 <FlaskConical className="w-3.5 h-3.5 text-[var(--color-sand-400)]" />
-                <span className="text-[12px] text-[var(--color-sand-500)] group-hover:text-[var(--color-sand-700)] flex-1 text-left transition-colors">Advanced</span>
+                <span className="text-[12px] text-[var(--color-sand-500)] group-hover:text-[var(--color-sand-700)] flex-1 text-left transition-colors">Advanced<span className="text-[var(--color-sand-400)] ml-1.5">· {approachOptions.length} protocols</span></span>
                 <ChevronDown className={`w-4 h-4 text-[var(--color-sand-400)] transition-transform ${showAdvanced ? "rotate-180" : ""}`} />
               </button>
 
