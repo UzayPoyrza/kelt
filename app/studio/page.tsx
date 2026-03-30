@@ -870,6 +870,7 @@ function StudioSession({ prompt, voice, duration, sound, soundOptions: initialSo
     if (initialAudioUrl && !studioAudioUrl) {
       setStudioAudioUrl(initialAudioUrl);
       setShowStudioPlayer(true);
+      setStudioPlaying(true);
       setHasGenerated(true);
     }
   }, [initialAudioUrl]);
