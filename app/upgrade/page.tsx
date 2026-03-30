@@ -456,7 +456,7 @@ export default function UpgradePage() {
   }, [fetchProfile]);
 
   const currentPlan = profile?.plan === "personal" ? "Personal" : profile?.plan === "creator" ? "Pro" : "Free";
-  const creditsTotal = profile?.plan === "creator" ? 100 : profile?.plan === "personal" ? 30 : 2;
+  const creditsTotal = profile?.plan === "creator" ? 102 : profile?.plan === "personal" ? 32 : 2;
   const creditsRemaining = profile?.credits_remaining ?? 0;
 
   const openPlanCheckout = async (plan: (typeof plans)[number]) => {
@@ -803,7 +803,7 @@ export default function UpgradePage() {
                         <Check className="w-3.5 h-3.5" />
                         Current Plan
                       </div>
-                    ) : plan.id === "free" && profile?.plan && profile.plan !== "free" ? (
+                    ) : (plan.id === "free" || (plan.id === "personal" && profile?.plan === "creator")) ? (
                       null
                     ) : (
                       <button
