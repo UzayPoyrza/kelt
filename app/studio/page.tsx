@@ -679,10 +679,10 @@ function PlayerBar({ session, isPlaying, onTogglePlay, onClose, inline, sound, v
         />
       </div>
 
-      <div className="flex items-center gap-2 sm:gap-3 lg:gap-5 px-3 sm:px-4 lg:px-6 py-3">
-        {/* Session info — title at lg+, icon at xl+ */}
-        <div className="hidden lg:flex items-center gap-3 min-w-0 max-w-[200px] xl:max-w-[300px]">
-          <div className="hidden xl:flex w-10 h-10 rounded-lg items-center justify-center shrink-0" style={{ background: colors.bg }}>
+      <div className="flex items-center gap-2 sm:gap-3 xl:gap-5 px-3 sm:px-4 xl:px-6 py-3 overflow-hidden">
+        {/* Session info — title at xl+ (at lg, right panel takes 288px leaving only ~512px) */}
+        <div className="hidden xl:flex items-center gap-3 min-w-0 max-w-[200px] 2xl:max-w-[300px]">
+          <div className="hidden 2xl:flex w-10 h-10 rounded-lg items-center justify-center shrink-0" style={{ background: colors.bg }}>
             <Icon className="w-5 h-5" style={{ color: colors.accent }} />
           </div>
           <div className="min-w-0">
@@ -736,28 +736,28 @@ function PlayerBar({ session, isPlaying, onTogglePlay, onClose, inline, sound, v
           )}
         </div>
 
-        {/* Right side — background sound + actions */}
-        <div className="flex items-center gap-1.5 sm:gap-2 lg:gap-3 ml-auto shrink-0">
-          <div className="relative flex items-center gap-1.5 sm:gap-2.5 px-2 sm:px-3 py-1.5 rounded-full bg-[#f4f4f5] border border-[#e8e8ec]">
+        {/* Right side — background sound + actions. Entirely static except sound label truncation. */}
+        <div className="flex items-center gap-1.5 sm:gap-2 ml-auto shrink-0">
+          <div className="relative flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#f4f4f5] border border-[#e8e8ec] shrink-0">
             <button
               onClick={(e) => { e.stopPropagation(); setShowBgSound(!showBgSound); }}
-              className={`flex items-center gap-1.5 sm:gap-2 px-2 sm:px-2.5 py-1 rounded-md text-[12px] transition-all cursor-pointer min-w-0 ${showBgSound ? "bg-[#18181b] text-white" : "text-[#3f3f46] hover:bg-[#e8e8ec]"}`}
+              className={`flex items-center gap-1.5 px-2 py-1 rounded-md text-[12px] transition-all cursor-pointer ${showBgSound ? "bg-[#18181b] text-white" : "text-[#3f3f46] hover:bg-[#e8e8ec]"}`}
               style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}
             >
               <Music className={`w-3.5 h-3.5 shrink-0 ${showBgSound ? "text-white/70" : "text-[#71717a]"}`} />
-              <span className="truncate max-w-[7ch] sm:max-w-[10ch] lg:max-w-[14ch]">{soundIdToLabel(bgSound)}</span>
-              <ChevronDown className={`w-4 h-4 shrink-0 transition-transform ${showBgSound ? "rotate-180 text-white/70" : "text-[#71717a]"}`} />
+              <span className="truncate w-[7ch] sm:w-[10ch] lg:w-[7ch] xl:w-[14ch]">{soundIdToLabel(bgSound)}</span>
+              <ChevronDown className={`w-3.5 h-3.5 shrink-0 transition-transform ${showBgSound ? "rotate-180 text-white/70" : "text-[#71717a]"}`} />
             </button>
 
-            <div className="w-[1px] h-3.5 bg-[#d4d4d8] shrink-0" />
+            <div className="w-[1px] h-3.5 bg-[#d4d4d8]" />
 
-            <button onClick={() => setBgVol(bgVol > 0 ? 0 : 70)} className="text-[#71717a] hover:text-[#18181b] transition-colors cursor-pointer shrink-0">
+            <button onClick={() => setBgVol(bgVol > 0 ? 0 : 70)} className="text-[#71717a] hover:text-[#18181b] transition-colors cursor-pointer">
               {bgVol === 0 ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5" />}
             </button>
             <input
               type="range" min={0} max={100} value={bgVol}
               onChange={(e) => setBgVol(Number(e.target.value))}
-              className="w-16 h-[3px] rounded-full appearance-none cursor-pointer shrink-0 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-2.5 [&::-webkit-slider-thumb]:h-2.5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-[#3f3f46] [&::-webkit-slider-thumb]:cursor-pointer"
+              className="w-14 h-[3px] rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-2.5 [&::-webkit-slider-thumb]:h-2.5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-[#3f3f46] [&::-webkit-slider-thumb]:cursor-pointer"
               style={{ background: `linear-gradient(to right, #3f3f46 ${bgVol}%, #d4d4d8 ${bgVol}%)` }}
             />
 
@@ -1979,9 +1979,6 @@ function StudioSession({ prompt, voice, duration, sound, soundOptions: initialSo
             <span className={`text-[13px] ${(profile?.credits_remaining ?? 0) === 0 ? "text-red-500 font-medium" : "text-[#18181b]"}`} style={{ fontFamily: "var(--font-body)", fontWeight: (profile?.credits_remaining ?? 0) === 0 ? 500 : 400 }}>
               {profile?.credits_remaining ?? 0} credits remaining
             </span>
-            <a href="/upgrade" className="text-[11px] px-2.5 py-1 rounded-md bg-[var(--color-sand-100)] text-[var(--color-sand-700)] hover:bg-[var(--color-sand-200)] transition-colors cursor-pointer" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>
-              Get Credits
-            </a>
           </div>
           <div className="flex items-center gap-4">
             {generateWarning && (
@@ -2027,13 +2024,6 @@ function StudioSession({ prompt, voice, duration, sound, soundOptions: initialSo
               )}
             </button>
           </div>
-          <button
-            onClick={handlePreviewScript}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-[#e4e4e7] bg-white text-[#52525b] hover:bg-[#f4f4f5] transition-colors text-xs cursor-pointer"
-            style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}
-          >
-            Preview .txt
-          </button>
           </div>
         </div>
 
@@ -2117,9 +2107,6 @@ function StudioSession({ prompt, voice, duration, sound, soundOptions: initialSo
             <span className={`text-[11px] ${(profile?.credits_remaining ?? 0) === 0 ? "text-red-500 font-medium" : "text-[#a1a1aa]"}`} style={{ fontFamily: "var(--font-body)" }}>
               {profile?.credits_remaining ?? 0} credits remaining
             </span>
-            <a href="/upgrade" className="text-[10px] px-2 py-0.5 rounded-md bg-[var(--color-sand-100)] text-[var(--color-sand-600)] hover:bg-[var(--color-sand-200)] transition-colors cursor-pointer" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>
-              Get Credits
-            </a>
           </div>
         </div>
 
@@ -3443,9 +3430,11 @@ function StudioPageContent() {
                   <p className="text-xs text-[var(--color-sand-900)]" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>{profile?.display_name || "User"}</p>
                   <p className="text-[10px] text-[var(--color-sand-500)]" style={{ fontFamily: "var(--font-body)" }}>{planDisplayName(profile?.plan)} plan</p>
                 </div>
+                {profile?.plan !== "creator" && (
                 <a href="/upgrade" className={`text-[11px] px-3.5 py-1.5 rounded-lg text-white bg-clip-padding bg-[length:300%_300%] animate-[border-glow_4s_ease_infinite] hover:opacity-90 transition-opacity cursor-pointer shadow-sm shrink-0 ${profile?.plan === "free" ? "" : "!bg-none !bg-[var(--color-sand-800)]"}`} style={{ fontFamily: "var(--font-body)", fontWeight: 600, ...(profile?.plan === "free" ? { backgroundImage: "linear-gradient(135deg, var(--color-sage), var(--color-ocean), var(--color-dusk), var(--color-ember), var(--color-sage))", backgroundSize: "300% 300%" } : {}) }}>
                   {profile?.plan === "free" ? "Upgrade" : "Get Credits"}
                 </a>
+                )}
               </div>
               <div className="px-2 mb-2 space-y-1">
                 <div className="flex items-center justify-between">
@@ -3610,9 +3599,11 @@ function StudioPageContent() {
                   {planDisplayName(profile?.plan)} plan{profile?.subscription_status === "canceling" ? " — Expiring" : ""}
                 </p>
               </div>
+              {profile?.plan !== "creator" && (
               <a href="/upgrade" className={`text-[11px] px-3.5 py-1.5 rounded-lg text-white bg-clip-padding bg-[length:300%_300%] animate-[border-glow_4s_ease_infinite] hover:opacity-90 transition-opacity cursor-pointer shadow-sm shrink-0 ${profile?.plan === "free" ? "" : "!bg-none !bg-[var(--color-sand-800)]"}`} style={{ fontFamily: "var(--font-body)", fontWeight: 600, ...(profile?.plan === "free" ? { backgroundImage: "linear-gradient(135deg, var(--color-sage), var(--color-ocean), var(--color-dusk), var(--color-ember), var(--color-sage))", backgroundSize: "300% 300%" } : {}) }}>
                 {profile?.plan === "free" ? "Upgrade" : "Get Credits"}
               </a>
+              )}
             </div>
             <div className="px-2 mb-2 space-y-1">
               <div className="flex items-center justify-between">
