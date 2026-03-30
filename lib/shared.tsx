@@ -15,20 +15,20 @@ import svgPaths from "@/lib/svg-paths";
 
 /* ─── Data ─── */
 
-export const durations = [3, 5, 7, 10, 15];
+export const durations = [3, 5, 7, 10, 12, 15];
 
 const SAMPLE_BASE = "https://audio.neurotypeapp.com/incraft_audio";
 export const voices = [
-  { id: "Graham", label: "Aria", description: "Calm, gentle female", sample: `${SAMPLE_BASE}/breath_sample_graham_f2.mp3` },
+  { id: "Claire", label: "Aria", description: "Calm, gentle female", sample: `${SAMPLE_BASE}/breath_sample_claire.mp3` },
   { id: "Luna", label: "Lin", description: "Soft, intimate tone", sample: `${SAMPLE_BASE}/breath_sample_luna_v3.mp3`, popular: true },
-  { id: "Claire", label: "James", description: "Grounded, steady male", sample: `${SAMPLE_BASE}/breath_sample_claire.mp3` },
+  { id: "Graham", label: "James", description: "Grounded, steady male", sample: `${SAMPLE_BASE}/breath_sample_graham_f2.mp3` },
   { id: "Silas", label: "Aditya", description: "Deep, spacious", sample: `${SAMPLE_BASE}/breath_sample_silas_f3.mp3` },
 ];
 
 /** Map old frontend voice IDs to new API voice IDs (for legacy sessions) */
 export const legacyVoiceMap: Record<string, string> = {
-  aria: "Graham",
-  james: "Claire",
+  aria: "Claire",
+  james: "Graham",
   lin: "Luna",
   aditya: "Silas",
 };

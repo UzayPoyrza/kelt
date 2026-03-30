@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { DM_Sans, Playfair_Display } from "next/font/google";
 import "./globals.css";
 import AuthProvider from "@/lib/components/AuthProvider";
+import PostHogProvider from "@/lib/components/PostHogProvider";
 import { OrganizationSchema, WebSiteSchema } from "@/lib/schema";
 
 const dmSans = DM_Sans({
@@ -59,7 +60,9 @@ export default function RootLayout({
       <body style={{ backgroundColor: "#faf9f7" }}>
         <OrganizationSchema />
         <WebSiteSchema />
-        <AuthProvider>{children}</AuthProvider>
+        <PostHogProvider>
+          <AuthProvider>{children}</AuthProvider>
+        </PostHogProvider>
       </body>
     </html>
   );

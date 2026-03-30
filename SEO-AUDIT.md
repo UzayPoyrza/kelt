@@ -71,11 +71,9 @@ Added `<Link>` components to homepage footer for `/create`, `/upgrade`, `/contac
 
 Switched to `next/font/google` for DM Sans and Playfair Display. Removed raw `@font-face` declarations from `globals.css`. Fonts now auto-preload, self-host as woff2, and use `size-adjust` to prevent CLS.
 
-### 11. Missing Privacy Policy and Terms of Service pages
+### 11. ~~Missing Privacy Policy and Terms of Service pages~~ COMPLETED
 
-Linked from the `/upgrade` footer but the pages don't exist (404). Dead links = trust and compliance failure (GDPR/CCPA risk).
-
-**Fix:** Create `/privacy` and `/terms` pages with actual legal content.
+Privacy Policy and Terms of Service pages created and live.
 
 ---
 
@@ -93,22 +91,11 @@ Created `lib/schema.tsx` with JSON-LD components. Integrated into pages:
 
 Added to `next.config.ts` via `headers()`: X-Frame-Options (DENY), X-Content-Type-Options (nosniff), Referrer-Policy (strict-origin-when-cross-origin), Permissions-Policy (camera/mic/geo denied). CSP still needs to be added separately.
 
-### 14. E-E-A-T gaps
+### 14. ~~E-E-A-T gaps~~ PARTIALLY COMPLETED
 
-**E-E-A-T Score: 28/100**
-
-| Factor | Score | Issues |
-|--------|-------|--------|
-| Experience | 25/100 | No about page, no team info, no founder story |
-| Expertise | 30/100 | Clinical claims without citations, no advisory board |
-| Authoritativeness | 20/100 | No external endorsements, no backlink-worthy content |
-| Trustworthiness | 35/100 | Dead legal links, contact email on different domain (launchspace.org) |
-
-**Key fixes:**
-- Create an About page with team/founder information
+About page created. Privacy Policy and Terms of Service live. Remaining optional improvements:
 - Add citations to clinical research for each protocol
-- Move contact email to `@incraft.io` domain
-- Link testimonials to verifiable sources (LinkedIn, professional directories)
+- Link testimonials to verifiable sources
 
 ### 15. ~~Thin content on key pages~~ NOT APPLICABLE
 

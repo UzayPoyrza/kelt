@@ -103,7 +103,7 @@ export function serializeScript(blocks: ScriptBlock[]): string {
   return lines.join("\n");
 }
 
-export function estimateDuration(script: ScriptBlock[]): { minutes: number; seconds: number } {
+export function estimateTotalSeconds(script: ScriptBlock[]): number {
   let totalSeconds = 0;
   for (const block of script) {
     if (block.type === "voice") {
@@ -112,5 +112,10 @@ export function estimateDuration(script: ScriptBlock[]): { minutes: number; seco
       totalSeconds += block.pauseDuration ?? 0;
     }
   }
+  return totalSeconds;
+}
+
+export function estimateDuration(script: ScriptBlock[]): { minutes: number; seconds: number } {
+  const totalSeconds = estimateTotalSeconds(script);
   return { minutes: Math.floor(totalSeconds / 60), seconds: Math.round(totalSeconds % 60) };
 }

@@ -3,8 +3,8 @@ import { getAuthUser } from "@/app/api/_lib/auth";
 
 // Voice mapping: frontend names → TTS voice IDs
 const VOICE_MAP: Record<string, string> = {
-  aria: "Graham",
-  james: "Claire",
+  aria: "Claire",
+  james: "Graham",
   lin: "Luna",
   aditya: "Silas",
 };
@@ -13,7 +13,7 @@ const VALID_VOICES = new Set(["Graham", "Claire", "Luna", "Silas"]);
 function toTtsVoiceId(frontendVoice: string): string {
   // Already a valid TTS voice ID (studio uses these directly)
   if (VALID_VOICES.has(frontendVoice)) return frontendVoice;
-  return VOICE_MAP[frontendVoice] || "Graham";
+  return VOICE_MAP[frontendVoice] || "Claire";
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

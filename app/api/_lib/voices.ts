@@ -1,10 +1,10 @@
 const VOICE_MAP: Record<string, string> = {
-  aria: "Graham",
-  james: "Claire",
+  aria: "Claire",
+  james: "Graham",
   lin: "Luna",
   aditya: "Silas",
 };
 
 export function toTtsVoiceId(frontendVoice: string): string {
-  return VOICE_MAP[frontendVoice] || "Graham";
+  return VOICE_MAP[frontendVoice] || "Claire";
 }

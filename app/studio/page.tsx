@@ -57,7 +57,7 @@ import {
 import svgPaths from "@/lib/svg-paths";
 import { suggestions, voices as sharedVoices, durations as sharedDurations, detectIntent, detectSupportChoice, supportChoices, modes, modeRules, getApproaches, rotatingPhrases, soundIdToLabel, soundIdToUrl, audioCatalog, protocolLabel, downloadMixedAudio } from "@/lib/shared";
 import { ProfileProvider, useProfile } from "@/lib/hooks/useProfile";
-import { generateScript as generateScriptFn, deriveSessionName, estimateDuration, serializeScript, parseRawScript, type ScriptBlock } from "@/lib/generateScript";
+import { generateScript as generateScriptFn, deriveSessionName, estimateDuration, estimateTotalSeconds, serializeScript, parseRawScript, type ScriptBlock } from "@/lib/generateScript";
 import { useSearchParams } from "next/navigation";
 import { Suspense } from "react";
 
@@ -108,8 +108,8 @@ function Logo() {
 /* ─── Data ─── */
 
 const voices = [
-  { id: "Graham", name: "Aria", desc: "Warm, calm, nurturing", color: "var(--color-sage)" },
-  { id: "Claire", name: "James", desc: "Deep, grounding, steady", color: "var(--color-ocean)" },
+  { id: "Claire", name: "Aria", desc: "Warm, calm, nurturing", color: "var(--color-sage)" },
+  { id: "Graham", name: "James", desc: "Deep, grounding, steady", color: "var(--color-ocean)" },
   { id: "Luna", name: "Lin", desc: "Soft, dreamy, gentle", color: "var(--color-dusk)" },
   { id: "Silas", name: "Aditya", desc: "Clear, focused, present", color: "var(--color-ember)" },
 ];
@@ -135,6 +135,7 @@ const durations = [
   { value: 5, label: "5 min", desc: "Short session" },
   { value: 7, label: "7 min", desc: "Default session" },
   { value: 10, label: "10 min", desc: "Standard session" },
+  { value: 12, label: "12 min", desc: "Extended session" },
   { value: 15, label: "15 min", desc: "Deep practice" },
 ];
 
@@ -988,6 +989,9 @@ function StudioSession({ prompt, voice, duration, sound, soundOptions: initialSo
   }, []);
 
   const estimated = estimateDuration(script);
+  const MAX_SCRIPT_SECONDS = 17 * 60;
+  const scriptRef = useRef(script);
+  scriptRef.current = script;
 
   // ─── Autosave (triggers on completed actions, not keystrokes) ───
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
@@ -1132,6 +1136,12 @@ function StudioSession({ prompt, voice, duration, sound, soundOptions: initialSo
   }, [selectedBlock]);
 
   const handleGenerateAudio = useCallback(async () => {
+    // Block generation if script exceeds 17-minute limit
+    if (estimateTotalSeconds(script) > MAX_SCRIPT_SECONDS) {
+      setGenerateWarning("Script exceeds 17-minute limit. Shorten it before generating.");
+      setTimeout(() => setGenerateWarning(null), 3000);
+      return;
+    }
     // Check for empty voice blocks
     const emptyVoice = script.find(b => b.type === "voice" && b.text.trim() === "");
     if (emptyVoice) {
@@ -1340,8 +1350,19 @@ function StudioSession({ prompt, voice, duration, sound, soundOptions: initialSo
   const addingBlock = useRef(false);
 
   const setPauseDuration = useCallback((id: string, seconds: number) => {
+    const clamped = Math.max(0, seconds);
+    const cur = scriptRef.current;
+    const block = cur.find(b => b.id === id);
+    if (block && clamped > (block.pauseDuration ?? 0)) {
+      const hypothetical = cur.map(b => b.id === id ? { ...b, pauseDuration: clamped } : b);
+      if (estimateTotalSeconds(hypothetical) > MAX_SCRIPT_SECONDS) {
+        setGenerateWarning("Script limit reached — 17 minutes maximum.");
+        setTimeout(() => setGenerateWarning(null), 3000);
+        return;
+      }
+    }
     setScript(prev => prev.map(b =>
-      b.id === id ? { ...b, pauseDuration: Math.max(0, seconds) } : b
+      b.id === id ? { ...b, pauseDuration: clamped } : b
     ));
     setSelectedBlock(id);
     setEditOriginalText(null);
@@ -1351,6 +1372,16 @@ function StudioSession({ prompt, voice, duration, sound, soundOptions: initialSo
   }, [markEdited]);
 
   const updateBlockText = useCallback((id: string, text: string) => {
+    const cur = scriptRef.current;
+    const block = cur.find(b => b.id === id);
+    if (block && text.length > block.text.length) {
+      const hypothetical = cur.map(b => b.id === id ? { ...b, text } : b);
+      if (estimateTotalSeconds(hypothetical) > MAX_SCRIPT_SECONDS) {
+        setGenerateWarning("Script limit reached — 17 minutes maximum.");
+        setTimeout(() => setGenerateWarning(null), 3000);
+        return;
+      }
+    }
     setScript(prev => prev.map(b => b.id === id ? { ...b, text } : b));
     markEdited();
   }, [markEdited]);
@@ -1411,6 +1442,12 @@ function StudioSession({ prompt, voice, duration, sound, soundOptions: initialSo
   // Add voice+pause. Always inserts: newVoice, newPause (voice first, pause after).
   const addBlock = useCallback((referenceId: string, position: "before" | "after") => {
     if (addingBlock.current) return;
+    // Block adding if script is already at 17-min limit (new pause adds 3s)
+    if (estimateTotalSeconds(scriptRef.current) + 3 > MAX_SCRIPT_SECONDS) {
+      setGenerateWarning("Script limit reached — 17 minutes maximum.");
+      setTimeout(() => setGenerateWarning(null), 3000);
+      return;
+    }
     // If currently editing a block, handle it first
     if (selectedBlock) {
       const currentBlock = script.find(b => b.id === selectedBlock);
@@ -1634,8 +1671,8 @@ function StudioSession({ prompt, voice, duration, sound, soundOptions: initialSo
 
             <div className="hidden min-[1160px]:block w-px h-4 bg-[#e4e4e7]" />
 
-            <span className="hidden min-[1160px]:inline text-[10px] text-[#a1a1aa] tabular-nums whitespace-nowrap" style={{ fontFamily: "var(--font-body)" }}>
-              {script.filter(b => b.type === "voice").length} seg · {script.filter(b => b.type === "pause").length} pau · ~{estimated.minutes}m{estimated.seconds > 0 ? ` ${estimated.seconds}s` : ""}
+            <span className={`hidden min-[1160px]:inline text-[10px] tabular-nums whitespace-nowrap ${estimated.minutes * 60 + estimated.seconds >= MAX_SCRIPT_SECONDS ? "text-red-500 font-semibold" : estimated.minutes >= 16 ? "text-amber-500" : "text-[#a1a1aa]"}`} style={{ fontFamily: "var(--font-body)" }}>
+              {script.filter(b => b.type === "voice").length} seg · {script.filter(b => b.type === "pause").length} pau · ~{estimated.minutes}m{estimated.seconds > 0 ? ` ${estimated.seconds}s` : ""}{estimated.minutes * 60 + estimated.seconds >= MAX_SCRIPT_SECONDS ? " (limit)" : ""}
             </span>
           </div>
         </div>
@@ -2256,9 +2293,9 @@ function StudioSession({ prompt, voice, duration, sound, soundOptions: initialSo
                 )}
               </div>
             </div>
-            <div className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg bg-[#f9f9fb] border border-transparent">
-              <Timer className="w-4 h-4 text-[#a1a1aa]" />
-              <span className="text-sm text-[#71717a] tabular-nums" style={{ fontFamily: "var(--font-body)" }}>~{estimated.minutes}m {estimated.seconds > 0 ? `${estimated.seconds}s` : ""}</span>
+            <div className={`flex items-center gap-2.5 px-3 py-2.5 rounded-lg border ${estimated.minutes * 60 + estimated.seconds >= MAX_SCRIPT_SECONDS ? "bg-red-50 border-red-200" : "bg-[#f9f9fb] border-transparent"}`}>
+              <Timer className={`w-4 h-4 ${estimated.minutes * 60 + estimated.seconds >= MAX_SCRIPT_SECONDS ? "text-red-400" : "text-[#a1a1aa]"}`} />
+              <span className={`text-sm tabular-nums ${estimated.minutes * 60 + estimated.seconds >= MAX_SCRIPT_SECONDS ? "text-red-500 font-semibold" : "text-[#71717a]"}`} style={{ fontFamily: "var(--font-body)" }}>~{estimated.minutes}m {estimated.seconds > 0 ? `${estimated.seconds}s` : ""}{estimated.minutes * 60 + estimated.seconds >= MAX_SCRIPT_SECONDS ? " (limit)" : ""}</span>
             </div>
           </div>
 
@@ -2550,9 +2587,9 @@ function StudioSession({ prompt, voice, duration, sound, soundOptions: initialSo
                   {/* Estimated duration */}
                   <div>
                     <label className="text-[10px] uppercase tracking-wider text-[#71717a] mb-2.5 block" style={{ fontFamily: "var(--font-body)" }}>Estimated Duration</label>
-                    <div className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg bg-[#f9f9fb] border border-transparent">
-                      <Timer className="w-4 h-4 text-[#a1a1aa]" />
-                      <span className="text-sm text-[#71717a] tabular-nums" style={{ fontFamily: "var(--font-body)" }}>~{estimated.minutes}m {estimated.seconds > 0 ? `${estimated.seconds}s` : ""}</span>
+                    <div className={`flex items-center gap-2.5 px-3 py-2.5 rounded-lg border ${estimated.minutes * 60 + estimated.seconds >= MAX_SCRIPT_SECONDS ? "bg-red-50 border-red-200" : "bg-[#f9f9fb] border-transparent"}`}>
+                      <Timer className={`w-4 h-4 ${estimated.minutes * 60 + estimated.seconds >= MAX_SCRIPT_SECONDS ? "text-red-400" : "text-[#a1a1aa]"}`} />
+                      <span className={`text-sm tabular-nums ${estimated.minutes * 60 + estimated.seconds >= MAX_SCRIPT_SECONDS ? "text-red-500 font-semibold" : "text-[#71717a]"}`} style={{ fontFamily: "var(--font-body)" }}>~{estimated.minutes}m {estimated.seconds > 0 ? `${estimated.seconds}s` : ""}{estimated.minutes * 60 + estimated.seconds >= MAX_SCRIPT_SECONDS ? " (limit)" : ""}</span>
                     </div>
                   </div>
                 </div>}
@@ -2958,7 +2995,7 @@ function StudioPageContent() {
         console.log("[studio] Session loaded:", full.id, full.title);
         setGenConfig({
           prompt: full.prompt || full.title || "",
-          voice: full.voice || "Graham",
+          voice: full.voice || "Claire",
           duration: full.duration || 7,
           sound: (full.soundscape ? soundIdToLabel(full.soundscape) || full.soundscape : null) || "Rain",
           soundOptions: full.sound_options || null,
@@ -3104,7 +3141,7 @@ function StudioPageContent() {
   const [historyFilter, setHistoryFilter] = useState<HistoryFilter>("all");
   const [sessionsPage, setSessionsPage] = useState(1);
   const [confirmDialog, setConfirmDialog] = useState<{ type: "regenerate" | "delete" | "generate"; sessionId: string; sessionTitle: string } | null>(null);
-  const [settingsVoice, setSettingsVoice] = useState("Graham");
+  const [settingsVoice, setSettingsVoice] = useState("Claire");
   const [settingsDuration, setSettingsDuration] = useState(10);
   const [settingsSound, setSettingsSound] = useState("Rain");
   // Populate settings from profile preferences
@@ -3786,7 +3823,7 @@ function StudioPageContent() {
                               const full = await res.json();
                               setGenConfig({
                                 prompt: full.prompt || session.title,
-                                voice: full.voice || session.voice || "Graham",
+                                voice: full.voice || session.voice || "Claire",
                                 duration: full.duration || parseInt(session.duration) || 5,
                                 sound: (full.soundscape ? soundIdToLabel(full.soundscape) || full.soundscape : null) || session.sound,
                                 soundOptions: full.sound_options || null,
@@ -3799,10 +3836,10 @@ function StudioPageContent() {
                                 preferredApproach: full.preferred_approach || "auto",
                               });
                             } else {
-                              setGenConfig({ prompt: session.title, voice: session.voice || "Graham", duration: parseInt(session.duration) || 5, sound: session.sound, soundOptions: null, sessionId: session.id, script: null, title: session.title, soundVolume: 70, supportChoice: detectSupportChoice(session.title || ""), mode: "still", preferredApproach: "auto" });
+                              setGenConfig({ prompt: session.title, voice: session.voice || "Claire", duration: parseInt(session.duration) || 5, sound: session.sound, soundOptions: null, sessionId: session.id, script: null, title: session.title, soundVolume: 70, supportChoice: detectSupportChoice(session.title || ""), mode: "still", preferredApproach: "auto" });
                             }
                           } catch {
-                            setGenConfig({ prompt: session.title, voice: session.voice || "Graham", duration: parseInt(session.duration) || 5, sound: session.sound, soundOptions: null, sessionId: session.id, script: null, title: session.title, soundVolume: 70, supportChoice: detectSupportChoice(session.title || ""), mode: "still", preferredApproach: "auto" });
+                            setGenConfig({ prompt: session.title, voice: session.voice || "Claire", duration: parseInt(session.duration) || 5, sound: session.sound, soundOptions: null, sessionId: session.id, script: null, title: session.title, soundVolume: 70, supportChoice: detectSupportChoice(session.title || ""), mode: "still", preferredApproach: "auto" });
                           }
                           setActiveNav("generate" as NavId);
                           setGenStep("studio");
@@ -4027,12 +4064,12 @@ function StudioPageContent() {
                                 const res = await fetch(`/api/sessions/${session.id}`);
                                 if (res.ok) {
                                   const full = await res.json();
-                                  setGenConfig({ prompt: full.prompt || session.title, voice: full.voice || session.voice || "Graham", duration: full.duration || parseInt(session.duration) || 5, sound: (full.soundscape ? soundIdToLabel(full.soundscape) || full.soundscape : null) || session.sound, soundOptions: full.sound_options || null, sessionId: session.id, script: normalizeScript(full.script), title: full.title || session.title, soundVolume: full.sound_volume ?? 70, supportChoice: full.support_choice || detectSupportChoice(full.prompt || session.title || ""), mode: full.mode || "still", preferredApproach: full.preferred_approach || "auto" });
+                                  setGenConfig({ prompt: full.prompt || session.title, voice: full.voice || session.voice || "Claire", duration: full.duration || parseInt(session.duration) || 5, sound: (full.soundscape ? soundIdToLabel(full.soundscape) || full.soundscape : null) || session.sound, soundOptions: full.sound_options || null, sessionId: session.id, script: normalizeScript(full.script), title: full.title || session.title, soundVolume: full.sound_volume ?? 70, supportChoice: full.support_choice || detectSupportChoice(full.prompt || session.title || ""), mode: full.mode || "still", preferredApproach: full.preferred_approach || "auto" });
                                 } else {
-                                  setGenConfig({ prompt: session.title, voice: session.voice || "Graham", duration: parseInt(session.duration) || 5, sound: session.sound, soundOptions: null, sessionId: session.id, script: null, title: session.title, soundVolume: 70, supportChoice: detectSupportChoice(session.title || ""), mode: "still", preferredApproach: "auto" });
+                                  setGenConfig({ prompt: session.title, voice: session.voice || "Claire", duration: parseInt(session.duration) || 5, sound: session.sound, soundOptions: null, sessionId: session.id, script: null, title: session.title, soundVolume: 70, supportChoice: detectSupportChoice(session.title || ""), mode: "still", preferredApproach: "auto" });
                                 }
                               } catch {
-                                setGenConfig({ prompt: session.title, voice: session.voice || "Graham", duration: parseInt(session.duration) || 5, sound: session.sound, soundOptions: null, sessionId: session.id, script: null, title: session.title, soundVolume: 70, supportChoice: detectSupportChoice(session.title || ""), mode: "still", preferredApproach: "auto" });
+                                setGenConfig({ prompt: session.title, voice: session.voice || "Claire", duration: parseInt(session.duration) || 5, sound: session.sound, soundOptions: null, sessionId: session.id, script: null, title: session.title, soundVolume: 70, supportChoice: detectSupportChoice(session.title || ""), mode: "still", preferredApproach: "auto" });
                               }
                               setActiveNav("generate" as NavId);
                               setGenStep("studio");
@@ -4055,7 +4092,7 @@ function StudioPageContent() {
                             <div className="flex items-center justify-end gap-1">
                               <div className="relative group/tip">
                                 <button
-                                  onClick={async (e) => { e.stopPropagation(); setLoadingSession(true); try { const res = await fetch(`/api/sessions/${session.id}`); if (res.ok) { const full = await res.json(); setGenConfig({ prompt: full.prompt || session.title, voice: full.voice || session.voice || "Graham", duration: full.duration || parseInt(session.duration) || 5, sound: (full.soundscape ? soundIdToLabel(full.soundscape) || full.soundscape : null) || session.sound, soundOptions: full.sound_options || null, sessionId: session.id, script: normalizeScript(full.script), title: full.title || session.title, soundVolume: full.sound_volume ?? 70, supportChoice: full.support_choice || detectSupportChoice(full.prompt || session.title || ""), mode: full.mode || "still", preferredApproach: full.preferred_approach || "auto" }); } else { setGenConfig({ prompt: session.title, voice: session.voice || "Graham", duration: parseInt(session.duration) || 5, sound: session.sound, soundOptions: null, sessionId: session.id, script: null, title: session.title, soundVolume: 70, supportChoice: detectSupportChoice(session.title || ""), mode: "still", preferredApproach: "auto" }); } } catch { setGenConfig({ prompt: session.title, voice: session.voice || "Graham", duration: parseInt(session.duration) || 5, sound: session.sound, soundOptions: null, sessionId: session.id, script: null, title: session.title, soundVolume: 70, supportChoice: detectSupportChoice(session.title || ""), mode: "still", preferredApproach: "auto" }); } setActiveNav("generate" as NavId); setGenStep("studio"); setLoadingSession(false); updateSessionUrl(session.id); }}
+                                  onClick={async (e) => { e.stopPropagation(); setLoadingSession(true); try { const res = await fetch(`/api/sessions/${session.id}`); if (res.ok) { const full = await res.json(); setGenConfig({ prompt: full.prompt || session.title, voice: full.voice || session.voice || "Claire", duration: full.duration || parseInt(session.duration) || 5, sound: (full.soundscape ? soundIdToLabel(full.soundscape) || full.soundscape : null) || session.sound, soundOptions: full.sound_options || null, sessionId: session.id, script: normalizeScript(full.script), title: full.title || session.title, soundVolume: full.sound_volume ?? 70, supportChoice: full.support_choice || detectSupportChoice(full.prompt || session.title || ""), mode: full.mode || "still", preferredApproach: full.preferred_approach || "auto" }); } else { setGenConfig({ prompt: session.title, voice: session.voice || "Claire", duration: parseInt(session.duration) || 5, sound: session.sound, soundOptions: null, sessionId: session.id, script: null, title: session.title, soundVolume: 70, supportChoice: detectSupportChoice(session.title || ""), mode: "still", preferredApproach: "auto" }); } } catch { setGenConfig({ prompt: session.title, voice: session.voice || "Claire", duration: parseInt(session.duration) || 5, sound: session.sound, soundOptions: null, sessionId: session.id, script: null, title: session.title, soundVolume: 70, supportChoice: detectSupportChoice(session.title || ""), mode: "still", preferredApproach: "auto" }); } setActiveNav("generate" as NavId); setGenStep("studio"); setLoadingSession(false); updateSessionUrl(session.id); }}
                                   className="w-8 h-8 rounded-lg hover:bg-[#ededfc] flex items-center justify-center text-[#3f3f46] hover:text-[#18181b] transition-colors cursor-pointer"
                                 >
                                   <PenLine className="w-4 h-4" />

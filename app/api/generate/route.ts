@@ -143,8 +143,8 @@ export async function POST(request: NextRequest) {
     console.log("[generate] Using editor script, length:", typeof serializedScript === "string" ? serializedScript.length : JSON.stringify(serializedScript).length);
     console.log("[generate] Editor script preview:", (typeof serializedScript === "string" ? serializedScript : JSON.stringify(serializedScript)).slice(0, 150));
   } else {
-    // API only accepts duration_min: 3, 5, 7, 10, 15 — clamp to nearest valid
-    const validDurations = [3, 5, 7, 10, 15];
+    // API only accepts duration_min: 3, 5, 7, 10, 12, 15 — clamp to nearest valid
+    const validDurations = [3, 5, 7, 10, 12, 15];
     const apiDuration = validDurations.find(d => d >= (duration || 7)) || 7;
 
     // Let the API auto-detect when user didn't explicitly pick a support choice

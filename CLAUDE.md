@@ -96,7 +96,7 @@ Generates a meditation script. Called from `/api/generate/route.ts`. Audio rende
 |-------|------|----------|---------|-------|
 | `prompt` | string | Yes | — | 1-1000 chars |
 | `support_choice` | enum | No | `"auto_detect"` | See enums below. Send `"auto_detect"` when user didn't pick — API has LLM-powered detection |
-| `duration_min` | enum | No | `7` | **Only accepts: 3, 5, 7, 10, 15**. Clamp invalid values to nearest valid |
+| `duration_min` | enum | No | `7` | **Only accepts: 3, 5, 7, 10, 12, 15**. Clamp invalid values to nearest valid |
 | `mode` | enum | No | `"still"` | `"still"`, `"walking"`, `"gentle_movement"` |
 | `extra_gentle` | bool | No | `false` | Gentler shape variants |
 | `preferred_approach` | enum | No | `"auto"` | See enums below |
