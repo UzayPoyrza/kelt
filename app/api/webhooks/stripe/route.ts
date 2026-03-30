@@ -60,10 +60,10 @@ export async function POST(request: NextRequest) {
         const billing = recurring && "interval" in recurring && recurring.interval === "year" ? "yearly" : "monthly";
         const credits = CREDIT_AMOUNTS[plan] || 30;
 
-        // Get period dates from the subscription object
-        const subAny = sub as unknown as Record<string, unknown>;
-        const periodStart = subAny.current_period_start as number | undefined;
-        const periodEnd = subAny.current_period_end as number | undefined;
+        // Get period dates from the subscription item (new Stripe API versions moved them here)
+        const item0 = sub.items.data[0] as unknown as Record<string, unknown>;
+        const periodStart = (item0?.current_period_start as number | undefined);
+        const periodEnd = (item0?.current_period_end as number | undefined);
 
         // Upsert subscription
         await supabase.from("subscriptions").upsert({
@@ -104,9 +104,10 @@ export async function POST(request: NextRequest) {
       const plan = getPlanFromPriceId(priceId);
       const recurring = sub.items.data[0]?.price.recurring;
       const billing = recurring && "interval" in recurring && recurring.interval === "year" ? "yearly" : "monthly";
-      const subAny2 = sub as unknown as Record<string, unknown>;
-      const pStart = subAny2.current_period_start as number | undefined;
-      const pEnd = subAny2.current_period_end as number | undefined;
+      // Get period dates from subscription item (new Stripe API versions moved them here)
+      const item0Updated = sub.items.data[0] as unknown as Record<string, unknown>;
+      const pStart = (item0Updated?.current_period_start as number | undefined);
+      const pEnd = (item0Updated?.current_period_end as number | undefined);
 
       // Detect canceling state: subscription is still active but set to cancel at period end
       const isCanceling = sub.status === "active" && sub.cancel_at_period_end === true;
