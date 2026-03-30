@@ -989,7 +989,7 @@ function StudioSession({ prompt, voice, duration, sound, soundOptions: initialSo
   }, []);
 
   const estimated = estimateDuration(script);
-  const MAX_SCRIPT_SECONDS = 17 * 60;
+  const MAX_SCRIPT_SECONDS = 20 * 60;
   const scriptRef = useRef(script);
   scriptRef.current = script;
 
@@ -1136,9 +1136,9 @@ function StudioSession({ prompt, voice, duration, sound, soundOptions: initialSo
   }, [selectedBlock]);
 
   const handleGenerateAudio = useCallback(async () => {
-    // Block generation if script exceeds 17-minute limit
+    // Block generation if script exceeds 20-minute limit
     if (estimateTotalSeconds(script) > MAX_SCRIPT_SECONDS) {
-      setGenerateWarning("Script exceeds 17-minute limit. Shorten it before generating.");
+      setGenerateWarning("Script exceeds 20-minute limit. Shorten it before generating.");
       setTimeout(() => setGenerateWarning(null), 3000);
       return;
     }

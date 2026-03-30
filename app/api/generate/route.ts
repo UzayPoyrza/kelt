@@ -158,33 +158,47 @@ export async function POST(request: NextRequest) {
       extra_gentle: false,
       preferred_approach: preferred_approach || "auto",
     };
-    console.log("[generate] Calling MindFlow API:", JSON.stringify(apiBody));
+    console.log("[generate] Invoking mindflow-api Lambda:", JSON.stringify(apiBody));
     const scriptStartMs = Date.now();
 
-    const scriptResponse = await fetch(
-      "https://j6w7gkn6x7.execute-api.us-east-1.amazonaws.com/v1/sessions/generate",
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(apiBody),
-      }
-    );
-    console.log("[generate] MindFlow API responded:", scriptResponse.status, `in ${Date.now() - scriptStartMs}ms`);
+    const { LambdaClient, InvokeCommand } = await import("@aws-sdk/client-lambda");
+    const lambda = new LambdaClient({ region: "us-east-1" });
 
-    if (!scriptResponse.ok) {
-      const errBody = await scriptResponse.text();
-      console.error("[generate] Script API failed:", scriptResponse.status, errBody);
-      // Mark generation failed and clean up the empty session
+    // API Gateway v2 (HTTP API) event format required by Mangum
+    const lambdaPayload = {
+      version: "2.0",
+      routeKey: "POST /v1/sessions/generate",
+      rawPath: "/v1/sessions/generate",
+      rawQueryString: "",
+      requestContext: {
+        http: { method: "POST", path: "/v1/sessions/generate", sourceIp: "127.0.0.1", protocol: "HTTP/1.1", userAgent: "lambda-direct" },
+        accountId: "", apiId: "", domainName: "", domainPrefix: "",
+        requestId: "direct-invoke", routeKey: "POST /v1/sessions/generate", stage: "v1", time: "", timeEpoch: 0,
+      },
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(apiBody),
+      isBase64Encoded: false,
+    };
+
+    const lambdaResponse = await lambda.send(new InvokeCommand({
+      FunctionName: "mindflow-api",
+      Payload: new TextEncoder().encode(JSON.stringify(lambdaPayload)),
+    }));
+    console.log("[generate] mindflow-api Lambda responded in", `${Date.now() - scriptStartMs}ms`);
+
+    const lambdaResult = JSON.parse(new TextDecoder().decode(lambdaResponse.Payload));
+
+    // Handle Lambda-level errors
+    if (lambdaResponse.FunctionError) {
+      console.error("[generate] Lambda function error:", JSON.stringify(lambdaResult));
       await supabase
         .from("generations")
         .update({ status: "failed" })
         .eq("id", generation.id);
-      // Delete the session if we just created it (no prior script)
       if (!sessionId) {
         await supabase.from("generations").delete().eq("session_id", activeSessionId);
         await supabase.from("sessions").delete().eq("id", activeSessionId);
       }
-      // Refund credit (OAuth only — anonymous doesn't use credits)
       if (!isAnonymous) {
         await supabase.rpc("refund_credit", { user_id_input: user!.id });
         await supabase.from("credit_ledger").insert({
@@ -194,14 +208,44 @@ export async function POST(request: NextRequest) {
           generation_id: generation.id,
         });
       }
-
       return NextResponse.json(
-        { error: "Script generation failed", detail: errBody },
+        { error: "Script generation failed", detail: JSON.stringify(lambdaResult) },
         { status: 502 }
       );
     }
 
-    const scriptResult = await scriptResponse.json();
+    // Parse API Gateway-style response (body may be a JSON string)
+    let scriptResult;
+    if (lambdaResult.statusCode && lambdaResult.body) {
+      if (lambdaResult.statusCode >= 400) {
+        console.error("[generate] Lambda returned error status:", lambdaResult.statusCode, lambdaResult.body);
+        await supabase
+          .from("generations")
+          .update({ status: "failed" })
+          .eq("id", generation.id);
+        if (!sessionId) {
+          await supabase.from("generations").delete().eq("session_id", activeSessionId);
+          await supabase.from("sessions").delete().eq("id", activeSessionId);
+        }
+        if (!isAnonymous) {
+          await supabase.rpc("refund_credit", { user_id_input: user!.id });
+          await supabase.from("credit_ledger").insert({
+            user_id: user!.id,
+            amount: 1,
+            reason: "refund_generation_failed",
+            generation_id: generation.id,
+          });
+        }
+        return NextResponse.json(
+          { error: "Script generation failed", detail: lambdaResult.body },
+          { status: 502 }
+        );
+      }
+      scriptResult = typeof lambdaResult.body === "string" ? JSON.parse(lambdaResult.body) : lambdaResult.body;
+    } else {
+      // Direct response (not API Gateway format)
+      scriptResult = lambdaResult;
+    }
     // Log all API fields to discover title-like keys
     const stringFields = Object.entries(scriptResult)
       .filter(([, v]) => typeof v === "string" && (v as string).length < 200)
