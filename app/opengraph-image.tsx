@@ -1,7 +1,7 @@
 import { ImageResponse } from "next/og";
 
 export const runtime = "edge";
-export const alt = "Incraft — AI Guided Meditation";
+export const alt = "[Free] Best AI Meditation Generator Online by Incraft";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 

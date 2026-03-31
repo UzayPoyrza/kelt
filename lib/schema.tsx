@@ -24,7 +24,7 @@ export function OrganizationSchema() {
         url: "https://incraft.io",
         logo: "https://incraft.io/icon.png",
         description:
-          "AI-generated meditations with natural pauses, studio-quality audio, and adaptive guidance that evolves with you.",
+          "Generate studio-quality guided meditation in 1 prompt. Natural voice narration, timed pauses, tailored scripts. AI built on scientific protocols. Free.",
         sameAs: [],
       }}
     />
@@ -42,7 +42,7 @@ export function WebSiteSchema() {
         name: "Incraft",
         url: "https://incraft.io",
         description:
-          "AI-generated meditations with natural pauses, studio-quality audio, and adaptive guidance that evolves with you.",
+          "Generate studio-quality guided meditation in 1 prompt. Natural voice narration, timed pauses, tailored scripts. AI built on scientific protocols. Free.",
         potentialAction: {
           "@type": "SearchAction",
           target: {
