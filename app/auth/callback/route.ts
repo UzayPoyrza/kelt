@@ -35,24 +35,11 @@ export async function GET(request: Request) {
         const admin = createAdminClient();
         const { data: profile } = await admin
           .from("profiles")
-          .select("id, is_anonymous")
+          .select("id")
           .eq("id", user.id)
           .single();
 
-        if (profile && profile.is_anonymous) {
-          // Anonymous user linking to a real account — upgrade credits
-          await admin.rpc("upgrade_anonymous_to_free", { target_user_id: user.id });
-          // Update profile with real user info from OAuth
-          await admin
-            .from("profiles")
-            .update({
-              email: user.email,
-              display_name:
-                user.user_metadata?.full_name ?? user.user_metadata?.name ?? null,
-              avatar_url: user.user_metadata?.avatar_url ?? null,
-            })
-            .eq("id", user.id);
-        } else if (!profile) {
+        if (!profile) {
           await admin.from("profiles").insert({
             id: user.id,
             email: user.email,
@@ -69,6 +56,6 @@ export async function GET(request: Request) {
     }
   }
 
-  // Auth error — redirect to login with error indicator
+  // Auth error - redirect to login with error indicator
   return NextResponse.redirect(`${origin}/login?error=auth`);
 }

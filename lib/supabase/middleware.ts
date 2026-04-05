@@ -25,14 +25,14 @@ export async function updateSession(request: NextRequest) {
     }
   );
 
-  // Refresh the session — important for Server Components
+  // Refresh the session - important for Server Components
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // Protect /studio — only allow non-anonymous authenticated users
+  // Protect /studio - only allow authenticated users
   if (request.nextUrl.pathname.startsWith("/studio")) {
-    if (!user || user.is_anonymous) {
+    if (!user) {
       const url = request.nextUrl.clone();
       url.pathname = "/login";
       url.search = "";
@@ -40,16 +40,16 @@ export async function updateSession(request: NextRequest) {
     }
   }
 
-  // Redirect OAuth users away from /login — they belong in /studio
-  if (user && !user.is_anonymous && request.nextUrl.pathname === "/login") {
+  // Redirect authenticated users away from /login - they belong in /studio
+  if (user && request.nextUrl.pathname === "/login") {
     const url = request.nextUrl.clone();
     url.pathname = "/studio";
     url.search = "";
     return NextResponse.redirect(url);
   }
 
-  // Redirect authenticated (non-anonymous) users from / to /studio
-  if (user && !user.is_anonymous && request.nextUrl.pathname === "/") {
+  // Redirect authenticated users from / to /studio
+  if (user && request.nextUrl.pathname === "/") {
     const url = request.nextUrl.clone();
     url.pathname = "/studio";
     url.search = "";

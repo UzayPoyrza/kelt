@@ -36,7 +36,7 @@ const reasons = [
   {
     icon: MessageCircle,
     title: "General Support",
-    desc: "Billing, account, or anything else — we're here to help.",
+    desc: "Billing, account, or anything else. We're here to help.",
     subject: "Support%20Request",
     color: "#6d9ab5",
     colorLight: "#e5eef4",
@@ -98,7 +98,7 @@ export default function ContactPage() {
             className="text-[14px] text-[#71717a] leading-relaxed max-w-md mx-auto"
             style={{ fontFamily: "var(--font-body)" }}
           >
-            Whether you found a bug, have a feature idea, or just need help — we read every message and typically respond within 24 hours.
+            Whether you found a bug, have a feature idea, or just need help, we read every message and typically respond within 24 hours.
           </p>
         </motion.div>
 
@@ -131,7 +131,7 @@ export default function ContactPage() {
                   >
                     {reason.title}
                   </span>
-                  <span className="text-[13px] text-[#a1a1aa]" style={{ fontFamily: "var(--font-body)" }}> — {reason.desc}</span>
+                  <span className="text-[13px] text-[#a1a1aa]" style={{ fontFamily: "var(--font-body)" }}> - {reason.desc}</span>
                 </div>
               </li>
             ))}

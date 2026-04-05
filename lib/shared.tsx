@@ -241,7 +241,7 @@ export async function downloadMixedAudio(
   console.log("[download] Starting download", { audioUrl, bgSoundUrl, bgVolume: bgVolume ?? 0, hasBg });
 
   if (!hasBg) {
-    console.log("[download] No background sound — downloading voice only");
+    console.log("[download] No background sound - downloading voice only");
     // Still proxy to get a downloadable blob (cross-origin <a> downloads may not trigger)
     try {
       const buf = await fetchAudioProxied(audioUrl);
@@ -358,7 +358,7 @@ export const ambients = [
   { id: "wind", label: "Wind", icon: Wind, src: `${AUDIO_BASE}/distant_wind_chimes.mp3` },
 ];
 
-/* Protocol-aware soundscape suggestions — auto-selected based on session intent */
+/* Protocol-aware soundscape suggestions - auto-selected based on session intent */
 export const soundscapePresets: Record<string, { label: string; description: string; layers: string[]; protocol: string; color: string; src: string }[]> = {
   sleep: [
     { label: "Sleep Train", description: "Engineered for CBT-I sleep onset", layers: ["Low drone", "Distant rain", "Delta wave undertone"], protocol: "CBT-I", color: "var(--color-dusk)", src: `${AUDIO_BASE}/sleep_train.mp3` },
@@ -382,7 +382,7 @@ export const soundscapePresets: Record<string, { label: string; description: str
   ],
 };
 
-/* Full audio catalog — all available background sounds from R2 */
+/* Full audio catalog - all available background sounds from R2 */
 export const audioCatalog = [
   { id: "10hz_alpha_wave_binurual", label: "10Hz Alpha Binaural", category: "binaural", src: `${AUDIO_BASE}/10hz_alpha_wave_binurual.mp3` },
   { id: "110_hz", label: "110 Hz Tone", category: "frequency", src: `${AUDIO_BASE}/110_hz.mp3` },
@@ -692,7 +692,7 @@ export function Header({ showNavLinks = false, hideFloatingNav = false, onScroll
         </div>
       </header>
 
-      {/* Floating blob nav — hides while scrolling, reappears when you stop */}
+      {/* Floating blob nav - hides while scrolling, reappears when you stop */}
       <AnimatePresence>
         {showBlob && (
           <motion.div

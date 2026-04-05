@@ -132,7 +132,7 @@ export async function POST(request: NextRequest) {
         .eq("id", userId)
         .single();
 
-      // Plan switches never grant credits — credits only come from
+      // Plan switches never grant credits - credits only come from
       // checkout.session.completed (initial) and invoice.paid (renewal)
       const updates: Record<string, unknown> = { plan };
 

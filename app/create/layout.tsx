@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "Create a Meditation",
   description:
-    "Configure your personalized AI meditation. Choose your voice, duration, focus area, and clinical protocol — then generate in seconds.",
+    "Configure your personalized AI meditation. Choose your voice, duration, focus area, and clinical protocol, then generate in seconds.",
   alternates: { canonical: "/create" },
   openGraph: {
     title: "Create a Meditation | Incraft",

@@ -61,7 +61,7 @@ const mockBlocks = [
   { id: 7, type: "voice" as const, text: "Release it slowly through your mouth. Let everything go." },
 ];
 
-/* ─── Studio Preview — simplified, readable mock of the script editor ─── */
+/* ─── Studio Preview - simplified, readable mock of the script editor ─── */
 
 function StudioPreview() {
   let voiceNum = 0;
@@ -253,7 +253,7 @@ function LoginContent() {
   useEffect(() => { window.scrollTo(0, 0); }, []);
 
   // After OAuth sign-in, the auth callback redirects to /studio directly.
-  // No auto-redirect needed here — the login page is always for signing in.
+  // No auto-redirect needed here - the login page is always for signing in.
 
   const handleOAuthLogin = async (provider: "google" | "apple") => {
     setLoadingProvider(provider);
@@ -400,7 +400,7 @@ function LoginContent() {
                   You&apos;ve used your free trial.
                 </p>
                 <p className="text-xs text-[var(--color-sand-500)] mt-0.5" style={{ fontFamily: "var(--font-body)" }}>
-                  Sign up to get 2 credits — free.
+                  Sign up to get 2 credits, free.
                 </p>
               </div>
             )}

@@ -228,7 +228,7 @@ function SignupContent() {
             </p>
           </motion.div>
 
-          {/* ─── Trust signals — big and bold ─── */}
+          {/* ─── Trust signals ─── */}
           <motion.div
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
@@ -263,7 +263,7 @@ function SignupContent() {
             transition={{ delay: 0.15, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
             className="space-y-3 mb-10"
           >
-            {/* Google — primary */}
+            {/* Google - primary */}
             <motion.button
               onClick={() => handleOAuthLogin("google")}
               disabled={loadingProvider !== null}
@@ -292,7 +292,7 @@ function SignupContent() {
               )}
             </motion.button>
 
-            {/* Apple — secondary */}
+            {/* Apple - secondary */}
             <motion.button
               onClick={() => handleOAuthLogin("apple")}
               disabled={loadingProvider !== null}
@@ -321,7 +321,7 @@ function SignupContent() {
             style={{ background: "linear-gradient(90deg, transparent, var(--color-sand-200), transparent)" }}
           />
 
-          {/* ─── Full access — 2x2 grid with checkmarks ─── */}
+          {/* ─── Full access - 2x2 grid with checkmarks ─── */}
           <motion.div
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}

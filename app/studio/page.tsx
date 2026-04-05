@@ -73,7 +73,7 @@ function formatTime(seconds: number): string {
 function normalizeScript(raw: unknown): ScriptBlock[] | null {
   if (!raw) return null;
   if (Array.isArray(raw)) {
-    // Already ScriptBlock[] — validate shape
+    // Already ScriptBlock[] - validate shape
     if (raw.length > 0 && typeof raw[0] === 'object' && 'type' in raw[0]) return raw as ScriptBlock[];
     return null;
   }
@@ -273,12 +273,12 @@ function SessionCard({ session, delay, isNowPlaying, generatingPhase, onPlay, on
       } else if (block.type === "pause") {
         const dur = block.pauseDuration || 0;
         const label = block.label || "pause";
-        previewLines.push(`— ${label} · ${dur}s —`);
+        previewLines.push(`~ ${label} · ${dur}s ~`);
         previewLines.push("");
       }
     }
   } else {
-    previewLines.push("No script yet — open in Studio to generate one.");
+    previewLines.push("No script yet. Open in Studio to generate one.");
   }
 
   return (
@@ -289,7 +289,7 @@ function SessionCard({ session, delay, isNowPlaying, generatingPhase, onPlay, on
       className={`group rounded-xl border border-[#e0e0e4] bg-white transition-all duration-200 flex flex-col ${generatingPhase ? "opacity-80 cursor-default" : "hover:border-[#c0c0c8] hover:shadow-[0_2px_12px_rgba(0,0,0,0.08)] cursor-pointer"}`}
       onClick={generatingPhase ? undefined : onOpenStudio}
     >
-      {/* Preview area — like a document thumbnail */}
+      {/* Preview area - like a document thumbnail */}
       <div className="relative h-[160px] bg-[#f0eee9] border-b border-[#e4e0d8] overflow-hidden rounded-t-xl px-5 pt-4">
         {/* Category accent stripe at top */}
         <div className="absolute top-0 left-0 w-full h-[2px]" style={{ background: colors.accent }} />
@@ -305,10 +305,10 @@ function SessionCard({ session, delay, isNowPlaying, generatingPhase, onPlay, on
             <div key={i}>
               {line === "" ? (
                 <div className="h-[3px]" />
-              ) : line.startsWith("—") ? (
+              ) : line.startsWith("~") ? (
                 <div className="flex items-center gap-1 my-0.5">
                   <div className="h-[1px] flex-1 bg-[#d4d4d8]" />
-                  <span className="text-[7px] text-[#a1a1aa] tracking-wide shrink-0" style={{ fontFamily: "var(--font-body)" }}>{line.replace(/—/g, "").trim()}</span>
+                  <span className="text-[7px] text-[#a1a1aa] tracking-wide shrink-0" style={{ fontFamily: "var(--font-body)" }}>{line.replace(/~/g, "").trim()}</span>
                   <div className="h-[1px] flex-1 bg-[#d4d4d8]" />
                 </div>
               ) : (
@@ -321,7 +321,7 @@ function SessionCard({ session, delay, isNowPlaying, generatingPhase, onPlay, on
         {/* Fade-out gradient at bottom */}
         <div className="absolute bottom-0 left-0 w-full h-10 bg-gradient-to-t from-[#f8f8fa] to-transparent" />
 
-        {/* Generating overlay — blocks interaction */}
+        {/* Generating overlay - blocks interaction */}
         {generatingPhase && !isNowPlaying && (
           <div className="absolute inset-0 z-10 bg-[var(--color-sand-50)]/85 backdrop-blur-[2px] flex flex-col items-center justify-center gap-2">
             <motion.div
@@ -363,7 +363,7 @@ function SessionCard({ session, delay, isNowPlaying, generatingPhase, onPlay, on
         )}
       </div>
 
-      {/* Footer — title + voice + opened time + 3-dot menu */}
+      {/* Footer - title + voice + opened time + 3-dot menu */}
       <div className="px-3.5 py-3">
         {isRenaming ? (
           <input
@@ -682,7 +682,7 @@ function PlayerBar({ session, isPlaying, onTogglePlay, onClose, inline, sound, v
 
       {/* Container-query responsive: @3xl=768px, @4xl=896px, @5xl=1024px */}
       <div className="flex items-center gap-2 @xl:gap-3 @5xl:gap-5 px-3 @xl:px-4 @5xl:px-6 py-3 overflow-hidden">
-        {/* Session info — title at @3xl (768px container), icon at @4xl (896px) */}
+        {/* Session info - title at @3xl (768px container), icon at @4xl (896px) */}
         <div className="hidden @3xl:flex items-center gap-3 min-w-0 max-w-[200px] @5xl:max-w-[300px]">
           <div className="hidden @4xl:flex w-10 h-10 rounded-lg items-center justify-center shrink-0" style={{ background: colors.bg }}>
             <Icon className="w-5 h-5" style={{ color: colors.accent }} />
@@ -738,7 +738,7 @@ function PlayerBar({ session, isPlaying, onTogglePlay, onClose, inline, sound, v
           )}
         </div>
 
-        {/* Right side — background sound + actions. Entirely static except sound label truncation. */}
+        {/* Right side - background sound + actions. Entirely static except sound label truncation. */}
         <div className="flex items-center gap-1.5 @sm:gap-2 ml-auto shrink-0">
           <div className="relative flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#f4f4f5] border border-[#e8e8ec] shrink-0">
             <button
@@ -914,7 +914,7 @@ function StudioSession({ prompt, voice, duration, sound, soundOptions: initialSo
           setShowStudioPlayer(true);
           setHasGenerated(true);
         } else if (gens.length > 0 && !gens[0].audio_url) {
-          // Generation exists but no audio — show player in rendering state
+          // Generation exists but no audio - show player in rendering state
           console.log("[studio-session] Generation exists but no audio, showing render state");
           setRenderingAudio(true);
           setShowStudioPlayer(true);
@@ -1224,7 +1224,7 @@ function StudioSession({ prompt, voice, duration, sound, soundOptions: initialSo
           audioUrl: g.audio_url || null,
         }, ...prev]);
       }
-      // Script generation done — transition to audio rendering phase
+      // Script generation done - transition to audio rendering phase
       const renderSessionId = data.session?.id || sessionIdState;
       setIsGenerating(false);
       setHasGenerated(true);
@@ -1252,7 +1252,7 @@ function StudioSession({ prompt, voice, duration, sound, soundOptions: initialSo
                 updated[0] = { ...updated[0], audioUrl: renderData.audio_url };
                 return updated;
               });
-              // Audio ready — show player and auto-play
+              // Audio ready - show player and auto-play
               onStopOtherPlayers?.();
               setShowStudioPlayer(true);
               setStudioPlaying(true);
@@ -1356,7 +1356,7 @@ function StudioSession({ prompt, voice, duration, sound, soundOptions: initialSo
     if (block && clamped > (block.pauseDuration ?? 0)) {
       const hypothetical = cur.map(b => b.id === id ? { ...b, pauseDuration: clamped } : b);
       if (estimateTotalSeconds(hypothetical) > MAX_SCRIPT_SECONDS) {
-        setGenerateWarning("Script limit reached — 17 minutes maximum.");
+        setGenerateWarning("Script limit reached, 17 minutes maximum.");
         setTimeout(() => setGenerateWarning(null), 3000);
         return;
       }
@@ -1377,7 +1377,7 @@ function StudioSession({ prompt, voice, duration, sound, soundOptions: initialSo
     if (block && text.length > block.text.length) {
       const hypothetical = cur.map(b => b.id === id ? { ...b, text } : b);
       if (estimateTotalSeconds(hypothetical) > MAX_SCRIPT_SECONDS) {
-        setGenerateWarning("Script limit reached — 17 minutes maximum.");
+        setGenerateWarning("Script limit reached, 17 minutes maximum.");
         setTimeout(() => setGenerateWarning(null), 3000);
         return;
       }
@@ -1444,7 +1444,7 @@ function StudioSession({ prompt, voice, duration, sound, soundOptions: initialSo
     if (addingBlock.current) return;
     // Block adding if script is already at 17-min limit (new pause adds 3s)
     if (estimateTotalSeconds(scriptRef.current) + 3 > MAX_SCRIPT_SECONDS) {
-      setGenerateWarning("Script limit reached — 17 minutes maximum.");
+      setGenerateWarning("Script limit reached, 17 minutes maximum.");
       setTimeout(() => setGenerateWarning(null), 3000);
       return;
     }
@@ -1453,12 +1453,12 @@ function StudioSession({ prompt, voice, duration, sound, soundOptions: initialSo
       const currentBlock = script.find(b => b.id === selectedBlock);
       if (currentBlock && currentBlock.type === "voice") {
         if (currentBlock.text.trim() === "") {
-          // Empty block — show error, don't add
+          // Empty block - show error, don't add
           setGenerateWarning("Write something or cancel the current block first.");
           setTimeout(() => setGenerateWarning(null), 3000);
           return;
         } else {
-          // Has text — save it first, then continue adding
+          // Has text - save it first, then continue adding
           saveEdit();
         }
       }
@@ -1598,7 +1598,7 @@ function StudioSession({ prompt, voice, duration, sound, soundOptions: initialSo
             </button>
           </div>
 
-          {/* Center: Session title — fills remaining space, truncates */}
+          {/* Center: Session title - fills remaining space, truncates */}
           <div className="flex-1 min-w-0 flex justify-center overflow-hidden">
             {isRenamingSession ? (
               <input
@@ -1677,7 +1677,7 @@ function StudioSession({ prompt, voice, duration, sound, soundOptions: initialSo
           </div>
         </div>
 
-        {/* Script blocks — Timeline Editor */}
+        {/* Script blocks - Timeline Editor */}
         <div ref={scriptScrollRef} className="flex-1 overflow-y-auto studio-scroll relative" style={{ background: "#fafaf9" }} onClick={handleBackgroundClick}>
           <div className="max-w-[680px] mx-auto px-8 py-6">
             {/* Add segment at top */}
@@ -1762,7 +1762,7 @@ function StudioSession({ prompt, voice, duration, sound, soundOptions: initialSo
 
                         {/* Duration controls */}
                         <div className="flex items-center gap-1">
-                          {/* Reorder arrows — hover only */}
+                          {/* Reorder arrows - hover only */}
                           <div className="flex items-center gap-px opacity-0 group-hover/pause:opacity-100 transition-opacity mr-1">
                             <button
                               onClick={(e) => { e.stopPropagation(); if (canMoveUp) moveBlock(block.id, "up"); }}
@@ -1806,7 +1806,7 @@ function StudioSession({ prompt, voice, duration, sound, soundOptions: initialSo
                               style={{ fontFamily: "var(--font-body)", fontWeight: 600, color: isEmpty ? "#c4c4c4" : "#52525b" }}
                               title="Click to edit duration"
                             >
-                              {isEmpty ? "—" : `${dur}s`}
+                              {isEmpty ? "-" : `${dur}s`}
                             </button>
                           )}
 
@@ -1818,7 +1818,7 @@ function StudioSession({ prompt, voice, duration, sound, soundOptions: initialSo
                       </div>
                     </div>
 
-                    {/* Add segment — hover zone below pause */}
+                    {/* Add segment - hover zone below pause */}
                     <div className="relative flex items-center justify-center group/addpause" style={{ height: "32px", marginLeft: "51px" }}>
                       <div className="absolute inset-x-0 top-1/2 border-t border-dashed border-[rgba(122,158,126,0.35)] lg:border-transparent lg:group-hover/addpause:border-[rgba(122,158,126,0.35)] transition-colors" />
                       <button
@@ -1936,7 +1936,7 @@ function StudioSession({ prompt, voice, duration, sound, soundOptions: initialSo
                           {/* Actions */}
                           {!isSelected && (
                             <div className="flex items-center gap-0.5 shrink-0">
-                              {/* Reorder — hover only */}
+                              {/* Reorder - hover only */}
                               <div className="flex flex-col opacity-0 group-hover/row:opacity-100 transition-opacity">
                                 <button
                                   onClick={(e) => { e.stopPropagation(); if (canMoveVoiceUp) moveBlock(block.id, "up"); }}
@@ -1953,7 +1953,7 @@ function StudioSession({ prompt, voice, duration, sound, soundOptions: initialSo
                                   <svg width="8" height="5" viewBox="0 0 10 6" fill="none"><path d="M5 6L0 1h10L5 6z" fill="currentColor"/></svg>
                                 </button>
                               </div>
-                              {/* Pencil — always visible */}
+                              {/* Pencil - always visible */}
                               <button
                                 onClick={(e) => { e.stopPropagation(); startEditing(block.id); }}
                                 className="w-7 h-7 rounded-md flex items-center justify-center text-[#a1a1aa] hover:text-[#52525b] hover:bg-[#f4f4f5] transition-all cursor-pointer"
@@ -1961,7 +1961,7 @@ function StudioSession({ prompt, voice, duration, sound, soundOptions: initialSo
                               >
                                 <PenLine className="w-3.5 h-3.5" />
                               </button>
-                              {/* Trash — always visible, always red */}
+                              {/* Trash - always visible, always red */}
                               <button
                                 onClick={(e) => { e.stopPropagation(); deleteBlock(block.id); }}
                                 className="w-7 h-7 rounded-md flex items-center justify-center text-[#ef4444] hover:text-red-600 hover:bg-red-50 transition-all cursor-pointer"
@@ -2002,7 +2002,7 @@ function StudioSession({ prompt, voice, duration, sound, soundOptions: initialSo
 
           </div>
 
-        {/* Bottom bar — desktop */}
+        {/* Bottom bar - desktop */}
         <div className="hidden lg:flex items-center justify-between px-6 py-3.5 border-t border-[#e8e8e8]" style={{ background: "#ffffff" }}>
           <div className="flex items-center gap-2.5">
             {/* Credit progress ring */}
@@ -2065,7 +2065,7 @@ function StudioSession({ prompt, voice, duration, sound, soundOptions: initialSo
           </div>
         </div>
 
-        {/* Bottom bar — mobile (sticky at bottom) */}
+        {/* Bottom bar - mobile (sticky at bottom) */}
         <div className="flex lg:hidden flex-col border-t border-[#e8e8e8] shrink-0" style={{ background: "#ffffff" }}>
           {/* Voice indicator + panel toggles */}
           <div className="flex items-center gap-2 px-4 pt-3 pb-2">
@@ -2192,7 +2192,7 @@ function StudioSession({ prompt, voice, duration, sound, soundOptions: initialSo
         )}
       </div>
 
-      {/* ─── Right Panel (Settings / History) — desktop only ─── */}
+      {/* ─── Right Panel (Settings / History) - desktop only ─── */}
       <div className="w-full lg:w-72 shrink-0 border-t lg:border-t-0 lg:border-l border-[#e4e4e7] hidden lg:flex flex-col overflow-y-auto studio-scroll" style={{ background: "#fafafa" }}>
         <div className="px-4 pt-1 border-b border-[#e4e4e7] flex items-center gap-0">
           <button
@@ -2259,7 +2259,7 @@ function StudioSession({ prompt, voice, duration, sound, soundOptions: initialSo
             </div>
           </div>
 
-          {/* Background Sound — info only */}
+          {/* Background Sound - info only */}
           <div>
             <label className="text-[10px] uppercase tracking-wider text-[#71717a] mb-2.5 block" style={{ fontFamily: "var(--font-body)" }}>Background Sound</label>
             <div className="rounded-lg bg-[#f9f9fb] border border-transparent px-3 py-2.5">
@@ -2570,7 +2570,7 @@ function StudioSession({ prompt, voice, duration, sound, soundOptions: initialSo
                     </div>
                   </div>
 
-                  {/* Background Sound — info only */}
+                  {/* Background Sound - info only */}
                   <div>
                     <label className="text-[10px] uppercase tracking-wider text-[#71717a] mb-2.5 block" style={{ fontFamily: "var(--font-body)" }}>Background Sound</label>
                     <div className="rounded-lg bg-[#f9f9fb] border border-transparent px-3 py-2.5">
@@ -2744,7 +2744,7 @@ function StudioPageContent() {
   const [sessionsLoading, setSessionsLoading] = useState(true);
   const { profile, loading: profileLoading, refetch: refetchProfile } = useProfile();
   const [anonBannerDismissed, setAnonBannerDismissed] = useState(false);
-  // Gate studio access on profile — must have a non-anonymous profile
+  // Gate studio access on profile - must have a non-anonymous profile
   useEffect(() => {
     if (profileLoading) return;
     if (!profile || profile.is_anonymous) {
@@ -2898,7 +2898,7 @@ function StudioPageContent() {
 
   const [generationsPage, setGenerationsPage] = useState(1);
   const fetchGenerations = useCallback(async () => {
-    // Fetch all generations (up to 100) — paginate client-side
+    // Fetch all generations (up to 100) - paginate client-side
     const res = await fetch(`/api/generations?page=1&limit=100`);
     if (!res.ok) return;
     const data = await res.json();
@@ -2946,7 +2946,7 @@ function StudioPageContent() {
     return () => document.removeEventListener("visibilitychange", onVisible);
   }, [refetchProfile, fetchSessions, fetchGenerations]);
 
-  // Handle checkout return — verify session with backend before refreshing profile
+  // Handle checkout return - verify session with backend before refreshing profile
   useEffect(() => {
     if (searchParams.get("checkout") === "success") {
       const sessionId = searchParams.get("session_id");
@@ -3067,7 +3067,7 @@ function StudioPageContent() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Handle browser back button — only handle session→sessions transition
+  // Handle browser back button - only handle session->sessions transition
   // (when a session was opened via pushState, back should return to sessions list)
   useEffect(() => {
     const handlePopState = (e: PopStateEvent) => {
@@ -3128,7 +3128,7 @@ function StudioPageContent() {
   // Audio URL from auto-render (when session loaded via ?session=X with no audio)
   const [autoRenderedAudioUrl, setAutoRenderedAudioUrl] = useState<string | null>(null);
   const [autoRenderError, setAutoRenderError] = useState<string | null>(null);
-  // User can dismiss the loading overlay — audio keeps generating in background
+  // User can dismiss the loading overlay - audio keeps generating in background
   const [loadingDismissed, setLoadingDismissed] = useState(false);
   // Track which session is currently being generated (for session card status)
   const [generatingSession, setGeneratingSession] = useState<{ id: string; phase: "script" | "audio" } | null>(null);
@@ -3187,7 +3187,7 @@ function StudioPageContent() {
       return;
     }
     if (isQuickGenerating) return;
-    // Ensure duration is valid — fallback to 5 if somehow unset
+    // Ensure duration is valid - fallback to 5 if somehow unset
     if (!sharedDurations.includes(genConfig.duration)) {
       setGenConfig(prev => ({ ...prev, duration: 5 }));
     }
@@ -3249,7 +3249,7 @@ function StudioPageContent() {
       }
       if (!res.ok) {
         console.error("[quick-gen] Script generation failed:", res.status);
-        setQuickGenError("Generation failed — this can happen with unclear prompts. Try describing what you need more clearly. If the issue persists, contact support.");
+        setQuickGenError("Generation failed. This can happen with unclear prompts. Try describing what you need more clearly. If the issue persists, contact support.");
         setLoadingPhase(null);
         setGeneratingSession(null);
         setSessions(prev => prev.filter(s => s.id !== placeholderId));
@@ -3260,7 +3260,7 @@ function StudioPageContent() {
       // Replace placeholder with real session ID and switch to audio phase
       if (data.session?.id) {
         setGeneratingSession({ id: data.session.id, phase: "audio" });
-        // Remove placeholder from sessions list — fetchSessions will add the real one
+        // Remove placeholder from sessions list - fetchSessions will add the real one
         setSessions(prev => prev.filter(s => s.id !== placeholderId));
       }
       refetchProfile();
@@ -3300,7 +3300,7 @@ function StudioPageContent() {
       }
 
       if (!audioUrl) {
-        // TTS failed — show error, refund already handled server-side
+        // TTS failed - show error, refund already handled server-side
         setQuickGenError("Audio rendering failed. Your credit has been refunded. Please try again.");
         setLoadingPhase(null);
         setGeneratingSession(null);
@@ -3308,7 +3308,7 @@ function StudioPageContent() {
         return;
       }
 
-      // Done — navigate to session, keep overlay up until session loads
+      // Done - navigate to session, keep overlay up until session loads
       setAutoRenderedAudioUrl(audioUrl);
       loadedSessionRef.current = null;
       router.push(`/studio?session=${data.session.id}`);
@@ -3319,7 +3319,7 @@ function StudioPageContent() {
       }, 800);
     } catch (err) {
       console.error("[quick-gen] Error:", err);
-      setQuickGenError("Something went wrong — try rephrasing your prompt. If the issue persists, contact support.");
+      setQuickGenError("Something went wrong. Try rephrasing your prompt. If the issue persists, contact support.");
       setLoadingPhase(null);
       setGeneratingSession(null);
       setSessions(prev => prev.filter(s => s.id !== placeholderId));
@@ -3345,7 +3345,7 @@ function StudioPageContent() {
     if (id === "sessions") fetchSessions();
     if (id === "history") fetchGenerations();
     if (id === "sessions" || id === "history") refetchProfile();
-    // Replace history state for tab switches — tabs shouldn't create history entries
+    // Replace history state for tab switches - tabs shouldn't create history entries
     window.history.replaceState({ studioNav: id, studioStep: "input" }, "", "/studio");
   };
 
@@ -3368,7 +3368,7 @@ function StudioPageContent() {
     }
   }, [loadingPhase]);
 
-  // Update URL to reflect the active session (or clear it) — use replaceState
+  // Update URL to reflect the active session (or clear it) - use replaceState
   // so browser back always goes to sessions list via the popstate handler
   const updateSessionUrl = useCallback((sessionId: string | null) => {
     if (sessionId) {
@@ -3409,7 +3409,7 @@ function StudioPageContent() {
     );
   }
 
-  // If no profile — show loading (useEffect above handles creating or redirecting)
+  // If no profile - show loading (useEffect above handles creating or redirecting)
   if (!profile) {
     return (
       <div className="h-screen flex flex-col items-center justify-center" style={{ backgroundColor: "var(--color-sand-50)" }}>
@@ -3424,7 +3424,7 @@ function StudioPageContent() {
     );
   }
 
-  // Studio view — sidebar stays, top header hidden
+  // Studio view - sidebar stays, top header hidden
   if (activeNav === "generate" && genStep === "studio") {
     return (
       <div className="h-screen flex" style={{ background: "#ffffff" }}>
@@ -3443,7 +3443,7 @@ function StudioPageContent() {
               <X className="w-4 h-4" />
             </button>
           </div>
-          {/* Generate button hidden in studio session — use bottom bar Generate Audio instead */}
+          {/* Generate button hidden in studio session - use bottom bar Generate Audio instead */}
           <nav className="flex-1 px-3 space-y-0.5">
             {navItems.map((item) => (
               <button key={item.id} onClick={() => { navigateTo(item.id); setSidebarOpen(false); }}
@@ -3509,7 +3509,7 @@ function StudioPageContent() {
           </div>
         </aside>
 
-        {/* Studio content — no top header */}
+        {/* Studio content - no top header */}
         <div className="flex-1 flex flex-col min-h-0 min-w-0">
           <StudioSession
             key={genConfig.sessionId || genConfig.prompt}
@@ -3577,7 +3577,7 @@ function StudioPageContent() {
 
         <div className="px-3 mb-4">
           <div className="relative">
-            {/* Animated gradient border glow — visible when active */}
+            {/* Animated gradient border glow - visible when active */}
             <div
               className={`absolute -inset-[2px] rounded-[14px] bg-[length:300%_300%] animate-[border-glow_4s_ease_infinite] transition-opacity duration-500 blur-[1px] ${
                 activeNav === ("generate" as NavId) ? "opacity-80" : "opacity-0"
@@ -3650,7 +3650,7 @@ function StudioPageContent() {
               <div className="flex-1 min-w-0">
                 <p className="text-xs text-[var(--color-sand-900)]" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>{profile?.display_name || "User"}</p>
                 <p className={`text-[10px] ${profile?.subscription_status === "canceling" ? "text-amber-600" : "text-[var(--color-sand-500)]"}`} style={{ fontFamily: "var(--font-body)" }}>
-                  {planDisplayName(profile?.plan)} plan{profile?.subscription_status === "canceling" ? " — Expiring" : ""}
+                  {planDisplayName(profile?.plan)} plan{profile?.subscription_status === "canceling" ? " - Expiring" : ""}
                 </p>
               </div>
               {profile?.plan !== "creator" && (
@@ -3793,7 +3793,7 @@ function StudioPageContent() {
                   <SessionsLoadingIcon />
                 ) : filteredSessions.length > 0 ? (
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-                    {/* New Session card — always pinned first */}
+                    {/* New Session card - always pinned first */}
                     <motion.div
                       initial={{ opacity: 0, y: 8 }}
                       animate={{ opacity: 1, y: 0 }}
@@ -4150,7 +4150,7 @@ function StudioPageContent() {
               </motion.div>
             )}
 
-            {/* Generate — Step 1: Prompt Input (identical to homepage) */}
+            {/* Generate - Step 1: Prompt Input (identical to homepage) */}
             {activeNav === ("generate" as NavId) && genStep === "input" && (
               <motion.div key="gen-input" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }} className="max-w-2xl w-full mx-auto px-4 flex flex-col items-center justify-center min-h-[calc(100vh-120px)]">
                 {/* Hidden measurer */}
@@ -4233,7 +4233,7 @@ function StudioPageContent() {
               </motion.div>
             )}
 
-            {/* Generate — Step 2: Configure (copied from /create page) */}
+            {/* Generate - Step 2: Configure (copied from /create page) */}
             {activeNav === ("generate" as NavId) && genStep === "choose" && (
               <motion.div key="gen-choose" initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.4 }} className="w-full max-w-xl mx-auto" onClick={() => voicePlaying && setVoicePlaying(null)}>
                 {/* Back + "Your intention" on same line */}
@@ -4248,7 +4248,7 @@ function StudioPageContent() {
                   <p className="text-[11px] uppercase tracking-widest text-[var(--color-sand-400)]" style={{ fontFamily: "var(--font-body)" }}>Your intention</p>
                 </motion.div>
 
-                {/* Editable prompt — centered */}
+                {/* Editable prompt - centered */}
                 <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="mb-6 sm:mb-8 text-center">
                   <p className="text-2xl sm:text-3xl text-[var(--color-sand-900)] leading-snug inline" style={{ fontFamily: "var(--font-display)" }}>
                     <span className="text-[var(--color-sand-300)] select-none">&ldquo;</span>
@@ -4293,7 +4293,7 @@ function StudioPageContent() {
                   )}
                 </motion.div>
 
-                {/* Duration — segmented control */}
+                {/* Duration - segmented control */}
                 <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.06 }} className="mb-5">
                   <p className="text-[11px] uppercase tracking-widest text-[var(--color-sand-400)] mb-2" style={{ fontFamily: "var(--font-body)" }}>Duration</p>
                   <div className="relative">
@@ -4312,7 +4312,7 @@ function StudioPageContent() {
                   <p className="text-[10px] text-[var(--color-sand-400)] mt-1.5" style={{ fontFamily: "var(--font-body)" }}>Actual length may vary by ~25% depending on prompt and protocol</p>
                 </motion.div>
 
-                {/* Voice — single row, compact with accent stripe */}
+                {/* Voice - single row, compact with accent stripe */}
                 <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="mb-5">
                   <p className="text-[11px] uppercase tracking-widest text-[var(--color-sand-400)] mb-2" style={{ fontFamily: "var(--font-body)" }}>Voice</p>
                   <div className="flex gap-2">
@@ -4382,7 +4382,7 @@ function StudioPageContent() {
                 <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.14 }} className="mb-5">
                   <div className="flex items-center gap-2 mb-2">
                     <p className="text-[11px] uppercase tracking-widest text-[var(--color-sand-400)]" style={{ fontFamily: "var(--font-body)" }}>Focus area</p>
-                    <span className="text-[10px] text-[var(--color-sand-400)]" style={{ fontFamily: "var(--font-body)" }}>— optional</span>
+                    <span className="text-[10px] text-[var(--color-sand-400)]" style={{ fontFamily: "var(--font-body)" }}>(optional)</span>
                   </div>
                   {(() => {
                     const detectedSC = detectSupportChoice(genConfig.prompt);
@@ -4424,7 +4424,7 @@ function StudioPageContent() {
                     style={{ fontFamily: "var(--font-body)" }}
                   >
                     <FlaskConical className="w-3.5 h-3.5 text-[var(--color-sand-400)]" />
-                    <span className="text-[12px] text-[var(--color-sand-500)] group-hover:text-[var(--color-sand-700)] flex-1 text-left transition-colors">Advanced<span className="text-[10px] text-[var(--color-sand-400)] ml-1.5">— optional · {genApproachOptions.length} protocols</span></span>
+                    <span className="text-[12px] text-[var(--color-sand-500)] group-hover:text-[var(--color-sand-700)] flex-1 text-left transition-colors">Advanced<span className="text-[10px] text-[var(--color-sand-400)] ml-1.5">(optional) · {genApproachOptions.length} protocols</span></span>
                     <ChevronDown className={`w-4 h-4 text-[var(--color-sand-400)] transition-transform ${showGenAdvanced ? "rotate-180" : ""}`} />
                   </button>
 
@@ -4458,7 +4458,7 @@ function StudioPageContent() {
                       })()}
 
                       {/* Protocol */}
-                      <div className="flex items-center gap-2 mb-1"><p className="text-[11px] uppercase tracking-widest text-[var(--color-sand-400)]" style={{ fontFamily: "var(--font-body)" }}>Protocol</p><span className="text-[10px] text-[var(--color-sand-400)]" style={{ fontFamily: "var(--font-body)" }}>— optional</span></div>
+                      <div className="flex items-center gap-2 mb-1"><p className="text-[11px] uppercase tracking-widest text-[var(--color-sand-400)]" style={{ fontFamily: "var(--font-body)" }}>Protocol</p><span className="text-[10px] text-[var(--color-sand-400)]" style={{ fontFamily: "var(--font-body)" }}>(optional)</span></div>
                       <p className="text-[9px] text-[var(--color-sand-400)] mb-1.5" style={{ fontFamily: "var(--font-body)" }}>For therapists, instructors, and advanced users. Overrides the auto-selected approach.</p>
                       {genApproachOptions.length > 0 ? (
                         <div className="flex flex-wrap gap-1">
@@ -4474,7 +4474,7 @@ function StudioPageContent() {
                           ))}
                         </div>
                       ) : (
-                        <p className="text-[10px] text-[var(--color-sand-400)] italic" style={{ fontFamily: "var(--font-body)" }}>No specific approaches — AI will auto-select.</p>
+                        <p className="text-[10px] text-[var(--color-sand-400)] italic" style={{ fontFamily: "var(--font-body)" }}>No specific approaches. AI will auto-select.</p>
                       )}
                     </motion.div>
                   )}
@@ -4541,7 +4541,7 @@ function StudioPageContent() {
                             <p className="text-[13px] text-[var(--color-sand-900)] truncate" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>{profile?.email || "user@example.com"}</p>
                             <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                               <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] border ${profile?.subscription_status === "canceling" ? "bg-amber-50 text-amber-700 border-amber-200" : "bg-[var(--color-sand-100)] text-[var(--color-sand-600)] border-[var(--color-sand-200)]"}`} style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>
-                                {planDisplayName(profile?.plan)}{profile?.subscription_status === "canceling" ? " — Expiring" : ""}
+                                {planDisplayName(profile?.plan)}{profile?.subscription_status === "canceling" ? " - Expiring" : ""}
                               </span>
                               <span className={`text-[11px] ${(profile?.credits_remaining ?? 0) === 0 ? "text-red-500 font-medium" : "text-[var(--color-sand-400)]"}`} style={{ fontFamily: "var(--font-body)" }}>{profile?.credits_remaining ?? 0} credits remaining</span>
                             </div>
@@ -4587,7 +4587,7 @@ function StudioPageContent() {
                               {profile?.plan === "free"
                                 ? "Upgrade to get more credits"
                                 : profile?.subscription_status === "canceling"
-                                  ? "Expiring — go to Manage to renew"
+                                  ? "Expiring - go to Manage to renew"
                                   : profile?.subscription_period_end
                                     ? `Renews ${new Date(profile.subscription_period_end).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}`
                                     : "Manage billing, invoices, and plan changes"}
@@ -4839,7 +4839,7 @@ function StudioPageContent() {
               </motion.div>
             </div>
 
-            {/* Session title — appears on transition from script → audio */}
+            {/* Session title - appears on transition from script to audio */}
             <AnimatePresence>
               {loadingPhase === "audio" && loadingSessionInfo?.title && (
                 <motion.p
@@ -4868,14 +4868,14 @@ function StudioPageContent() {
                 >
                   {loadingPhase === "script" && loadingPhaseStep === 0 && "Writing your meditation..."}
                   {loadingPhase === "script" && loadingPhaseStep === 1 && "Choosing the right approach..."}
-                  {loadingPhase === "audio" && loadingPhaseStep === 0 && "Script is ready — generating voice..."}
+                  {loadingPhase === "audio" && loadingPhaseStep === 0 && "Script is ready, generating voice..."}
                   {loadingPhase === "audio" && loadingPhaseStep === 1 && "Shaping the soundscape..."}
                   {loadingPhase === "audio" && loadingPhaseStep === 2 && "Almost there..."}
                 </motion.p>
               </AnimatePresence>
             </div>
 
-            {/* Metadata pills — appear during audio phase */}
+            {/* Metadata pills - appear during audio phase */}
             <AnimatePresence>
               {loadingPhase === "audio" && loadingSessionInfo && (
                 <motion.div
@@ -4903,7 +4903,7 @@ function StudioPageContent() {
               className="text-[11px] text-[var(--color-sand-500)] text-center mt-8"
               style={{ fontFamily: "var(--font-body)" }}
             >
-              You can close this tab — find your session in All Sessions when it&apos;s ready.
+              You can close this tab. Find your session in All Sessions when it&apos;s ready.
             </motion.p>
           </motion.div>
         )}

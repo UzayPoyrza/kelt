@@ -5,7 +5,7 @@ export type ScriptBlock = {
   pauseDuration?: number;
 };
 
-/** Returns an empty script — no more hardcoded placeholder content */
+/** Returns an empty script - no more hardcoded placeholder content */
 export function generateScript(_prompt: string): ScriptBlock[] {
   return [];
 }
@@ -32,7 +32,7 @@ export function deriveSessionName(prompt: string): string {
 /**
  * Parse raw TTS script format into ScriptBlock[].
  * Format:
- *   First line: "ID — Title" (title extracted, ID discarded)
+ *   First line: "ID - Title" (title extracted, ID discarded)
  *   <break time="Xs" /> → short pause (≤3s)
  *   [pause: N] → long pause (≥4s)
  *   [skip_point] → ignored
@@ -48,13 +48,13 @@ export function parseRawScript(raw: string): { title: string; blocks: ScriptBloc
     const line = lines[i].trim();
     if (!line) continue;
 
-    // First non-empty line: extract title (e.g. "U003 — Name the Worry")
+    // First non-empty line: extract title (e.g. "U003 - Name the Worry")
     if (id === 1 && !title && /^[A-Z0-9]+\s*[—–-]\s*.+/.test(line)) {
       title = line.replace(/^[A-Z0-9]+\s*[—–-]\s*/, "").trim();
       continue;
     }
 
-    // Skip points — ignore
+    // Skip points - ignore
     if (/^\[skip_point\]$/i.test(line)) continue;
 
     // Break tag: <break time="1.1s" />

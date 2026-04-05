@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createHash } from "crypto";
 import { getAuthUser } from "@/app/api/_lib/auth";
-import { createAdminClient } from "@/lib/supabase/admin";
 import { deriveSessionName, parseRawScript } from "@/lib/generateScript";
 
 export async function POST(request: NextRequest) {
@@ -15,50 +13,20 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Prompt is required" }, { status: 400 });
   }
 
-  console.log("[generate] Starting:", { prompt: prompt.slice(0, 60), voice, duration, userId: user!.id.slice(0, 8), isAnon: user!.is_anonymous });
-  const isAnonymous = !!user!.is_anonymous;
+  console.log("[generate] Starting:", { prompt: prompt.slice(0, 60), voice, duration, userId: user!.id.slice(0, 8) });
 
-  // === Authorization: daily rate limit (anon) or credits (OAuth) ===
-  if (isAnonymous) {
-    // Cap duration at 3 minutes for anonymous
-    if ((duration || 7) > 3) {
-      return NextResponse.json({ error: "Duration limited to 3 minutes for free trial" }, { status: 403 });
-    }
+  // === Authorization: check credits ===
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("credits_remaining")
+    .eq("id", user!.id)
+    .single();
 
-    // IP-based rate limit: 2 generations/day per IP (persists across sign-out/new anonymous users)
-    const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim()
-      || request.headers.get("x-real-ip")
-      || "unknown";
-    const ipHash = createHash("sha256").update(ip).digest("hex");
-    const today = new Date().toISOString().slice(0, 10);
-    const admin = createAdminClient();
-
-    const { data: rateRow } = await admin
-      .from("anon_rate_limits")
-      .select("count")
-      .eq("ip_hash", ipHash)
-      .eq("date", today)
-      .single();
-
-    if (rateRow && rateRow.count >= 2) {
-      return NextResponse.json(
-        { error: "Daily limit reached. Sign up to continue.", code: "daily_limit" },
-        { status: 429 }
-      );
-    }
-  } else {
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("credits_remaining")
-      .eq("id", user!.id)
-      .single();
-
-    if (!profile || profile.credits_remaining < 1) {
-      console.log("[generate] Insufficient credits:", profile?.credits_remaining);
-      return NextResponse.json({ error: "Insufficient credits" }, { status: 402 });
-    }
-    console.log("[generate] Credits OK:", profile.credits_remaining);
+  if (!profile || profile.credits_remaining < 1) {
+    console.log("[generate] Insufficient credits:", profile?.credits_remaining);
+    return NextResponse.json({ error: "Insufficient credits" }, { status: 402 });
   }
+  console.log("[generate] Credits OK:", profile.credits_remaining);
 
   let activeSessionId = sessionId;
 
@@ -98,7 +66,7 @@ export async function POST(request: NextRequest) {
       voice: voice || "Luna",
       duration: String(duration || 7),
       status: "pending",
-      credit_cost: isAnonymous ? 0 : 1,
+      credit_cost: 1,
     })
     .select()
     .single();
@@ -109,27 +77,25 @@ export async function POST(request: NextRequest) {
   }
   console.log("[generate] Generation record created:", generation.id);
 
-  // Credit deduction: only for OAuth users (anonymous uses daily rate limit)
-  if (!isAnonymous) {
-    const { data: creditDeducted, error: creditError } = await supabase
-      .rpc("deduct_credit", { user_id_input: user!.id });
+  // Credit deduction
+  const { data: creditDeducted, error: creditError } = await supabase
+    .rpc("deduct_credit", { user_id_input: user!.id });
 
-    if (creditError || !creditDeducted) {
-      await supabase
-        .from("generations")
-        .update({ status: "failed" })
-        .eq("id", generation.id);
+  if (creditError || !creditDeducted) {
+    await supabase
+      .from("generations")
+      .update({ status: "failed" })
+      .eq("id", generation.id);
 
-      return NextResponse.json({ error: "Failed to deduct credit" }, { status: 402 });
-    }
-
-    await supabase.from("credit_ledger").insert({
-      user_id: user!.id,
-      amount: -1,
-      reason: "generation",
-      generation_id: generation.id,
-    });
+    return NextResponse.json({ error: "Failed to deduct credit" }, { status: 402 });
   }
+
+  await supabase.from("credit_ledger").insert({
+    user_id: user!.id,
+    amount: -1,
+    reason: "generation",
+    generation_id: generation.id,
+  });
 
   // Generate script: use editor script if provided, otherwise call Incraft API
   let script: unknown;
@@ -143,7 +109,7 @@ export async function POST(request: NextRequest) {
     console.log("[generate] Using editor script, length:", typeof serializedScript === "string" ? serializedScript.length : JSON.stringify(serializedScript).length);
     console.log("[generate] Editor script preview:", (typeof serializedScript === "string" ? serializedScript : JSON.stringify(serializedScript)).slice(0, 150));
   } else {
-    // API only accepts duration_min: 3, 5, 7, 10, 12, 15 — clamp to nearest valid
+    // API only accepts duration_min: 3, 5, 7, 10, 12, 15 - clamp to nearest valid
     const validDurations = [3, 5, 7, 10, 12, 15];
     const apiDuration = validDurations.find(d => d >= (duration || 7)) || 7;
 
@@ -199,15 +165,13 @@ export async function POST(request: NextRequest) {
         await supabase.from("generations").delete().eq("session_id", activeSessionId);
         await supabase.from("sessions").delete().eq("id", activeSessionId);
       }
-      if (!isAnonymous) {
-        await supabase.rpc("refund_credit", { user_id_input: user!.id });
-        await supabase.from("credit_ledger").insert({
-          user_id: user!.id,
-          amount: 1,
-          reason: "refund_generation_failed",
-          generation_id: generation.id,
-        });
-      }
+      await supabase.rpc("refund_credit", { user_id_input: user!.id });
+      await supabase.from("credit_ledger").insert({
+        user_id: user!.id,
+        amount: 1,
+        reason: "refund_generation_failed",
+        generation_id: generation.id,
+      });
       return NextResponse.json(
         { error: "Script generation failed", detail: JSON.stringify(lambdaResult) },
         { status: 502 }
@@ -227,15 +191,13 @@ export async function POST(request: NextRequest) {
           await supabase.from("generations").delete().eq("session_id", activeSessionId);
           await supabase.from("sessions").delete().eq("id", activeSessionId);
         }
-        if (!isAnonymous) {
-          await supabase.rpc("refund_credit", { user_id_input: user!.id });
-          await supabase.from("credit_ledger").insert({
-            user_id: user!.id,
-            amount: 1,
-            reason: "refund_generation_failed",
-            generation_id: generation.id,
-          });
-        }
+        await supabase.rpc("refund_credit", { user_id_input: user!.id });
+        await supabase.from("credit_ledger").insert({
+          user_id: user!.id,
+          amount: 1,
+          reason: "refund_generation_failed",
+          generation_id: generation.id,
+        });
         return NextResponse.json(
           { error: "Script generation failed", detail: lambdaResult.body },
           { status: 502 }
@@ -264,12 +226,10 @@ export async function POST(request: NextRequest) {
         await supabase.from("generations").delete().eq("session_id", activeSessionId);
         await supabase.from("sessions").delete().eq("id", activeSessionId);
       }
-      if (!isAnonymous) {
-        await supabase.rpc("refund_credit", { user_id_input: user!.id });
-        await supabase.from("credit_ledger").insert({
-          user_id: user!.id, amount: 1, reason: "refund_no_script", generation_id: generation.id,
-        });
-      }
+      await supabase.rpc("refund_credit", { user_id_input: user!.id });
+      await supabase.from("credit_ledger").insert({
+        user_id: user!.id, amount: 1, reason: "refund_no_script", generation_id: generation.id,
+      });
       return NextResponse.json({ error: "Script generation returned empty content" }, { status: 502 });
     }
 
@@ -320,7 +280,7 @@ export async function POST(request: NextRequest) {
   if (routedProtocol) {
     sessionUpdate.protocol = routedProtocol;
   }
-  // Always set title — from API or derived from prompt
+  // Always set title - from API or derived from prompt
   sessionUpdate.title = apiTitle || deriveSessionName(prompt);
   const { data: session } = await supabase
     .from("sessions")
@@ -334,17 +294,6 @@ export async function POST(request: NextRequest) {
     .from("generations")
     .update({ status: "completed", timings: apiTimings })
     .eq("id", generation.id);
-
-  // Increment IP-based rate limit for anonymous users
-  if (isAnonymous) {
-    const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim()
-      || request.headers.get("x-real-ip")
-      || "unknown";
-    const ipHash = createHash("sha256").update(ip).digest("hex");
-    const today = new Date().toISOString().slice(0, 10);
-    const admin = createAdminClient();
-    await admin.rpc("increment_anon_rate_limit", { hash: ipHash, d: today });
-  }
 
   return NextResponse.json({ session, generation: { ...generation, status: "completed", timings: apiTimings } });
 }

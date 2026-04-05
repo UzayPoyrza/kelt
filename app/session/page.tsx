@@ -103,7 +103,7 @@ function SessionContent() {
         if (session.protocol) setSessionProtocol(session.protocol);
         if (session.soundscape) setSoundscape(session.soundscape);
         if (session.sound_options) setSoundOptions(session.sound_options);
-        // Don't go to "ready" yet — let the audio fetch effect determine the next stage
+        // Don't go to "ready" yet - let the audio fetch effect determine the next stage
         setStage("rendering");
         renderStartTime.current = Date.now();
       } else {
@@ -134,7 +134,7 @@ function SessionContent() {
           return;
         }
 
-        // No audio yet — trigger render with generation_id for unique audio file
+        // No audio yet - trigger render with generation_id for unique audio file
         const latestGenId = gens.length > 0 ? gens[0].id : undefined;
         if (!cancelled) setRenderLoading(true);
         const renderRes = await fetch("/api/render", {
@@ -378,7 +378,7 @@ function SessionContent() {
         <Header />
 
         <div className="relative z-10 flex-1 flex items-start justify-center px-4 sm:px-6 pt-6 sm:pt-8 pb-6">
-          {/* Audio elements — always in DOM so refs and event listeners work */}
+          {/* Audio elements - always in DOM so refs and event listeners work */}
           {audioUrl && <audio ref={audioRef} src={audioUrl} preload="metadata" />}
           <audio ref={bgAudioRef} loop preload="none" />
 
@@ -413,7 +413,7 @@ function SessionContent() {
               </motion.div>
             )}
 
-            {/* ─── Rendering (the main loading experience — 30-60s of TTS) ─── */}
+            {/* ─── Rendering (the main loading experience, 30-60s of TTS) ─── */}
             {stage === "rendering" && (
               <motion.div
                 key="rendering"
@@ -425,14 +425,14 @@ function SessionContent() {
               >
                 {/* Breathing orb */}
                 <div className="relative w-32 h-32 sm:w-40 sm:h-40 flex items-center justify-center mb-10">
-                  {/* Outer ring — slow rotation */}
+                  {/* Outer ring - slow rotation */}
                   <motion.div
                     className="absolute inset-0 rounded-full"
                     style={{ border: "1px solid var(--color-sand-200)" }}
                     animate={{ rotate: 360, scale: [1, 1.04, 1] }}
                     transition={{ rotate: { duration: 20, repeat: Infinity, ease: "linear" }, scale: { duration: 4, repeat: Infinity, ease: "easeInOut" } }}
                   />
-                  {/* Mid ring — counter-rotate */}
+                  {/* Mid ring - counter-rotate */}
                   <motion.div
                     className="absolute inset-4 rounded-full"
                     style={{ border: "1px solid var(--color-sand-200)" }}
@@ -467,7 +467,7 @@ function SessionContent() {
                   </motion.div>
                 </div>
 
-                {/* Session info — fades in with real data */}
+                {/* Session info - fades in with real data */}
                 {sessionTitle && (
                   <motion.p
                     initial={{ opacity: 0, y: 6 }}
@@ -480,7 +480,7 @@ function SessionContent() {
                   </motion.p>
                 )}
 
-                {/* Phase messages — crossfade between them */}
+                {/* Phase messages - crossfade between them */}
                 <div className="h-12 flex flex-col items-center justify-center">
                   <AnimatePresence mode="wait">
                     <motion.p
@@ -492,7 +492,7 @@ function SessionContent() {
                       className="text-sm text-[var(--color-sand-600)] text-center"
                       style={{ fontFamily: "var(--font-body)" }}
                     >
-                      {renderPhase === 0 && "Script is ready — generating voice..."}
+                      {renderPhase === 0 && "Script is ready, generating voice..."}
                       {renderPhase === 1 && "Shaping the soundscape..."}
                       {renderPhase === 2 && "Adding final touches..."}
                       {renderPhase === 3 && "Almost there..."}
@@ -500,7 +500,7 @@ function SessionContent() {
                   </AnimatePresence>
                 </div>
 
-                {/* Metadata pills — appear once we have the data */}
+                {/* Metadata pills - appear once we have the data */}
                 <motion.div
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
@@ -516,7 +516,7 @@ function SessionContent() {
                   )}
                 </motion.div>
 
-                {/* Reassurance — user can leave */}
+                {/* Reassurance - user can leave */}
                 <motion.p
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
@@ -524,7 +524,7 @@ function SessionContent() {
                   className="text-[11px] text-[var(--color-sand-500)] text-center mt-8"
                   style={{ fontFamily: "var(--font-body)" }}
                 >
-                  You can close this tab — find your session in Studio when it&apos;s ready.
+                  You can close this tab. Find your session in Studio when it&apos;s ready.
                 </motion.p>
               </motion.div>
             )}
@@ -641,7 +641,7 @@ function SessionContent() {
                       </div>
                     )}
 
-                    {/* Progress — interactive */}
+                    {/* Progress - interactive */}
                     <div className="mb-3">
                       <div
                         ref={progressRef}
@@ -742,7 +742,7 @@ function SessionContent() {
 
                           {hasSoundOptions ? (
                             <>
-                              {/* Recommended (1 sound — the default pick) */}
+                              {/* Recommended (1 sound - the default pick) */}
                               <div>
                                 <p className="text-[10px] uppercase tracking-wider text-[var(--color-sand-400)] mb-2 font-medium" style={{ fontFamily: "var(--font-body)" }}>Recommended</p>
                                 <div className="flex flex-wrap gap-1.5">
@@ -851,7 +851,7 @@ function SessionContent() {
                   </AnimatePresence>
                 </motion.div>
 
-                {/* Edit in Incraft Studio — slim CTA with hover demo */}
+                {/* Edit in Incraft Studio - slim CTA with hover demo */}
                 {!showBgPicker && (
                   <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }} className="mt-4">
                     <a href={studioHref} className="block relative rounded-xl group">
@@ -886,7 +886,7 @@ function SessionContent() {
                           </div>
                         </div>
 
-                        {/* Demo — reveals on hover */}
+                        {/* Demo - reveals on hover */}
                         <div className="max-h-0 group-hover:max-h-[200px] transition-[max-height] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] overflow-hidden">
                           <div className="mx-2.5 sm:mx-4 mb-3 rounded-lg overflow-hidden border border-white/[0.08]" style={{ background: "rgba(255,255,255,0.02)" }}>
                             <div className="px-3 py-2 space-y-[4px]">
@@ -898,7 +898,7 @@ function SessionContent() {
                                 <span className="text-[8px] text-white/40 truncate" style={{ fontFamily: "var(--font-body)" }}>Find a comfortable position...</span>
                               </div>
 
-                              {/* Pause block — short */}
+                              {/* Pause block - short */}
                               <div className="flex items-center gap-2 px-2 py-1 rounded" style={{ background: "rgba(255,255,255,0.02)" }}>
                                 <div className="w-3 h-3 rounded-full flex items-center justify-center shrink-0" style={{ background: "rgba(161,161,170,0.15)" }}>
                                   <svg width="6" height="6" viewBox="0 0 14 14" fill="none"><rect x="2" y="1" width="3.5" height="12" rx="1" fill="rgba(255,255,255,0.3)" /><rect x="8.5" y="1" width="3.5" height="12" rx="1" fill="rgba(255,255,255,0.3)" /></svg>
@@ -907,7 +907,7 @@ function SessionContent() {
                                 <span className="text-[7px] text-white/20 tabular-nums ml-auto" style={{ fontFamily: "var(--font-body)" }}>2s</span>
                               </div>
 
-                              {/* Voice block — selected/editing */}
+                              {/* Voice block - selected/editing */}
                               <div className="flex items-center gap-2 px-2 py-1.5 rounded border border-white/[0.1]" style={{ background: "rgba(255,255,255,0.04)" }}>
                                 <div className="w-3 h-3 rounded-full flex items-center justify-center shrink-0" style={{ background: "rgba(122,158,126,0.2)" }}>
                                   <div className="w-1 h-1 rounded-full" style={{ background: "var(--color-sage)" }} />
@@ -916,7 +916,7 @@ function SessionContent() {
                                 <div className="w-[1px] h-3 bg-white/40 animate-pulse shrink-0" />
                               </div>
 
-                              {/* Pause block — long */}
+                              {/* Pause block - long */}
                               <div className="flex items-center gap-2 px-2 py-1 rounded" style={{ background: "rgba(122,158,126,0.04)" }}>
                                 <div className="w-3 h-3 rounded-full flex items-center justify-center shrink-0" style={{ background: "rgba(122,158,126,0.2)" }}>
                                   <svg width="6" height="6" viewBox="0 0 14 14" fill="none"><rect x="2" y="1" width="3.5" height="12" rx="1" fill="rgba(122,158,126,0.5)" /><rect x="8.5" y="1" width="3.5" height="12" rx="1" fill="rgba(122,158,126,0.5)" /></svg>

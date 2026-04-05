@@ -60,7 +60,7 @@ function CinematicTransition() {
       className="relative pt-16 pb-8 sm:pt-24 sm:pb-12 md:pt-32 md:pb-14 px-4 sm:px-6 overflow-hidden"
       style={{ background: "var(--color-sand-800)" }}
     >
-      {/* Giant ghost text — slow drift */}
+      {/* Giant ghost text - slow drift */}
       <div
         className="absolute inset-0 flex items-center justify-center pointer-events-none select-none overflow-hidden"
         style={{ top: "-10%" }}
@@ -120,7 +120,7 @@ function CinematicTransition() {
         />
       </div>
 
-      {/* Testimonials — integrated, minimal */}
+      {/* Testimonials - integrated, minimal */}
       <div className="relative z-10 max-w-4xl mx-auto grid md:grid-cols-3 gap-x-12 gap-y-8 sm:gap-y-10">
         {testimonials.map((t, i) => (
           <motion.div
@@ -411,7 +411,7 @@ export default function HomePage() {
             </h1>
 
             <p className="text-center text-sm text-[var(--color-sand-500)] -mt-3 mb-8" style={{ fontFamily: "var(--font-body)" }}>
-              Describe what you need — a sentence or two is perfect
+              Describe what you need, a sentence or two is perfect
             </p>
 
             {/* Input */}
@@ -485,7 +485,7 @@ export default function HomePage() {
           </motion.div>
         </div>
 
-        {/* Scroll hint — prominent samples CTA */}
+        {/* Scroll hint - prominent samples CTA */}
         <motion.button
           onClick={scrollToInfo}
           initial={{ opacity: 0, y: 10 }}
@@ -510,7 +510,7 @@ export default function HomePage() {
       </section>
 
       {/* ════════════════════════════════════════════
-          SECTION 0 — AUDIO SAMPLES
+          SECTION 0 - AUDIO SAMPLES
          ════════════════════════════════════════════ */}
       <section ref={infoRef} className="section-deferred relative pb-10 sm:pb-12 px-4 sm:px-6 scroll-mt-0" style={{ background: "var(--color-sand-900)" }}>
         <div className="max-w-6xl mx-auto w-full pt-10 sm:pt-16 md:pt-20">
@@ -520,7 +520,7 @@ export default function HomePage() {
             </h2>
             <p className="text-base text-white/50 max-w-xl mx-auto leading-relaxed" style={{ fontFamily: "var(--font-body)" }}>
               Zero editing. Zero post-production. Every session below was generated
-              in one shot — entirely using Incraft.
+              in one shot, entirely using Incraft.
             </p>
           </FadeIn>
 
@@ -637,12 +637,12 @@ export default function HomePage() {
       </section>
 
       {/* ════════════════════════════════════════════
-          TRANSITION — Cinematic Focus Pull
+          TRANSITION - Cinematic Focus Pull
          ════════════════════════════════════════════ */}
       <CinematicTransition />
 
       {/* ════════════════════════════════════════════
-          SECTION 1 — PAUSE INTELLIGENCE
+          SECTION 1 - PAUSE INTELLIGENCE
          ════════════════════════════════════════════ */}
       <section ref={howRef} className="section-deferred relative py-12 sm:py-16 md:py-20 px-4 sm:px-6 overflow-hidden" style={{ background: "var(--color-sand-50)" }}>
         <div className="max-w-4xl mx-auto">
@@ -654,7 +654,7 @@ export default function HomePage() {
               Most AI reads text.<br />Ours <span className="bg-clip-text text-transparent bg-[length:300%_300%] animate-[border-glow_4s_ease_infinite]" style={{ backgroundImage: "linear-gradient(135deg, var(--color-sage), var(--color-ocean), var(--color-dusk), var(--color-ember), var(--color-sage))", backgroundSize: "300% 300%" }}>understands silence.</span>
             </h2>
             <p className="text-base text-[var(--color-sand-600)] max-w-lg mx-auto leading-relaxed" style={{ fontFamily: "var(--font-body)" }}>
-              Every pause is intentional &mdash; timed to your breath, calibrated to the instruction.
+              Every pause is intentional, timed to your breath, calibrated to the instruction.
             </p>
           </FadeIn>
 
@@ -666,7 +666,7 @@ export default function HomePage() {
                   <div className="w-2 h-2 rounded-full bg-[var(--color-sand-300)]" />
                   <div className="w-2 h-2 rounded-full bg-[var(--color-sand-300)]" />
                 </div>
-                <span className="text-[10px] text-[var(--color-sand-400)] ml-1" style={{ fontFamily: "var(--font-body)" }}>Incraft Session — First 24 seconds</span>
+                <span className="text-[10px] text-[var(--color-sand-400)] ml-1" style={{ fontFamily: "var(--font-body)" }}>Incraft Session - First 24 seconds</span>
               </div>
 
               <div className="p-5 md:p-7">
@@ -713,7 +713,7 @@ export default function HomePage() {
                   </div>
                   <div>
                     <p className="text-sm text-[var(--color-sand-900)] font-medium" style={{ fontFamily: "var(--font-body)" }}>Every pause is precision-timed</p>
-                    <p className="text-xs text-[var(--color-sand-500)] mt-0.5" style={{ fontFamily: "var(--font-body)" }}>Audio matches the script exactly — every pause, every breath cue</p>
+                    <p className="text-xs text-[var(--color-sand-500)] mt-0.5" style={{ fontFamily: "var(--font-body)" }}>Audio matches the script exactly: every pause, every breath cue</p>
                   </div>
                 </div>
               </div>
@@ -723,7 +723,7 @@ export default function HomePage() {
       </section>
 
       {/* ════════════════════════════════════════════
-          SECTION 2 — STUDIO AUDIO
+          SECTION 2 - STUDIO AUDIO
          ════════════════════════════════════════════ */}
       <section className="section-deferred relative py-14 sm:py-20 md:py-24 px-4 sm:px-6 overflow-hidden" style={{ background: "var(--color-sand-900)" }}>
         <div className="absolute inset-0 pointer-events-none hidden sm:block">
@@ -812,7 +812,7 @@ export default function HomePage() {
       </section>
 
       {/* ════════════════════════════════════════════
-          SECTION 3 — SCIENTIFIC PROTOCOLS
+          SECTION 3 - SCIENTIFIC PROTOCOLS
          ════════════════════════════════════════════ */}
       <section className="section-deferred relative py-14 sm:py-20 md:py-24 px-4 sm:px-6" style={{ background: "var(--color-sand-50)" }}>
         <div className="max-w-4xl mx-auto">
@@ -833,7 +833,7 @@ export default function HomePage() {
           <FadeIn>
             <div className="bg-white rounded-2xl border border-[var(--color-sand-200)] overflow-hidden shadow-sm mb-14">
               <div className="px-5 py-3 border-b border-[var(--color-sand-100)] bg-[var(--color-sand-50)]">
-                <span className="text-[10px] text-[var(--color-sand-400)]" style={{ fontFamily: "var(--font-body)" }}>How it works — prompt to protocol</span>
+                <span className="text-[10px] text-[var(--color-sand-400)]" style={{ fontFamily: "var(--font-body)" }}>How it works - prompt to protocol</span>
               </div>
 
               <div className="p-5 md:p-7">
@@ -929,7 +929,7 @@ export default function HomePage() {
       </section>
 
       {/* ════════════════════════════════════════════
-          SECTION 4 — SOUND AWARE
+          SECTION 4 - SOUND AWARE
          ════════════════════════════════════════════ */}
       <section className="section-deferred relative py-14 sm:py-20 md:py-24 px-4 sm:px-6 overflow-hidden" style={{ background: "var(--color-sand-100)" }}>
         <div className="max-w-4xl mx-auto relative z-10">
@@ -946,7 +946,7 @@ export default function HomePage() {
             </p>
           </FadeIn>
 
-          {/* Demo — dark card mimicking an AI analysis terminal */}
+          {/* Demo - dark card mimicking an AI analysis terminal */}
           <FadeIn>
             <div className="rounded-2xl overflow-hidden shadow-xl" style={{ background: "#1a1614" }}>
               {/* Card chrome */}
@@ -1030,7 +1030,7 @@ export default function HomePage() {
 
           <FadeIn delay={0.3}>
             <p className="text-center text-[11px] text-[var(--color-sand-400)] mt-6" style={{ fontFamily: "var(--font-body)" }}>
-              Selects from 40+ layers — binaural beats, breath pacers, sound bowls, nature, drones, metronomes
+              Selects from 40+ layers: binaural beats, breath pacers, sound bowls, nature, drones, metronomes
             </p>
           </FadeIn>
         </div>

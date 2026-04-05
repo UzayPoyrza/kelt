@@ -21,13 +21,13 @@ const principles = [
     icon: FlaskConical,
     title: "Evidence-Based Protocols",
     description:
-      "Every meditation protocol in Incraft is grounded in peer-reviewed research. From Cognitive Behavioral Therapy for Insomnia (CBT-I) to Mindfulness-Based Stress Reduction (MBSR), we implement clinically validated techniques — not trends.",
+      "Every meditation protocol in Incraft is grounded in peer-reviewed research. From Cognitive Behavioral Therapy for Insomnia (CBT-I) to Mindfulness-Based Stress Reduction (MBSR), we implement clinically validated techniques, not trends.",
   },
   {
     icon: Brain,
     title: "Intelligent Personalization",
     description:
-      "Our AI analyzes your prompt to detect intent, recommend the most appropriate therapeutic approach, and match you with curated soundscapes — adapting each session to what you actually need.",
+      "Our AI analyzes your prompt to detect intent, recommend the most appropriate therapeutic approach, and match you with curated soundscapes, adapting each session to what you actually need.",
   },
   {
     icon: Shield,
@@ -93,7 +93,7 @@ export default function AboutPage() {
               className="text-[14px] text-[#71717a] max-w-md mx-auto leading-relaxed"
               style={{ fontFamily: "var(--font-body)" }}
             >
-              Generate studio-quality guided meditation in 1 prompt. Tailored scripts, natural voice narration, timed pauses — AI powered by science-based protocols. Free.
+              Generate studio-quality guided meditation in 1 prompt. Tailored scripts, natural voice narration, timed pauses. AI powered by science-based protocols. Free.
             </p>
           </div>
 
@@ -114,10 +114,10 @@ export default function AboutPage() {
                     Incraft is built and operated by <strong>Launchspace LLC</strong>, a technology company focused on applying artificial intelligence to evidence-based health and wellness practices.
                   </p>
                   <p>
-                    Our team&rsquo;s work in this space began with <strong>Neurotype</strong> — a science-based meditation app that uses AI to deliver personalized session recommendations grounded in cognitive and behavioral research. Neurotype demonstrated that intelligent systems can meaningfully improve how people access and engage with meditation by matching users to clinically validated protocols based on their needs, rather than offering one-size-fits-all content.
+                    Our team&rsquo;s work in this space began with <strong>Neurotype</strong>, a science-based meditation app that uses AI to deliver personalized session recommendations grounded in cognitive and behavioral research. Neurotype demonstrated that intelligent systems can meaningfully improve how people access and engage with meditation by matching users to clinically validated protocols based on their needs, rather than offering one-size-fits-all content.
                   </p>
                   <p>
-                    Through years of building and refining Neurotype, we identified a deeper opportunity: not just recommending the right meditation, but <em>generating</em> it. That insight led to Incraft — an AI-powered meditation generator that creates complete, personalized sessions on demand, including scripts, voice narration, and ambient soundscapes.
+                    Through years of building and refining Neurotype, we identified a deeper opportunity: not just recommending the right meditation, but <em>generating</em> it. That insight led to Incraft, an AI-powered meditation generator that creates complete, personalized sessions on demand, including scripts, voice narration, and ambient soundscapes.
                   </p>
                 </div>
               </section>
@@ -160,7 +160,7 @@ export default function AboutPage() {
                     </li>
                   </ul>
                   <p>
-                    When you describe what you need, our system analyzes your intent and routes your session through the most appropriate protocol — the same way a trained practitioner would select an approach for a client, informed by evidence rather than guesswork.
+                    When you describe what you need, our system analyzes your intent and routes your session through the most appropriate protocol, the same way a trained practitioner would select an approach for a client, informed by evidence rather than guesswork.
                   </p>
                 </div>
               </section>
@@ -177,7 +177,7 @@ export default function AboutPage() {
                     Neurotype taught us what works in AI-assisted meditation: protocol accuracy, personalization depth, and clinical rigor. Users consistently reported better outcomes when matched to the right technique rather than browsing a library of pre-recorded sessions.
                   </p>
                   <p>
-                    Incraft takes that foundation further. Instead of recommending from a fixed catalog, we generate each session from scratch — tailoring the script language, pacing, therapeutic structure, voice, and soundscape to the individual. This means no two sessions are identical, and every session is built around what you actually asked for.
+                    Incraft takes that foundation further. Instead of recommending from a fixed catalog, we generate each session from scratch, tailoring the script language, pacing, therapeutic structure, voice, and soundscape to the individual. This means no two sessions are identical, and every session is built around what you actually asked for.
                   </p>
                   <p>
                     The underlying generation engine has been developed through extensive testing and iteration, drawing on our experience with thousands of meditation sessions and continuous refinement of our clinical protocol library.
@@ -228,7 +228,7 @@ export default function AboutPage() {
               </h2>
               <div className="text-[14px] text-[#52525b] leading-relaxed space-y-3">
                 <p>
-                  We take the responsibility of operating in the wellness space seriously. Incraft is designed as a supportive tool for general wellbeing — it is <strong>not</strong> a medical device, and it does not provide medical advice, diagnosis, or treatment.
+                  We take the responsibility of operating in the wellness space seriously. Incraft is designed as a supportive tool for general wellbeing. It is <strong>not</strong> a medical device, and it does not provide medical advice, diagnosis, or treatment.
                 </p>
                 <p>
                   We encourage anyone experiencing clinical mental health conditions to work with a qualified healthcare professional. Our content is intended to complement, not replace, professional care.

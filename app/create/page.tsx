@@ -92,14 +92,13 @@ function CreateContent() {
   const [promptError, setPromptError] = useState(false);
   const [generateError, setGenerateError] = useState<string | null>(null);
 
-  // Anonymous user detection (for signup gate at generate time)
+  // Auth check: gate generation behind signup
   const [isAnonymous, setIsAnonymous] = useState<boolean | null>(null);
 
   useEffect(() => {
     const supabase = createClient();
     supabase.auth.getSession().then(({ data: { session } }) => {
-      const user = session?.user;
-      setIsAnonymous(!user || !!user.is_anonymous);
+      setIsAnonymous(!session?.user);
     });
   }, []);
 
@@ -208,7 +207,7 @@ function CreateContent() {
         const success = await callGenerateApi();
         if (success) return;
       }
-      // No user or API failed — show error
+      // No user or API failed - show error
       setGenerateError("Something went wrong. Please try again.");
     } catch (err) {
       console.error("[create] Generate flow error:", err);
@@ -256,7 +255,7 @@ function CreateContent() {
               <p className="text-[11px] uppercase tracking-widest text-[var(--color-sand-400)]" style={{ fontFamily: "var(--font-body)" }}>Your intention</p>
             </motion.div>
 
-            {/* Prompt — centered */}
+            {/* Prompt - centered */}
             <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="mb-6 sm:mb-8 text-center">
               <p className="text-2xl sm:text-3xl text-[var(--color-sand-900)] leading-snug inline" style={{ fontFamily: "var(--font-display)" }}>
                 <span className="text-[var(--color-sand-300)] select-none">&ldquo;</span>
@@ -301,7 +300,7 @@ function CreateContent() {
               )}
             </motion.div>
 
-            {/* Duration — segmented control */}
+            {/* Duration - segmented control */}
             <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.06 }} className="mb-5">
               <p className="text-[11px] uppercase tracking-widest text-[var(--color-sand-400)] mb-2" style={{ fontFamily: "var(--font-body)" }}>Duration</p>
               <div className="relative">
@@ -320,7 +319,7 @@ function CreateContent() {
               <p className="text-[10px] text-[var(--color-sand-400)] mt-1.5" style={{ fontFamily: "var(--font-body)" }}>Actual length may vary by ~25% depending on prompt and protocol</p>
             </motion.div>
 
-            {/* Voice — single row, compact with accent stripe */}
+            {/* Voice - single row, compact with accent stripe */}
             <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="mb-5">
               <p className="text-[11px] uppercase tracking-widest text-[var(--color-sand-400)] mb-2" style={{ fontFamily: "var(--font-body)" }}>Voice</p>
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
@@ -390,7 +389,7 @@ function CreateContent() {
             <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.14 }} className="mb-5">
               <div className="flex items-center gap-2 mb-2">
                 <p className="text-[11px] uppercase tracking-widest text-[var(--color-sand-400)]" style={{ fontFamily: "var(--font-body)" }}>Focus area</p>
-                <span className="text-[10px] text-[var(--color-sand-400)]" style={{ fontFamily: "var(--font-body)" }}>— optional</span>
+                <span className="text-[10px] text-[var(--color-sand-400)]" style={{ fontFamily: "var(--font-body)" }}>(optional)</span>
               </div>
               <div className="flex flex-wrap gap-1">
                 {supportChoices.filter(s => s.id !== "auto_detect").map((s) => {
@@ -419,7 +418,7 @@ function CreateContent() {
                 style={{ fontFamily: "var(--font-body)" }}
               >
                 <FlaskConical className="w-3.5 h-3.5 text-[var(--color-sand-400)]" />
-                <span className="text-[12px] text-[var(--color-sand-500)] group-hover:text-[var(--color-sand-700)] flex-1 text-left transition-colors">Advanced<span className="text-[10px] text-[var(--color-sand-400)] ml-1.5">— optional · {approachOptions.length} protocols</span></span>
+                <span className="text-[12px] text-[var(--color-sand-500)] group-hover:text-[var(--color-sand-700)] flex-1 text-left transition-colors">Advanced<span className="text-[10px] text-[var(--color-sand-400)] ml-1.5">(optional) · {approachOptions.length} protocols</span></span>
                 <ChevronDown className={`w-4 h-4 text-[var(--color-sand-400)] transition-transform ${showAdvanced ? "rotate-180" : ""}`} />
               </button>
 
@@ -450,7 +449,7 @@ function CreateContent() {
                   )}
 
                   {/* Protocol */}
-                  <div className="flex items-center gap-2 mb-1"><p className="text-[11px] uppercase tracking-widest text-[var(--color-sand-400)]" style={{ fontFamily: "var(--font-body)" }}>Protocol</p><span className="text-[10px] text-[var(--color-sand-400)]" style={{ fontFamily: "var(--font-body)" }}>— optional</span></div>
+                  <div className="flex items-center gap-2 mb-1"><p className="text-[11px] uppercase tracking-widest text-[var(--color-sand-400)]" style={{ fontFamily: "var(--font-body)" }}>Protocol</p><span className="text-[10px] text-[var(--color-sand-400)]" style={{ fontFamily: "var(--font-body)" }}>(optional)</span></div>
                   <p className="text-[9px] text-[var(--color-sand-400)] mb-1.5" style={{ fontFamily: "var(--font-body)" }}>For therapists, instructors, and advanced users. Overrides the auto-selected approach.</p>
                   {approachOptions.length > 0 ? (
                     <div className="flex flex-wrap gap-1">
@@ -466,7 +465,7 @@ function CreateContent() {
                       ))}
                     </div>
                   ) : (
-                    <p className="text-[10px] text-[var(--color-sand-400)] italic" style={{ fontFamily: "var(--font-body)" }}>No specific approaches — AI will auto-select.</p>
+                    <p className="text-[10px] text-[var(--color-sand-400)] italic" style={{ fontFamily: "var(--font-body)" }}>No specific approaches. AI will auto-select.</p>
                   )}
                 </motion.div>
               )}

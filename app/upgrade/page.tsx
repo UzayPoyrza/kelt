@@ -104,11 +104,11 @@ const plans = [
 const faqs = [
   {
     q: "What are credits?",
-    a: "Each credit generates one meditation session. The length and complexity of the session doesn't affect credit cost — one session, one credit.",
+    a: "Each credit generates one meditation session. The length and complexity of the session doesn't affect credit cost. One session, one credit.",
   },
   {
     q: "Can I use generated sessions commercially?",
-    a: "Yes — on Personal and Pro plans. Paid plans include full commercial rights to every session you generate. Use them in apps, courses, podcasts, client sessions, or any other context. Free plan sessions are for personal use only.",
+    a: "Yes, on Personal and Pro plans. Paid plans include full commercial rights to every session you generate. Use them in apps, courses, podcasts, client sessions, or any other context. Free plan sessions are for personal use only.",
   },
   {
     q: "What happens if I run out of credits?",
@@ -120,7 +120,7 @@ const faqs = [
   },
   {
     q: "Is there a free tier?",
-    a: "Yes. The free plan includes 2 credits per month so you can experience Incraft before committing. Free sessions are for personal use only — upgrade to unlock commercial rights.",
+    a: "Yes. The free plan includes 2 credits per month so you can experience Incraft before committing. Free sessions are for personal use only. Upgrade to unlock commercial rights.",
   },
 ];
 
@@ -449,7 +449,7 @@ export default function UpgradePage() {
         setProfile(data);
       }
     } catch {
-      // silently fail — show free plan defaults
+      // silently fail - show free plan defaults
     } finally {
       setProfileLoading(false);
     }
@@ -725,7 +725,7 @@ export default function UpgradePage() {
                       </div>
                     </div>
 
-                    {/* Credits — hero */}
+                    {/* Credits - hero */}
                     <div
                       className="rounded-xl mb-3.5 px-4 py-3"
                       style={{
