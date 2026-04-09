@@ -3257,6 +3257,14 @@ function StudioPageContent() {
       }
       const data = await res.json();
       console.log("[quick-gen] Script done. Session:", data.session?.id, "Generation:", data.generation?.id);
+
+      // Track successful generation as Google Ads conversion
+      if (process.env.NEXT_PUBLIC_GOOGLE_ADS_GENERATION_LABEL) {
+        const { trackConversion } = await import("@/lib/components/GoogleAdsTag");
+        trackConversion(process.env.NEXT_PUBLIC_GOOGLE_ADS_GENERATION_LABEL);
+        console.log("[gtag] Generation conversion fired");
+      }
+
       // Replace placeholder with real session ID and switch to audio phase
       if (data.session?.id) {
         setGeneratingSession({ id: data.session.id, phase: "audio" });

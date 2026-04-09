@@ -30,6 +30,7 @@ export async function GET(request: Request) {
     const { error } = await supabase.auth.exchangeCodeForSession(code);
     if (!error) {
       // Ensure a profile row exists (fallback if DB trigger didn't fire)
+      let isNewUser = false;
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         const admin = createAdminClient();
@@ -40,6 +41,7 @@ export async function GET(request: Request) {
           .single();
 
         if (!profile) {
+          isNewUser = true;
           await admin.from("profiles").insert({
             id: user.id,
             email: user.email,
@@ -52,6 +54,13 @@ export async function GET(request: Request) {
 
       // Validate next param to prevent open redirects
       const safePath = next.startsWith("/") && !next.startsWith("//") ? next : "/studio";
+
+      // Append conversion=signup for Google Ads tracking (only for new signups)
+      if (isNewUser) {
+        const separator = safePath.includes("?") ? "&" : "?";
+        return NextResponse.redirect(`${origin}${safePath}${separator}conversion=signup`);
+      }
+
       return NextResponse.redirect(`${origin}${safePath}`);
     }
   }
